@@ -3421,6 +3421,45 @@
             lastLocalSaveAt.Tasks=Date.now(); return true;
         }
 
+        // Power Automate notification webhook. Keep this URL private because it contains the flow signature.
+        const POWER_AUTOMATE_WEBHOOK_URL = 'https://default5a9d9cfdc32e4ac1a9edfe83df4f9e.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9605697cb4c54cd6b099690c279f73c3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ImpL5xjxrDm70NAWqZAkQrlAIIFIOaHwEvoSofcvZGc';
+
+        function normalizeNotificationName(value) {
+            return String(value || '').trim().toLowerCase();
+        }
+
+        async function sendPowerAutomateAssignmentNotification({ type, creator, assignees, planDate, recordId, item, priority }) {
+            const creatorName = String(creator || '').trim();
+            const creatorKey = normalizeNotificationName(creatorName);
+            const allowedCreators = new Set(['anny', 'rita']);
+            if (!allowedCreators.has(creatorKey)) return { sent: false, skipped: true, reason: 'creator-not-allowed' };
+
+            const recipients = [...new Set((Array.isArray(assignees) ? assignees : [])
+                .map(v => String(v || '').trim())
+                .filter(Boolean)
+                .filter(name => normalizeNotificationName(name) !== creatorKey))];
+            if (!recipients.length) return { sent: false, skipped: true, reason: 'no-other-assignees' };
+
+            const payload = {
+                creator: creatorName,
+                assignees: recipients,
+                type: String(type || 'task').toLowerCase(),
+                planDate: String(planDate || ''),
+                recordId: recordId == null ? '' : String(recordId),
+                item: String(item || ''),
+                priority: String(priority || '')
+            };
+
+            const response = await fetch(POWER_AUTOMATE_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                mode: 'cors'
+            });
+            if (!response.ok) throw new Error(`Power Automate webhook returned HTTP ${response.status}.`);
+            return { sent: true, payload };
+        }
+
         async function saveDailyTask(e) {
             e.preventDefault();
             const id = document.getElementById('taskId').value;
@@ -3476,6 +3515,20 @@
                 if(!existingTask) {
                     // New task: normal batch save keeps the existing import/create workflow.
                     await saveSheetData('Tasks', dailyTasks);
+                    try {
+                        await sendPowerAutomateAssignmentNotification({
+                            type: 'task',
+                            creator: newTask.createdBy || currentUser?.name || '',
+                            assignees: selectedPics,
+                            planDate: newTask.planDate || newTask.plan,
+                            recordId: newTask.id,
+                            item: newTask.items,
+                            priority: newTask.priority
+                        });
+                    } catch (notifyErr) {
+                        // Notification failure must not undo a successfully saved task.
+                        console.error('Power Automate task notification error:', notifyErr);
+                    }
                 } else {
                     // Edit task: update exactly this Supabase record.
                     await saveTaskRecordDirect(newTask);
@@ -4083,6 +4136,7 @@
                 saving: parseFloat(document.getElementById('projectSaving').value || 0),
                 actualSaving: document.getElementById('projectActualSaving').value === '' ? "" : parseFloat(document.getElementById('projectActualSaving').value || 0),
                 note: document.getElementById('projectNote').value.trim(),
+                createdBy: existingProject?.createdBy || currentUser?.name || '',
                 createdAt: existingProject?.createdAt || new Date().toISOString()
             };
 
@@ -4094,6 +4148,20 @@
             }
 
             await saveSheetData("Projects", projectsList);
+            if (!id) {
+                try {
+                    await sendPowerAutomateAssignmentNotification({
+                        type: 'project',
+                        creator: proj.createdBy || currentUser?.name || '',
+                        assignees: owners,
+                        planDate: proj.dueDate,
+                        recordId: proj.id
+                    });
+                } catch (notifyErr) {
+                    // Notification failure must not undo a successfully saved project.
+                    console.error('Power Automate project notification error:', notifyErr);
+                }
+            }
             closeProjectModal();
             renderProjectsTable();
             updateDashboardCharts();
