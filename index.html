@@ -2659,7 +2659,15 @@
         function renderDashboardWorkloadSummary(filteredTasks){
             const head=document.getElementById('dashWorkloadSummaryHeader'), body=document.getElementById('dashWorkloadSummaryBody');
             if(!head||!body)return;
-            const members=[...new Set(users.filter(u=>u.status==='Active').map(u=>String(u.name||u.username||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+            // Exclude Anny from this specific Workload Analysis Summary table.
+            // This does not remove Anny from Users, tasks, charts, or other reports.
+            const isExcludedWorkloadMember=name=>String(name||'').trim().toLowerCase()==='anny';
+            const members=[...new Set(users
+                .filter(u=>u.status==='Active')
+                .map(u=>String(u.name||u.username||'').trim())
+                .filter(Boolean)
+                .filter(name=>!isExcludedWorkloadMember(name))
+            )].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
             const rows=[...new Set(filteredTasks.map(t=>String(t.category||'Unassigned').trim()||'Unassigned'))].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
             if(!members.length||!rows.length){head.innerHTML='<tr><th>Category</th></tr>';body.innerHTML='<tr><td class="py-4 text-center text-slate-400">No Workload data available</td></tr>';return;}
             const pr=getDashboardPeriodRange();
@@ -2674,7 +2682,20 @@
                 const totalDays=Math.max(1,Math.round((new Date(en)-new Date(st))/86400000)+1), overlapDays=Math.max(0,Math.round((b-a)/86400000)+1);
                 return h*(overlapDays/totalDays);
             };
-            filteredTasks.forEach(t=>{const h=overlapHours(t),row=String(t.category||'Unassigned').trim()||'Unassigned',pics=bomTaskValues('Member',t),share=pics.length?1/pics.length:0;pics.forEach(m=>{if(workload[m])workload[m][row]=(workload[m][row]||0)+h*share;});});
+            filteredTasks.forEach(t=>{
+                const h=overlapHours(t),
+                    row=String(t.category||'Unassigned').trim()||'Unassigned',
+                    pics=bomTaskValues('Member',t)
+                        .map(m=>String(m||'').trim())
+                        .filter(Boolean)
+                        .filter(m=>!isExcludedWorkloadMember(m)),
+                    share=pics.length?1/pics.length:0;
+                // Anny is completely excluded from this summary calculation.
+                // If a task has Anny + other PICs, the remaining PICs share the full task workload.
+                pics.forEach(m=>{
+                    if(workload[m]) workload[m][row]=(workload[m][row]||0)+h*share;
+                });
+            });
             const cls=p=>p<=0?'text-slate-300':p<5?'bg-blue-50 text-blue-800':p<15?'bg-blue-100 text-blue-900 font-semibold':p<30?'bg-indigo-100 text-indigo-900 font-semibold':p<50?'bg-amber-100 text-amber-900 font-bold':p<70?'bg-yellow-200 text-yellow-900 font-bold':p<85?'bg-emerald-100 text-emerald-900 font-bold':p<=100?'bg-green-300 text-green-950 font-extrabold':'bg-red-200 text-red-900 font-extrabold';
             let h='<tr><th class="py-2.5 px-3 bg-slate-900 min-w-[180px]">Category</th>'+members.map(m=>`<th class="py-2.5 px-2 text-center bg-slate-900">${escapeHtml(m)}</th>`).join('')+'</tr>';
             h+='<tr><th class="py-2.5 px-3 bg-slate-800 text-white">Total</th>'+members.map(m=>{const hours=Object.values(workload[m]).reduce((a,b)=>a+b,0),pct=cap[m]>0?hours/cap[m]*100:0;return `<th class="py-2 px-2 text-center" style="${getDashboardHeatmapStyle(pct)}" title="${hours.toFixed(2)} h / ${cap[m].toFixed(2)} h capacity">${pct.toFixed(1)}%</th>`;}).join('')+'</tr>';
