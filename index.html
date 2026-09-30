@@ -4453,6 +4453,22 @@
             );
         }
 
+        // Returns true when a member has a registered normal Day Off covering this date.
+        // Matching is case-insensitive and supports multi-day Day Off registrations.
+        function isDayOffForPIC(picName, dateIso) {
+            const member = String(picName || '').trim().toLowerCase();
+            return timeoffOtList.some(o => {
+                const type = String(o.type || '').trim().toLowerCase();
+                const itemPic = String(o.pic || '').trim().toLowerCase();
+                const start = cleanDateStr(o.startDate);
+                const end = cleanDateStr(o.endDate || o.startDate);
+                return type === 'day off' &&
+                       itemPic === member &&
+                       start && end &&
+                       start <= dateIso && dateIso <= end;
+            });
+        }
+
         function getDailyCapacityForPIC(picName, dateIso) {
             const d = new Date(dateIso + 'T00:00:00');
             const standard = getStandardDayHours(d);
@@ -4562,7 +4578,9 @@
                     totalWeekTaskHours += dayTaskHours;
                     totalWeekCapHours += totalDayCapacity;
 
-                    if (isSaturdayOffForPIC(u.name, dateIso)) {
+                    if (isDayOffForPIC(u.name, dateIso)) {
+                        rowHtml += `<td class="py-3 px-2 text-center font-extrabold text-rose-700 bg-rose-50 cursor-pointer" title="Day Off" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">OFF</td>`;
+                    } else if (isSaturdayOffForPIC(u.name, dateIso)) {
                         rowHtml += `<td class="py-3 px-2 text-center font-bold text-purple-700 bg-purple-50 cursor-pointer" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">SO</td>`;
                     } else if (totalDayCapacity > 0) {
                         let pct = Math.round((dayTaskHours / totalDayCapacity) * 100);
@@ -4620,7 +4638,9 @@
                     monthTaskTotal += dayTaskHours;
                     monthCapTotal += totalDayCapacity;
 
-                    if (isSaturdayOffForPIC(u.name, dateIso)) {
+                    if (isDayOffForPIC(u.name, dateIso)) {
+                        rowHtml += `<td class="py-1 px-0.5 text-center text-[10px] border-r font-extrabold text-rose-700 bg-rose-50 cursor-pointer" title="Day Off" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">OFF</td>`;
+                    } else if (isSaturdayOffForPIC(u.name, dateIso)) {
                         rowHtml += `<td class="py-1 px-0.5 text-center text-[10px] border-r font-bold text-purple-700 bg-purple-50 cursor-pointer" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">SO</td>`;
                     } else if (totalDayCapacity > 0) {
                         let pct = Math.round((dayTaskHours / totalDayCapacity) * 100);
@@ -5457,4 +5477,4 @@
 </body>
 </html>
 
->
+
