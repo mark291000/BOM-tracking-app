@@ -5158,10 +5158,24 @@
             const dObj = new Date(dateIso);
             const stdHours = getStandardDayHours(dObj);
 
-            const dayOffs = timeoffOtList.filter(o => o.pic === userName && cleanDateStr(o.startDate) <= dateIso && cleanDateStr(o.endDate) >= dateIso);
-            const otReq = dayOffs.filter(o => o.type === 'Over Time');
+            const dayOffs = timeoffOtList.filter(o => {
+                const start = cleanDateStr(o.startDate);
+                const end = cleanDateStr(o.endDate || o.startDate);
+                return String(o.pic || '').trim().toLowerCase() === String(userName || '').trim().toLowerCase()
+                    && start && end && start <= dateIso && dateIso <= end;
+            });
+            const otReq = dayOffs.filter(o => String(o.type || '').trim().toLowerCase() === 'over time');
+            const dayOffReq = dayOffs.filter(o => String(o.type || '').trim().toLowerCase() === 'day off');
+            const timeOffReq = dayOffs.filter(o => {
+                const type = String(o.type || '').trim().toLowerCase();
+                return type === 'time off' || type === 'saturday off';
+            });
+
             const otHours = otReq.reduce((sum, o) => sum + (parseFloat(o.hours) || 0), 0);
-            const timeOffHours = dayOffs.filter(o => o.type !== 'Over Time').reduce((sum, o) => sum + (parseFloat(o.hours) || 0), 0);
+            const timeOffHours = timeOffReq.reduce((sum, o) => sum + (parseFloat(o.hours) || 0), 0);
+            // Day Off is a date-based registration, so the sidebar shows 1d
+            // for the selected Day Off date instead of converting it to hours.
+            const dayOffDays = dayOffReq.length > 0 ? 1 : 0;
 
             const totalCapacity = getDailyCapacityForPIC(userName, dateIso);
             const tasksForDay = dailyTasks.filter(t => {
@@ -5192,9 +5206,16 @@
                     <div class="flex justify-between">
                         <span>Standard hours:</span><span class="font-bold">${stdHours.toFixed(2)} h</span>
                     </div>
+                    ${dayOffDays > 0 ? `
+                    <div class="flex justify-between">
+                        <span>Day off:</span><span class="font-bold text-rose-700">${dayOffDays}d</span>
+                    </div>
+                    ` : ''}
+                    ${timeOffHours > 0 ? `
                     <div class="flex justify-between">
                         <span>Time off:</span><span class="font-bold text-cyan-700">${timeOffHours.toFixed(2)} h</span>
                     </div>
+                    ` : ''}
                     <div class="flex justify-between">
                         <span>Overtime hours:</span><span class="font-bold text-amber-700">${otHours.toFixed(2)} h</span>
                     </div>
