@@ -41,7 +41,7 @@
         #tab-dashboard > .bom-page-filter .bom-multi { min-width: 0; flex: 1 1 135px; }
         #tab-dashboard > .bom-page-filter .bom-multi-btn { min-width: 0; width: 100%; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; }
         .gantt-hours-used-row td { padding-left: 2px !important; padding-right: 2px !important; }
-        .task-status-chart-wrap{position:relative;display:flex;align-items:center;justify-content:center;height:220px !important;overflow:visible;padding:0 4px;} .task-status-chart-wrap canvas{position:relative;z-index:1;max-height:220px !important;width:100% !important;height:220px !important;}
+        .task-status-chart-wrap{position:relative;display:flex;align-items:center;justify-content:center;height:250px !important;overflow:visible;padding:0 20px;} .task-status-chart-wrap canvas{position:relative;z-index:1;max-height:250px !important;width:100% !important;height:250px !important;}
         .gantt-hours-input { display:block !important; width:100% !important; min-width:0 !important; height:30px !important; min-height:30px !important; box-sizing:border-box !important; padding:4px 2px !important; border-radius:0 !important; }
         .project-date-row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; width:100%; }
         .project-date-row > div { min-width:0; }
@@ -74,6 +74,8 @@
         .gantt-hours-label { display:flex; align-items:center; gap:6px; }
         .gantt-hours-input { min-height:30px; font-size:10px !important; font-weight:700; color:#334155; background:#fff !important; border-radius:0 !important; border:1px solid #cbd5e1 !important; box-shadow:none !important; transition:.15s; }
         .gantt-hours-input:focus { border-color:#6366f1 !important; box-shadow:none !important; outline:none; }
+        #table-gantt .gantt-hours-input::-webkit-outer-spin-button, #table-gantt .gantt-hours-input::-webkit-inner-spin-button { -webkit-appearance:none !important; margin:0 !important; }
+        #table-gantt .gantt-hours-input { -moz-appearance:textfield !important; appearance:textfield !important; }
         .gantt-hours-input:disabled { background:#f1f5f9 !important; color:#cbd5e1 !important; box-shadow:none; }
         @media (max-width: 640px) { #taskPICsWrapper { grid-template-columns:1fr; } }
         .report-page-header { margin-left: -1.5rem; margin-right: -1.5rem; }
@@ -103,8 +105,8 @@
         .task-row-expanded .task-items-cell { max-width: none !important; width: auto !important; }
         .task-row-expanded .task-items-text { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
         .project-row-expanded .project-detail-cell, .project-row-expanded .project-note-cell { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; max-width: none !important; }
-        .project-row-expanded .project-detail-cell { min-width: 220px; }
-        .project-row-expanded .project-note-cell { min-width: 180px; }
+        .project-row-expanded .project-detail-cell { min-width:0; }
+        .project-row-expanded .project-note-cell { min-width:0; }
         #timeoffOtTableBody tr { height: 38px; }
 
         /* Stable table scrolling / sticky headers */
@@ -383,7 +385,429 @@
         #chartTaskStatus{font-variant-numeric:tabular-nums;}
         .task-status-chart-wrap canvas{z-index:1 !important;}
 #pdfExportHeader{display:none;}
-</style>
+        /* Dashboard filter is the fixed top control bar. */
+        #tab-dashboard > .bom-page-filter{position:sticky !important;top:0 !important;z-index:120 !important;margin-top:0 !important;}
+        #tab-dashboard > .bom-page-filter .bom-multi-menu{z-index:9999 !important;}
+        /* Export: use the page width efficiently and keep the report centered. */
+        .report-exporting #tab-dashboard{margin-left:auto !important;margin-right:auto !important;box-sizing:border-box !important;}
+        .report-exporting #tab-dashboard .dashboard-workload-mini-chart{height:380px !important;}
+        .report-exporting #tab-dashboard .h-72{height:390px !important;}
+        .report-exporting #tab-dashboard .task-status-chart-wrap{height:340px !important;}
+        .report-exporting #tab-dashboard table{font-size:12px !important;}
+        .report-exporting #tab-dashboard .p-5{padding:22px !important;}
+
+
+        /* === Final UX refinements === */
+        .task-name-cell{width:180px !important;max-width:180px !important}.task-name-cell .task-name-text{display:block;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.task-scope-cell{width:150px !important;max-width:150px !important}
+        #table-daily-tracking,#table-my-tasks,#table-projects{table-layout:fixed !important;width:100% !important}#table-daily-tracking th,#table-daily-tracking td,#table-my-tasks th,#table-my-tasks td,#table-projects th,#table-projects td{min-width:0;overflow:hidden}
+        #table-daily-tracking .task-items-cell,#table-my-tasks .task-items-cell,#table-daily-tracking .task-row-expanded .task-items-cell,#table-my-tasks .task-row-expanded .task-items-cell{width:200px !important;max-width:200px !important}.task-row-expanded .task-items-text{white-space:normal !important;overflow-wrap:anywhere !important}.project-row-expanded .project-detail-cell,.project-row-expanded .project-note-cell{min-width:0 !important;width:auto !important;max-width:none !important}
+        #table-projects .project-detail-cell,#table-projects .project-note-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#table-projects .project-row-expanded .project-detail-cell,#table-projects .project-row-expanded .project-note-cell{white-space:normal !important;overflow-wrap:anywhere !important}
+
+        #table-projects .project-name-cell{width:220px;min-width:220px;}
+        #table-projects .project-timeline-cell{width:280px;min-width:280px;}
+        #table-projects .project-name-cell .project-name-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        #table-projects .project-row-expanded .project-name-cell .project-name-text{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;}
+        #table-projects .project-timeline-cell .project-timeline-bar{height:12px;border-radius:9999px;overflow:hidden;background:#e2e8f0;}
+        #table-projects .project-timeline-cell .project-timeline-fill{height:100%;border-radius:9999px;}
+        #table-gantt .gantt-progress-track{height:12px;border-radius:9999px;background:#e2e8f0;overflow:hidden;}
+        #table-gantt .gantt-progress-fill{height:100%;border-radius:9999px;}
+
+        #table-gantt{table-layout:fixed !important;border-collapse:collapse !important}#table-gantt th:nth-child(1),#table-gantt td:nth-child(1){width:18%;}#table-gantt th:nth-child(2),#table-gantt td:nth-child(2),#table-gantt th:nth-child(3),#table-gantt td:nth-child(3),#table-gantt th:nth-child(4),#table-gantt td:nth-child(4){width:8%;}#table-gantt th:nth-child(5),#table-gantt td:nth-child(5){width:7%;}#table-gantt th:nth-child(6),#table-gantt td:nth-child(6){width:6%;}#table-gantt th:nth-child(7),#table-gantt td:nth-child(7){width:7%;}#table-gantt th:nth-child(8),#table-gantt td:nth-child(8){width:8%;}#table-gantt th:nth-child(9){width:auto;}#table-gantt .gantt-timeline-cell{padding:4px 0!important;overflow:visible!important;}#table-gantt .gantt-timeline-grid{position:relative;display:grid;grid-template-columns:repeat(var(--gantt-days),minmax(0,1fr));height:22px;width:100%;overflow:visible;background:linear-gradient(90deg,#f1f5f9,#e2e8f0);border-radius:9999px;}#table-gantt .gantt-timeline-day{height:100%;border-right:1px solid rgba(148,163,184,.25);min-width:0;}#table-gantt .gantt-continuous-bar{position:absolute;top:3px;height:16px;border-radius:9999px;z-index:2;min-width:6px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);pointer-events:none;}#table-gantt .gantt-continuous-bar.bg-indigo-600{background:#4f46e5!important}#table-gantt .gantt-continuous-bar.bg-emerald-500{background:#10b981!important}#table-gantt .gantt-continuous-bar.bg-rose-300{background:#fda4af!important;}#table-gantt .gantt-bar-cell{padding-left:0 !important;padding-right:0 !important;border-left:0 !important;border-right:0 !important}#table-gantt thead th{background:linear-gradient(180deg,#0f172a,#1e293b) !important;color:#fff !important;border-color:#334155 !important}#table-gantt tbody tr:nth-child(even) td{background:#f8fafc}#table-gantt tbody tr:hover td{background:#eef2ff !important}#table-gantt .gantt-progress-track{height:22px;border-radius:0;background:linear-gradient(90deg,#e2e8f0,#f1f5f9)}#table-gantt .gantt-progress-fill{border-radius:0;background:#4f46e5 !important}#table-gantt .gantt-progress-fill.bg-emerald-500{background:#10b981 !important}#table-gantt .gantt-progress-fill.bg-indigo-600{background:#4f46e5 !important}#table-gantt .gantt-project-name{overflow:hidden;text-overflow:ellipsis;white-space:normal;overflow-wrap:anywhere}
+        #timeoffMatrixScroll table{table-layout:fixed;width:100%}#timeoffMatrixScroll th:first-child,#timeoffMatrixScroll td:first-child{width:150px;min-width:150px}#weeklyCalendarBody td,#weeklyHeaderRow th{white-space:nowrap}.calendar-workload-cell{transition:background .18s ease,color .18s ease;font-variant-numeric:tabular-nums}.calendar-off-cell,.calendar-sat-off-cell{background:#e5e7eb !important;color:#6b7280 !important}
+        #tab-dashboard .h-72{height:320px !important}#tab-dashboard .task-status-chart-wrap{height:270px !important}#tab-dashboard .dashboard-workload-trend-wrap{height:320px !important}@media(max-width:1280px){.task-name-cell{width:160px !important;max-width:160px !important}.task-name-cell .task-name-text{max-width:150px}.task-scope-cell{width:130px !important;max-width:130px !important}}@media(max-width:900px){#table-daily-tracking,#table-my-tasks,#table-projects{min-width:980px !important}#table-gantt{min-width:900px !important}#timeoffMatrixScroll table{min-width:900px}}
+
+        /* === User requested validation + Gantt layout refinements === */
+        .bom-required-invalid{border-color:#ef4444 !important;box-shadow:0 0 0 1px rgba(239,68,68,.18) !important;background-color:#fff7f7 !important;}
+        .bom-required-invalid:focus{border-color:#dc2626 !important;box-shadow:0 0 0 2px rgba(239,68,68,.12) !important;}
+        #table-gantt{table-layout:fixed !important;width:100% !important;min-width:0 !important;}
+        #table-gantt th:nth-child(1),#table-gantt td:nth-child(1){width:12% !important;}
+        #table-gantt th:nth-child(2),#table-gantt td:nth-child(2){width:5.5% !important;}
+        #table-gantt th:nth-child(3),#table-gantt td:nth-child(3){width:5.5% !important;}
+        #table-gantt th:nth-child(4),#table-gantt td:nth-child(4){width:5.5% !important;}
+        #table-gantt th:nth-child(5),#table-gantt td:nth-child(5){width:4.5% !important;}
+        #table-gantt th:nth-child(6),#table-gantt td:nth-child(6){width:6% !important;}
+        #table-gantt th:nth-child(7),#table-gantt td:nth-child(7){width:5.5% !important;}
+        #table-gantt th:nth-child(8),#table-gantt td:nth-child(8){width:5.5% !important;}
+        #table-gantt thead th:nth-child(n+9){padding-left:1px !important;padding-right:1px !important;font-size:9px !important;min-width:0 !important;}
+        #table-gantt th:nth-child(n+9),#table-gantt td:nth-child(n+9){min-width:0 !important;}
+        #table-gantt .gantt-timeline-cell{min-width:0 !important;padding-left:0 !important;padding-right:0 !important;}
+        #table-gantt .gantt-timeline-grid{width:100% !important;min-width:0 !important;height:30px !important;min-height:30px !important;}
+        #table-gantt .gantt-timeline-day{min-width:0 !important;}
+        #table-gantt .gantt-hours-used-row td:not(:first-child){padding-left:1px !important;padding-right:1px !important;}
+        #table-gantt .gantt-hours-input{min-width:0 !important;width:100% !important;height:30px !important;min-height:30px !important;font-size:10px !important;padding:3px 1px !important;}
+        #ganttChartContainer{width:100% !important;min-width:0 !important;}
+        /* Gantt: exactly ~50% project-info columns and ~50% timeline. */
+        #table-gantt th:nth-child(1),#table-gantt td:nth-child(1){width:11% !important;}
+        #table-gantt th:nth-child(2),#table-gantt td:nth-child(2){width:5% !important;}
+        #table-gantt th:nth-child(3),#table-gantt td:nth-child(3){width:5% !important;}
+        #table-gantt th:nth-child(4),#table-gantt td:nth-child(4){width:5% !important;}
+        #table-gantt th:nth-child(5),#table-gantt td:nth-child(5){width:4% !important;}
+        #table-gantt th:nth-child(6),#table-gantt td:nth-child(6){width:5% !important;}
+        #table-gantt th:nth-child(7),#table-gantt td:nth-child(7){width:5% !important;}
+        #table-gantt th:nth-child(8),#table-gantt td:nth-child(8){width:10% !important;}
+        #table-gantt .gantt-timeline-cell{width:50% !important;padding-left:3px !important;padding-right:3px !important;}
+        #table-gantt .gantt-timeline-grid{background:#e2e8f0 !important;border-radius:9999px !important;overflow:hidden !important;}
+        #table-gantt .gantt-timeline-day{border-right:0 !important;background:transparent !important;}
+        #table-gantt .gantt-continuous-bar{border-radius:9999px !important;box-shadow:none !important;}
+        #table-gantt .gantt-hours-used-row td:not(:first-child):nth-child(n+9){padding-left:3px !important;padding-right:3px !important;}
+        #table-gantt .gantt-hours-input{min-width:54px !important;width:100% !important;height:34px !important;min-height:34px !important;font-size:11px !important;padding:5px 4px !important;}
+        #table-gantt .gantt-timeline-cell{min-width:0 !important;}
+
+        .dashboard-workload-analysis-row{min-height:420px;}
+        .dashboard-workload-side{display:grid;grid-template-rows:1fr 1fr;gap:12px;min-height:420px;}
+        .dashboard-workload-side-card{min-height:0;overflow:hidden;}
+        .dashboard-workload-mini-chart{height:calc(100% - 24px);min-height:145px;position:relative;}
+        .dashboard-workload-mini-chart canvas{width:100% !important;height:100% !important;}
+        .dashboard-workload-summary-card{min-height:420px;}
+        @media(max-width:1024px){.dashboard-workload-side{min-height:520px;}.dashboard-workload-summary-card{min-height:520px;}}
+
+
+    
+        /* Final overrides for Gantt planned tube and dashboard workload layout. */
+        #table-gantt th:nth-child(1),#table-gantt td:nth-child(1){width:11% !important;}
+        #table-gantt th:nth-child(2),#table-gantt td:nth-child(2){width:5% !important;}
+        #table-gantt th:nth-child(3),#table-gantt td:nth-child(3){width:5% !important;}
+        #table-gantt th:nth-child(4),#table-gantt td:nth-child(4){width:5% !important;}
+        #table-gantt th:nth-child(5),#table-gantt td:nth-child(5){width:4% !important;}
+        #table-gantt th:nth-child(6),#table-gantt td:nth-child(6){width:5% !important;}
+        #table-gantt th:nth-child(7),#table-gantt td:nth-child(7){width:5% !important;}
+        #table-gantt th:nth-child(8),#table-gantt td:nth-child(8){width:10% !important;}
+        #table-gantt .gantt-timeline-day{border-right:0 !important;background:transparent !important;}
+        #table-gantt .gantt-timeline-grid{background:#e2e8f0 !important;border-radius:9999px !important;}
+        #table-gantt .gantt-continuous-bar{border-radius:9999px !important;box-shadow:none !important;}
+
+        /* Gantt final visual: one planned tube only, no full-width gray rail/grid lines. */
+        #table-gantt .gantt-timeline-grid{position:relative;display:block;height:26px !important;min-height:26px !important;width:100% !important;background:transparent !important;border-radius:0 !important;overflow:visible !important;}
+        #table-gantt .gantt-timeline-day{display:none !important;border:0 !important;background:transparent !important;}
+        #table-gantt .gantt-planned-tube{position:absolute;top:6px;height:14px;background:#cbd5e1;border-radius:9999px;overflow:hidden;box-shadow:none;}
+        #table-gantt .gantt-planned-fill{height:100%;background:#4338ca;border-radius:9999px 0 0 9999px;min-width:0;}
+        #table-gantt .gantt-hours-timeline-cell{padding:4px 2px !important;background:#f8fafc !important;border:0 !important;}
+        #table-gantt .gantt-hours-grid{display:grid;grid-template-columns:repeat(var(--gantt-days),minmax(0,1fr));gap:2px;width:100%;align-items:center;}
+        #table-gantt .gantt-hours-input{width:100% !important;min-width:0 !important;height:28px !important;min-height:28px !important;padding:2px 1px !important;font-size:10px !important;border:1px solid #cbd5e1 !important;border-radius:4px !important;box-sizing:border-box !important;text-align:center !important;}
+        #table-gantt .gantt-hours-input.has-hours{background:#fff7ed !important;border-color:#fdba74 !important;color:#9a3412 !important;}
+        #table-gantt .gantt-hours-input:disabled{background:#f1f5f9 !important;border-color:#e2e8f0 !important;color:#cbd5e1 !important;}
+
+    
+
+/* User-provided BOM C&S login design */
+
+
+    .footer {
+      position: relative;
+      min-height: 100vh;
+      padding-top: 6.54vw;
+      isolation: isolate;
+      overflow: hidden;
+    }
+
+    /* Left Block (Tasks / Projects Info) */
+    .jobs {
+      margin-left: 8.65vw;
+      width: 25vw;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 100px;
+      background: #f7f8fa;
+      padding: .39vw .75vw;
+      font-size: .88vw;
+      font-weight: 600;
+      line-height: 1.2;
+      height: 1.9vw;
+      white-space: nowrap;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .headline {
+      font-family: 'Epilogue', Arial, sans-serif;
+      font-weight: 900;
+      font-size: 1.7vw;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+
+    .job-title {
+      display: block;
+      margin-top: 1.45vw;
+    }
+
+    .footer-nav {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: .93vw;
+      margin-top: 1.5vw;
+      font-size: 1.075vw;
+      font-weight: 500;
+      line-height: 1.35;
+    }
+
+    .footer-nav a {
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      display: inline-block;
+    }
+
+    .footer-nav a:hover {
+      opacity: 0.7;
+      transform: translateX(4px);
+    }
+
+    /* Right Block (Team Portal Info) */
+    .contact {
+      position: absolute;
+      left: 74.3vw;
+      top: 6.54vw;
+      width: 22vw;
+    }
+
+    .contact-links {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-top: 1.45vw;
+      white-space: nowrap;
+    }
+
+    .note {
+      margin: 1.25vw 0 0;
+      font-size: .8vw;
+      line-height: 1.45;
+      color: rgba(8, 9, 9, 0.8);
+    }
+
+    /* Video background styling */
+    .footer-background {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .footer-background video {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    /* Transparent Glassmorphism Login Card Overlay */
+    .login-overlay {
+      position: absolute;
+      bottom: 3.5vw;
+      top: auto;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24vw;
+      min-width: 280px;
+      max-width: 360px;
+      padding: 1.2vw 1.5vw;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(8, 9, 9, 0.08), inset 0 0 15px rgba(255, 255, 255, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 0px;
+    }
+
+    .login-badge {
+      display: inline-block;
+      padding: 3px 9px;
+      margin-bottom: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #080909;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: 100px;
+    }
+
+    .login-header h2 {
+      font-family: 'Epilogue', Arial, sans-serif;
+      font-weight: 900;
+      font-size: 18px;
+      margin: 0 0 2px;
+      color: #080909;
+      letter-spacing: -0.02em;
+    }
+
+    .login-header p {
+      margin: 0;
+      font-size: 12px;
+      color: rgba(8, 9, 9, 0.75);
+      font-weight: 500;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-group label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: rgba(8, 9, 9, 0.85);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: #080909;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(8, 9, 9, 0.15);
+      border-radius: 10px;
+      outline: none;
+      transition: all 0.25s ease;
+    }
+
+    .form-input::placeholder {
+      color: rgba(8, 9, 9, 0.45);
+    }
+
+    .form-input:focus {
+      background: rgba(255, 255, 255, 0.8);
+      border-color: #080909;
+      box-shadow: 0 0 0 3px rgba(8, 9, 9, 0.08);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 11px;
+      margin-top: 4px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #ffffff;
+      background: #080909;
+      border: none;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .login-btn:hover {
+      background: #222425;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(8, 9, 9, 0.2);
+    }
+
+    .login-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Notification message box */
+    .login-msg {
+      display: none;
+      font-size: 12px;
+      text-align: center;
+      padding: 8px;
+      border-radius: 8px;
+      background: rgba(8, 9, 9, 0.85);
+      color: #fff;
+    }
+
+    /* Responsive under 700px */
+    @media (max-width: 700px) {
+      .footer {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        min-height: 100svh;
+        padding: 32px 20px 0;
+        background: var(--background);
+      }
+      .jobs {
+        order: 0;
+        margin: 0;
+        width: 100%;
+      }
+      .tag {
+        height: 30px;
+        padding: 6px 12px;
+        font-size: 13px;
+      }
+      .headline {
+        font-size: clamp(22px, 6.3vw, 28px);
+        line-height: 1.25;
+      }
+      .job-title, .contact-links {
+        margin-top: 14px;
+      }
+      .footer-nav {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px 20px;
+        margin-top: 16px;
+        font-size: 16px;
+      }
+      .contact {
+        position: static;
+        order: 1;
+        width: 100%;
+      }
+      .contact-links {
+        white-space: normal;
+      }
+      .note {
+        max-width: 100%;
+        margin: 12px 0 0;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .login-overlay {
+        position: relative;
+        top: auto;
+        left: auto;
+        transform: none;
+        order: 2;
+        width: 100%;
+        margin: 10px 0 20px;
+        background: rgba(255, 255, 255, 0.4);
+      }
+      .footer-background {
+        position: relative;
+        inset: auto;
+        order: 3;
+        z-index: auto;
+        width: calc(100% + 40px);
+        margin-left: -20px;
+        aspect-ratio: 4/3;
+      }
+      .footer-background video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    
+        #loginScreen > .footer { width:100%; height:100%; min-height:100%; }
+        #loginScreen .login-overlay form { margin:0; }
+        #loginScreen .login-msg { margin-top:0; }
+        @media (max-width:700px){ #loginScreen{overflow:auto;} #loginScreen > .footer{height:auto;min-height:100%;} }
+    </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased h-screen flex overflow-hidden">
 
@@ -410,29 +834,60 @@
         <p class="font-semibold text-base tracking-wide text-slate-200">Loading system data, please wait...</p>
     </div>
 
-    <!-- LOGIN SCREEN -->
-    <div id="loginScreen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-100">
-            <div class="text-center mb-6">
-                <div class="w-14 h-14 bg-indigo-600 text-white rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold shadow-lg mb-3">
-                    <i class="fa-solid fa-layer-group"></i>
-                </div>
-                <h2 class="text-2xl font-bold text-slate-800">BOM Team Management</h2>
-                <p class="text-xs text-slate-500 mt-1">Please sign in with your account</p>
-            </div>
-            <form onsubmit="handleLogin(event)" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Username / Member Name</label>
-                    <input type="text" id="loginUsername" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600 transition" placeholder="Enter your name...">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
-                    <input type="password" id="loginPassword" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600 transition" placeholder="Enter password...">
-                </div>
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl text-xs transition shadow-md">Sign In</button>
-            </form>
-            <div id="loginError" class="mt-4 text-center text-xs text-red-600 font-semibold hidden">Invalid username or password.</div>
+    <!-- LOGIN SCREEN: replaced with user-provided BOM C&S login design -->
+    <div id="loginScreen" class="fixed inset-0 z-50" style="background:#dfe4f2;">
+<footer class="footer">
+    <!-- Left Info Block: Task Tracking -->
+    <div class="jobs">
+      <span class="tag">BOM C&S TASK TRACKING</span>
+      <div class="headline job-title">
+        <span>Precision & Speed</span><br>
+        <span>In Every Project</span>
+      </div>
+      <nav class="footer-nav">
+        <a href="#dashboard">Dashboard</a>
+        <a href="#tasks">Tasks</a>
+        <a href="#projects">Projects</a>
+        <a href="#reports">Reports</a>
+      </nav>
+    </div>
+
+    <!-- Center Overlay: Transparent Glassmorphism Login Box -->
+    <div class="login-overlay">
+      <div class="login-header">
+        <span class="login-badge">BOM C&S LOGIN</span>
+        <h2>System Access</h2>
+        <p>Task & Project Tracking System</p>
+      </div>
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="loginUsername">User</label>
+          <input type="text" id="loginUsername" class="form-input" placeholder="Enter User ID or Email" required autocomplete="username">
         </div>
+        <div class="form-group" style="margin-top: 8px;">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="Enter Password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="login-btn">Log In</button>
+      </form>
+      <div id="loginError" class="login-msg" style="display:none"></div>
+    </div>
+
+    <!-- Right Info Block: C&S Team Portal -->
+    <div class="contact">
+      <span class="tag">C&S TEAM PORTAL</span>
+      <div class="headline contact-links">
+        <span>Streamline Workflows</span>
+        <span>Track Progress Live*</span>
+      </div>
+      <p class="note">*Stay aligned with real-time updates and seamless BOM execution.</p>
+    </div>
+
+    <!-- Background Video Container -->
+    <div class="footer-background">
+      <video id="scrubVideo" playsinline muted preload="auto" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260908_073327_03643c0a-db33-417a-ae8f-4a39259c7f9c.mp4"></video>
+    </div>
+  </footer>
     </div>
 
     <!-- LOADING OVERLAY -->
@@ -523,12 +978,6 @@
 
             <!-- TAB 1: DASHBOARD & REPORTS (NEW LAYOUT) -->
             <div id="tab-dashboard" class="tab-content">
-                <div class="report-page-header bg-white px-6 py-3 border-b border-slate-200 flex items-center justify-between gap-3">
-                    <h2 class="text-base font-bold text-slate-800">Dashboard & Reports</h2>
-                    <div class="flex items-center gap-2">
-                        <button onclick="exportReportPdf()" class="bom-action-btn bg-indigo-600 hover:bg-indigo-700 text-white"><i class="fa-solid fa-file-pdf"></i> Export Report</button>
-                    </div>
-                </div>
                 <div class="bom-page-filter bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex items-end gap-2.5" data-bom-filter-bar="1">
                     <div class="text-[10px] font-bold text-slate-500 uppercase mr-1 pb-2">Filters</div>
                     <div class="bom-multi" data-filter-key="Year"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Year <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
@@ -539,7 +988,8 @@
                     <div class="bom-multi" data-filter-key="Status"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Status <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
                     <button onclick="resetBomTopFilters()" class="bom-action-btn bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"><i class="fa-solid fa-rotate-left"></i> Reset</button>
                     <div class="ml-auto flex flex-wrap gap-1.5">
-</div></div>
+                        <button onclick="exportReportPdf()" class="bom-action-btn bg-indigo-600 hover:bg-indigo-700 text-white"><i class="fa-solid fa-file-pdf"></i> Export Report</button>
+                    </div></div>
 
 
                 <!-- KPI Cards -->
@@ -588,12 +1038,18 @@
                             <div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs border-collapse" id="dashScopeHeatmapTable"><thead id="dashScopeHeatmapHeader" class="bg-slate-800 text-white uppercase text-[10px] font-semibold"></thead><tbody id="dashScopeHeatmapBody" class="divide-y divide-slate-100 font-medium"></tbody></table></div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-                        <div class="lg:col-span-1 bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3 min-h-[320px]">
-                            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider"><i class="fa-solid fa-chart-line mr-2 text-indigo-600"></i>Team Workload %</h3>
-                            <div class="dashboard-workload-trend-wrap"><canvas id="dashAverageWorkloadTrend"></canvas></div>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch dashboard-workload-analysis-row">
+                        <div class="lg:col-span-1 dashboard-workload-side">
+                            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-2 dashboard-workload-side-card">
+                                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider"><i class="fa-solid fa-chart-line mr-2 text-indigo-600"></i>Team Workload %</h3>
+                                <div class="dashboard-workload-mini-chart"><canvas id="dashAverageWorkloadTrend"></canvas></div>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-2 dashboard-workload-side-card">
+                                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider"><i class="fa-solid fa-chart-area mr-2 text-cyan-600"></i>Team Workload Hours</h3>
+                                <div class="dashboard-workload-mini-chart"><canvas id="dashWorkloadHoursTrend"></canvas></div>
+                            </div>
                         </div>
-                    <div class="lg:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3 flex flex-col">
+                    <div class="lg:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3 flex flex-col dashboard-workload-summary-card">
                         <div class="flex flex-wrap justify-between items-start gap-2">
                             <div><h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center"><i class="fa-solid fa-calculator mr-2 text-purple-600"></i>Category Workload Distribution By Member</h3></div>
                             <div class="flex items-center gap-1.5"><button onclick="copyTableToClipboard('dashWorkloadSummaryTable')" class="bom-action-btn bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300"><i class="fa-solid fa-copy"></i> Copy</button><button onclick="exportStyledTable('dashWorkloadSummaryTable','Workload_Analysis_Summary')" class="bom-action-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300"><i class="fa-solid fa-file-excel"></i> Export Data</button></div>
@@ -633,55 +1089,20 @@
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto custom-scrollbar" style="max-height: calc(100vh - 220px);">
                         <table class="w-full text-left text-xs text-slate-700 border-collapse whitespace-nowrap" id="table-daily-tracking">
-                            <thead class="bg-slate-100 font-bold uppercase border-b border-slate-200">
-                                <tr>
-                                    <th class="py-3 px-3">
-                                        Category
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 0)"></i>
-                                    </th>
-                                    <th class="py-3 px-3">
-                                        Task Name
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 1)"></i>
-                                    </th>
-                                    <th class="py-3 px-3 max-w-xs">
-                                        Items (Email-Idea-ECO number-Project)
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 2)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Priority
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 3)"></i>
-                                    </th>
-                                    <th class="py-3 px-3">
-                                        PIC
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 4)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Start
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 5)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Plan
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 6)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Actual
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 7)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Usage (h)
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 8)"></i>
-                                    </th>
-                                    <th class="py-3 px-3">
-                                        Discipline
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 9)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Status
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 10)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">Action</th>
-                                </tr>
-                            </thead>
+                            <thead class="bg-slate-100 font-bold uppercase border-b border-slate-200"><tr>
+<th class="py-3 px-3">Category <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 0)"></i></th>
+<th class="py-3 px-3 task-name-cell">Task Name <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 1)"></i></th>
+<th class="py-3 px-3 max-w-xs">Detail <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 2)"></i></th>
+<th class="py-3 px-3 task-scope-cell">Scope <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 3)"></i></th>
+<th class="py-3 px-2 text-center">Priority <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 4)"></i></th>
+<th class="py-3 px-3">PIC <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 5)"></i></th>
+<th class="py-3 px-2 text-center">Start <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 6)"></i></th>
+<th class="py-3 px-2 text-center">Plan <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 7)"></i></th>
+<th class="py-3 px-2 text-center">Actual <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 8)"></i></th>
+<th class="py-3 px-2 text-center">Usage (h) <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 9)"></i></th>
+<th class="py-3 px-3">Discipline <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 10)"></i></th>
+<th class="py-3 px-2 text-center">Status <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-daily-tracking', 11)"></i></th>
+<th class="py-3 px-2 text-center">Action</th></tr></thead>
                             <tbody id="dailyTrackingTableBody" class="divide-y divide-slate-100"></tbody>
                         </table>
                     </div>
@@ -705,51 +1126,19 @@
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto custom-scrollbar" style="max-height: calc(100vh - 220px);">
                         <table class="w-full text-left text-xs text-slate-700 border-collapse whitespace-nowrap" id="table-my-tasks">
-                            <thead class="bg-slate-100 font-bold uppercase border-b border-slate-200">
-                                <tr>
-                                    <th class="py-3 px-3">
-                                        Category
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 0)"></i>
-                                    </th>
-                                    <th class="py-3 px-3">
-                                        Task Name
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 1)"></i>
-                                    </th>
-                                    <th class="py-3 px-3 max-w-xs">
-                                        Items (Email-Idea-ECO number-Project)
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 2)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Priority
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 3)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Start
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 4)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Plan
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 5)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Actual
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 6)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Usage (h)
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 7)"></i>
-                                    </th>
-                                    <th class="py-3 px-3">
-                                        Discipline
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 8)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">
-                                        Status
-                                        <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 9)"></i>
-                                    </th>
-                                    <th class="py-3 px-2 text-center">Action</th>
-                                </tr>
-                            </thead>
+                            <thead class="bg-slate-100 font-bold uppercase border-b border-slate-200"><tr>
+<th class="py-3 px-3">Category <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 0)"></i></th>
+<th class="py-3 px-3 task-name-cell">Task Name <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 1)"></i></th>
+<th class="py-3 px-3 max-w-xs">Detail <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 2)"></i></th>
+<th class="py-3 px-3 task-scope-cell">Scope <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 3)"></i></th>
+<th class="py-3 px-2 text-center">Priority <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 4)"></i></th>
+<th class="py-3 px-2 text-center">Start <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 5)"></i></th>
+<th class="py-3 px-2 text-center">Plan <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 6)"></i></th>
+<th class="py-3 px-2 text-center">Actual <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 7)"></i></th>
+<th class="py-3 px-2 text-center">Usage (h) <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 8)"></i></th>
+<th class="py-3 px-3">Discipline <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 9)"></i></th>
+<th class="py-3 px-2 text-center">Status <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-my-tasks', 10)"></i></th>
+<th class="py-3 px-2 text-center">Action</th></tr></thead>
                             <tbody id="myTasksTableBody" class="divide-y divide-slate-100"></tbody>
                         </table>
                     </div>
@@ -792,12 +1181,12 @@
                             <button onclick="currentPeriodToday()" class="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100">Today</button>
                         </div>
                         <div class="flex items-center space-x-3 text-[11px] text-slate-600 font-medium flex-wrap gap-y-1">
-                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded border border-slate-300 bg-white inline-block"></span><span>≤30%</span></div>
-                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-amber-100 border border-amber-200 inline-block"></span><span>30-50%</span></div>
-                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-yellow-200 border border-yellow-300 inline-block"></span><span>50-70%</span></div>
-                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-emerald-200 border border-emerald-300 inline-block"></span><span>70-90%</span></div>
-                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-orange-200 border border-orange-300 inline-block"></span><span>90-100%</span></div>
-                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-red-200 border border-red-300 inline-block"></span><span>>100%</span></div>
+                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-blue-50 border border-blue-100 inline-block"></span><span>0-50%</span></div>
+                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-cyan-100 border border-cyan-200 inline-block"></span><span>50-70%</span></div>
+                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-lime-100 border border-lime-200 inline-block"></span><span>70-85%</span></div>
+                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-green-300 border border-green-400 inline-block"></span><span>85-100%</span></div>
+                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-red-400 border border-red-500 inline-block"></span><span>&gt;100%</span></div>
+                            <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-gray-200 border border-gray-300 inline-block"></span><span>OFF</span></div>
                         </div>
                     </div>
                     <div id="timeoffMatrixScroll" class="overflow-auto custom-scrollbar">
@@ -889,7 +1278,11 @@
                     <div class="text-[10px] font-bold text-slate-500 uppercase mr-1 pb-2">Filters</div>
                     
                     <div class="bom-multi" data-filter-key="Project"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Project <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
-                    <div class="bom-multi" data-filter-key="Timeline"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Timeline <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
+                    <div class="bom-multi" data-filter-key="Start"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Start <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
+                    <div class="bom-multi" data-filter-key="Plan"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Plan <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
+                    <div class="bom-multi" data-filter-key="Actual"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Actual <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
+                    <div class="bom-multi" data-filter-key="Status"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Status <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
+                    <div class="bom-multi" data-filter-key="Progress"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Progress <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
                     <div class="bom-multi" data-filter-key="Owner"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Owner <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
                     <button onclick="resetBomTopFilters()" class="bom-action-btn bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"><i class="fa-solid fa-rotate-left"></i> Reset</button>
                     <div class="ml-auto flex flex-wrap gap-1.5">
@@ -918,7 +1311,7 @@
                         </div>
                     </div>
                     <div class="overflow-visible">
-                        <div id="ganttChartContainer" class="min-w-[760px] space-y-4 py-2"></div>
+                        <div id="ganttChartContainer" class="w-full space-y-4 py-2 overflow-x-auto"></div>
                     </div>
                 </div>
             </div>
@@ -973,7 +1366,7 @@
                             </div>
                             <div id="timeoffHoursContainer">
                                 <label class="block text-xs font-semibold text-slate-600 mb-1" id="timeoffAmountLabel">Days</label>
-                                <input type="number" step="0.5" id="timeoffHours" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
+                                <input type="number" id="timeoffHours" min="0.25" max="24" step="0.25" inputmode="decimal" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
                             </div>
                             <div id="timeoffReasonContainer" class="hidden">
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Reason <span class="text-red-500">*</span></label>
@@ -1151,7 +1544,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Workload (Hour)</label>
-                    <input id="capacityWorkload" type="number" step="any" min="0" value="0" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-purple-600">
+                    <input id="capacityWorkload" type="number" step="0.01" min="0" value="0" readonly disabled title="Calculated automatically from Daily Tracking average Usage Time" class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs outline-none cursor-not-allowed">
                 </div>
                 <div class="pt-3 border-t border-slate-100 flex justify-end gap-3">
                     <button type="button" onclick="closeCapacityCategoryModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl">Cancel</button>
@@ -1201,12 +1594,12 @@
                     <div><label class="block text-xs font-semibold text-slate-700 mb-1">Category</label><div class="relative"><input id="taskCategorySearch" autocomplete="off" required class="w-full p-2.5 pr-8 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600" placeholder="Search Category..." onfocus="openTaskLookup('category')" oninput="onTaskCategorySearch()"><button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" onclick="toggleTaskLookup('category')"><i class="fa-solid fa-chevron-down text-[10px]"></i></button><div id="taskCategoryLookup" class="hidden absolute left-0 right-0 top-full mt-1 z-[60] bg-white border border-slate-200 rounded-lg shadow-xl max-h-52 overflow-auto custom-scrollbar"></div></div><select id="taskCategory" onchange="onTaskCategoryChange()" class="hidden" tabindex="-1" aria-hidden="true"></select></div>
                     <div><label class="block text-xs font-semibold text-slate-700 mb-1">Task Name</label><div class="relative"><input id="taskNameSearch" autocomplete="off" required class="w-full p-2.5 pr-8 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600" placeholder="Search Task Name..." onfocus="openTaskLookup('task')" oninput="onTaskNameSearch()"><button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" onclick="toggleTaskLookup('task')"><i class="fa-solid fa-chevron-down text-[10px]"></i></button><div id="taskNameLookup" class="hidden absolute left-0 right-0 top-full mt-1 z-[60] bg-white border border-slate-200 rounded-lg shadow-xl max-h-52 overflow-auto custom-scrollbar"></div></div><select id="taskNameSelect" onchange="onTaskNameChange()" class="hidden" tabindex="-1" aria-hidden="true"></select><input type="text" id="taskNameOther" class="hidden mt-2 w-full p-2.5 bg-white border border-amber-300 rounded-xl text-xs outline-none focus:border-indigo-600" placeholder="Enter new Task Name..."></div>
                 </div>
-                <div><label class="block text-xs font-semibold text-slate-700 mb-1">Items (Email-Idea-ECO number-Project)</label><input type="text" id="taskItems" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600" placeholder="e.g., Mail#123 - ECO-456"></div>
+                <div><label class="block text-xs font-semibold text-slate-700 mb-1">Detail</label><input type="text" id="taskItems" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600" placeholder="e.g., Mail#123 - ECO-456"></div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div><label class="block text-xs font-semibold text-slate-700 mb-1">Assigned PICs</label><div id="taskPICsWrapper" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs min-h-28 overflow-visible"></div></div>
                     <div class="space-y-3"><div><label class="block text-xs font-semibold text-slate-700 mb-1">Start Date</label><input type="date" id="taskStart" required onchange="onTaskStartChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"></div><div><label class="block text-xs font-semibold text-slate-700 mb-1">Plan Date</label><input type="date" id="taskPlan" required onchange="onTaskPlanChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"></div><div><label class="block text-xs font-semibold text-slate-700 mb-1">Actual Date</label><input type="date" id="taskActual" onchange="onTaskActualChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"></div></div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-xs font-semibold text-slate-700 mb-1">Priority</label><select id="taskPriority" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600"><option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select></div><div><label class="block text-xs font-semibold text-slate-700 mb-1">Total Usage Time (Hour)</label><input type="number" step="any" min="0.000001" inputmode="decimal" id="taskUsageTime" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600 font-bold text-indigo-600"></div></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div><label class="block text-xs font-semibold text-slate-700 mb-1">Priority</label><select id="taskPriority" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600"><option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select></div><div><label class="block text-xs font-semibold text-slate-700 mb-1">Total Usage Time (Hour)</label><input type="number" step="any" min="0.000001" inputmode="decimal" id="taskUsageTime" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600 font-bold text-indigo-600"></div><div id="taskScopeWrap"><label class="block text-xs font-semibold text-slate-700 mb-1">Scope <span class="text-rose-500">*</span></label><select id="taskScope" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600"><option value="">-- Select Scope --</option><option value="In BOM's scope">In BOM's scope</option><option value="Out of BOM's scope">Out of BOM's scope</option><option value="RND process">RND process</option><option value="Compliance">Compliance</option><option value="Projects">Projects</option><option value="New Go Tracking">New Go Tracking</option></select></div></div>
                 <div class="pt-3 border-t border-slate-100 flex justify-end space-x-3"><button type="button" onclick="closeTaskModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition">Cancel</button><button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-md transition">Save Task</button></div>
             </form>
         </div>
@@ -1429,7 +1822,8 @@
                 const task={
                     id, category:'Project', name:'Project Processing', items:String(project.name||''),
                     priority:normalizeTaskPriority(projectPriorityToTaskPriority(project.priority)), pic:owner, pics:[owner],
-                    start:dateIso, plan:dateIso, actual:'', startDate:dateIso, planDate:dateIso, actualDate:'',
+                    // Gantt hour-entry row = work completed on that exact day.
+                    start:dateIso, plan:dateIso, actual:dateIso, startDate:dateIso, planDate:dateIso, actualDate:dateIso,
                     usageTime:perOwner, projectId:project.id,
                     createdBy:currentUser?.name||'', savedAt:new Date().toISOString()
                 };
@@ -1445,6 +1839,7 @@
 
 
         document.addEventListener("DOMContentLoaded", () => {
+            setupInlineRequiredValidation();
             initCalendarAnchor();
             currentGanttAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
@@ -1520,7 +1915,7 @@
             const updater = users.find(u=>String(u.id)===String(r?.updated_by));
             return {
                 id: r?.id,
-                category: r?.category || '', name: r?.name || '', items: r?.items || '',
+                category: r?.category || '', name: r?.name || '', items: r?.items || '', scope: r?.scope || '',
                 priority: r?.priority || 'Medium', pic: r?.pic || '', pics,
                 start: cleanDateStr(r?.start_date), plan: cleanDateStr(r?.plan_date), actual: cleanDateStr(r?.actual_date),
                 startDate: cleanDateStr(r?.start_date), planDate: cleanDateStr(r?.plan_date), actualDate: cleanDateStr(r?.actual_date),
@@ -1539,7 +1934,7 @@
             return { id:r?.id, name:r?.name||'', owner:r?.owner||owners.join(', '), owners, scope:r?.scope||'Projects', detail:r?.detail||'', status:r?.status||'Working on it', progress:Number(r?.progress||0), startDate:cleanDateStr(r?.start_date), dueDate:cleanDateStr(r?.due_date), actualDate:cleanDateStr(r?.actual_date), priority:Number(r?.priority||3), saving:r?.saving??0, actualSaving:r?.actual_saving??'', note:r?.note||'', hoursUsed:(r?.hours_used&&typeof r.hours_used==='object')?r.hours_used:{}, createdAt:r?.created_at||'', updatedAt:r?.updated_at||'' };
         }
 
-        async function fetchAllDataFromSheet({background = false} = {}) {
+        async function fetchAllDataFromSheet({background = false, forceRender = false} = {}) {
             if(!initSupabaseClient()){
                 const err=supabaseInitError || new Error('Supabase client is not available.');
                 if(!background) showAppNotification(err.message,'Supabase Connection');
@@ -1591,7 +1986,7 @@
                 applyPendingGanttHoursToState();
                 const curState={Users:users,Capacity:capacityData,Tasks:dailyTasks,TimeOff_OT:timeoffOtList,Projects:projectsList};
                 Object.keys(curState).forEach(k=>sheetSyncSnapshots[k]=JSON.parse(JSON.stringify(curState[k])));
-                if(!background||changedSheets.length){populateFilterOptions();if(!background&&!window._bomDefaultsInitialized){setBomCurrentPeriodDefaults();window._bomDefaultsInitialized=true;}updateDashboardFinancialKpis();updateBomFilterButtons();renderCapacityTable();renderDailyTrackingTable();renderMyTasksTable();renderTimeoffOtTable();renderGanttChart();renderProjectsTable();renderWeeklyCalendar();renderUserManagementTable();renderSaturdayMatrixTable();initDashboardCharts();onTimeoffTypeChange();restoreAdvancedTableFilters();}
+                if(!background||changedSheets.length||forceRender){populateFilterOptions();if(!background&&!window._bomDefaultsInitialized){setBomCurrentPeriodDefaults();window._bomDefaultsInitialized=true;}updateDashboardFinancialKpis();updateBomFilterButtons();window.bomFilteredTasks=dailyTasks.filter(taskPassesBomTopFilters);renderCapacityTable();renderDailyTrackingTable();renderMyTasksTable();renderTimeoffOtTable();renderGanttChart();renderProjectsTable();renderWeeklyCalendar();renderUserManagementTable();renderSaturdayMatrixTable();initDashboardCharts();onTimeoffTypeChange();restoreAdvancedTableFilters();}
                 return true;
             }catch(err){console.error('Supabase Fetch Error:',err);if(!background)showAppNotification(`Unable to load data from Supabase. ${err.message||''}`,'Database Error');return false;}
             finally{if(!background){if(initLoader){initLoader.classList.add('opacity-0','pointer-events-none');setTimeout(()=>{initLoader.style.display='none';},500);}if(syncLoader)syncLoader.classList.add('opacity-0','pointer-events-none');}}
@@ -1617,6 +2012,86 @@
         const pendingRowDeletions={Tasks:new Set(),Projects:new Set(),TimeOff_OT:new Set(),Capacity:new Set(),Users:new Set()};
         function ganttHoursKey(projectId,dateIso){return `${String(projectId)}__${String(dateIso)}`;}
         let activeSaves=0;
+        // Prevent accidental double-submit while the first request is still pending.
+        // A short-lived fingerprint also blocks a second identical create after the first
+        // request completed but the UI response arrived late.
+        const formSaveLocks = Object.create(null);
+        const recentCreateFingerprints = new Map();
+        function normalizeSavePart(v){ return String(v ?? '').trim().replace(/\s+/g,' ').toLowerCase(); }
+        function makeCreateFingerprint(type, parts){
+            return `${type}|${parts.map(normalizeSavePart).join('|')}`;
+        }
+        function beginFormSave(formId, fingerprint=''){
+            const form=document.getElementById(formId);
+            if(form?.dataset.saving==='1' || formSaveLocks[formId]) return false;
+            if(fingerprint){
+                const now=Date.now(), last=recentCreateFingerprints.get(fingerprint)||0;
+                if(now-last < 15000) return false;
+                recentCreateFingerprints.set(fingerprint, now);
+            }
+            formSaveLocks[formId]=true;
+            if(form){
+                form.dataset.saving='1';
+                form.querySelectorAll('button[type="submit"]').forEach(btn=>{
+                    btn.disabled=true;
+                    btn.dataset.saveOriginalHtml=btn.innerHTML;
+                    btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving...';
+                    btn.classList.add('opacity-60','cursor-not-allowed');
+                });
+            }
+            return true;
+        }
+        function endFormSave(formId){
+            formSaveLocks[formId]=false;
+            const form=document.getElementById(formId);
+            if(!form) return;
+            form.dataset.saving='0';
+            form.querySelectorAll('button[type="submit"]').forEach(btn=>{
+                btn.disabled=false;
+                if(btn.dataset.saveOriginalHtml) btn.innerHTML=btn.dataset.saveOriginalHtml;
+                btn.classList.remove('opacity-60','cursor-not-allowed');
+            });
+        }
+        function forgetCreateFingerprint(fingerprint){ if(fingerprint) recentCreateFingerprints.delete(fingerprint); }
+
+function clearRequiredFieldInvalid(el){
+    if(!el) return;
+    el.classList.remove('bom-required-invalid');
+}
+function markRequiredFieldInvalid(el){
+    if(!el) return;
+    el.classList.add('bom-required-invalid');
+}
+function validateRequiredFormFields(form){
+    if(!form) return true;
+    let valid=true;
+    form.querySelectorAll('[required]').forEach(el=>{
+        const isHidden=el.disabled || el.type==='hidden' || el.offsetParent===null;
+        if(isHidden) return;
+        const filled=(el.type==='checkbox'||el.type==='radio') ? el.checked : String(el.value ?? '').trim()!=='';
+        if(!filled){ markRequiredFieldInvalid(el); valid=false; } else clearRequiredFieldInvalid(el);
+    });
+    return valid;
+}
+function setupInlineRequiredValidation(){
+    document.querySelectorAll('form').forEach(form=>{
+        form.addEventListener('input',e=>{
+            if(e.target.matches('[required]')){
+                const el=e.target;
+                const filled=(el.type==='checkbox'||el.type==='radio') ? el.checked : String(el.value ?? '').trim()!=='';
+                if(filled) clearRequiredFieldInvalid(el);
+            }
+        });
+        form.addEventListener('change',e=>{
+            if(e.target.matches('[required]')){
+                const el=e.target;
+                const filled=(el.type==='checkbox'||el.type==='radio') ? el.checked : String(el.value ?? '').trim()!=='';
+                if(filled) clearRequiredFieldInvalid(el);
+            }
+        });
+        form.addEventListener('invalid',e=>{ e.preventDefault(); markRequiredFieldInvalid(e.target); },true);
+    });
+}
         // Safe save-status hook. The current UI has no dedicated save-indicator element,
         // so persistence must never fail just because an optional indicator is unavailable.
         function updateSaveIndicator(){
@@ -1698,6 +2173,7 @@
                 category:String(row?.category||'').trim(),
                 name:String(row?.name||'').trim(),
                 items:row?.items==null?'':String(row.items),
+                scope:String(row?.scope||'').trim(),
                 priority:normalizeTaskPriority(row?.priority||'Medium'),
                 pic:Array.isArray(row?.pics)?row.pics.join(', '):(row?.pic||''),
                 start_date:cleanDateStr(row?.start||row?.startDate),
@@ -1716,43 +2192,72 @@
         async function runTaskSave(local){
             const table=SUPABASE_TABLES.Tasks;
             const snap=sheetSyncSnapshots.Tasks||[];
-            const snapIds=new Set(snap.map(r=>String(r.id)).filter(Boolean));
-            const savedRows=[];
-            for(const row of (Array.isArray(local)?local:[])){
+            const snapById=new Map(snap.filter(r=>r?.id!==undefined&&r?.id!==null).map(r=>[String(r.id),r]));
+            const localRows=Array.isArray(local)?local:[];
+            const resultById=new Map();
+
+            for(const row of localRows){
+                const idKey=(row?.id!==undefined&&row?.id!==null&&String(row.id)!=='')?String(row.id):'';
+                const old=snapById.get(idKey);
                 const payload=taskDbPayload(row);
-                let result;
-                if(rowHasDbId(row) && snapIds.has(String(row.id))){
+                let result=null;
+
+                if(idKey && old){
+                    // Skip unchanged rows. This is the main save-speed improvement: an edit
+                    // no longer rewrites every task in the table.
+                    const oldPayload=taskDbPayload(old);
+                    if(JSON.stringify(payload)===JSON.stringify(oldPayload)){
+                        resultById.set(idKey,row);
+                        continue;
+                    }
                     result=await supabaseClient.from(table).update(payload).eq('id',Number(row.id)).select('*').single();
                 }else{
                     result=await supabaseClient.from(table).insert(payload).select('*').single();
                 }
                 if(result.error) throw result.error;
-                savedRows.push(mapDbTaskToApp(result.data));
+                const mapped=mapDbTaskToApp(result.data);
+                resultById.set(String(mapped.id),mapped);
             }
-            const currentIds=new Set(savedRows.map(r=>String(r.id)).filter(Boolean));
-            const deleted=snap.filter(r=>r.id!==undefined&&r.id!==null&&!currentIds.has(String(r.id)));
-            if(deleted.length){
-                const ids=deleted.map(r=>Number(r.id)).filter(Number.isSafeInteger);
-                if(ids.length){
-                    const {error}=await supabaseClient.from(table).delete().in('id',ids);
-                    if(error) throw error;
-                }
+
+            // Only delete rows explicitly marked for deletion. Do not infer deletion from
+            // a stale local snapshot, which can otherwise remove another user's new row.
+            const pending=pendingRowDeletions.Tasks||new Set();
+            const idsToDelete=snap
+                .filter(r=>r?.id!==undefined&&pending.has(stableRowKey('Tasks',r)))
+                .map(r=>Number(r.id)).filter(Number.isSafeInteger);
+            if(idsToDelete.length){
+                const {error}=await supabaseClient.from(table).delete().in('id',idsToDelete);
+                if(error) throw error;
             }
-            dailyTasks=savedRows;
-            sheetSyncSnapshots.Tasks=JSON.parse(JSON.stringify(savedRows));
+
+            dailyTasks=localRows.map(row=>{
+                const key=(row?.id!==undefined&&row?.id!==null)?String(row.id):'';
+                return resultById.get(key)||row;
+            }).filter(Boolean);
+            sheetSyncSnapshots.Tasks=JSON.parse(JSON.stringify(dailyTasks));
             lastLocalSaveAt.Tasks=Date.now();
             return true;
         }
 
         async function runSimpleTableSave(sheetName,local){
-            const table=tableForSheet(sheetName), snap=sheetSyncSnapshots[sheetName]||[], savedRows=[];
-            const snapIds=new Set(snap.map(r=>String(r.id)).filter(Boolean));
-            for(const row of local){
-                const payload=dbPayloadForSheet(sheetName,row); if(!payload)continue;
-                let result;
-                const numericId=Number(row.id);
-                if(rowHasDbId(row)&&snapIds.has(String(row.id))){
-                    result=await supabaseClient.from(table).update(payload).eq('id',numericId).select('*').single();
+            const table=tableForSheet(sheetName), snap=sheetSyncSnapshots[sheetName]||[];
+            const snapById=new Map(snap.filter(r=>r?.id!==undefined&&r?.id!==null).map(r=>[String(r.id),r]));
+            const localRows=Array.isArray(local)?local:[];
+            const savedRows=[];
+
+            for(const row of localRows){
+                const payload=dbPayloadForSheet(sheetName,row); if(!payload) continue;
+                const idKey=(row?.id!==undefined&&row?.id!==null&&String(row.id)!=='')?String(row.id):'';
+                const old=snapById.get(idKey);
+                let result=null;
+
+                if(idKey && old){
+                    const oldPayload=dbPayloadForSheet(sheetName,old);
+                    if(JSON.stringify(payload)===JSON.stringify(oldPayload)){
+                        savedRows.push(row);
+                        continue;
+                    }
+                    result=await supabaseClient.from(table).update(payload).eq('id',Number(row.id)).select('*').single();
                 }else if(sheetName==='Users'){
                     result=await supabaseClient.from(table).upsert(payload,{onConflict:'name'}).select('*').single();
                 }else if(sheetName==='Capacity'){
@@ -1760,14 +2265,22 @@
                 }else{
                     result=await supabaseClient.from(table).insert(payload).select('*').single();
                 }
-                if(result.error)throw result.error;
+                if(result.error) throw result.error;
                 savedRows.push(mapSavedRow(sheetName,result.data));
             }
-            const currentIds=new Set(savedRows.map(r=>String(r.id)).filter(Boolean));
-            const deleted=snap.filter(r=>r.id!==undefined&&r.id!==null&&!currentIds.has(String(r.id)));
-            if(deleted.length){const ids=deleted.map(r=>Number(r.id)).filter(Number.isSafeInteger);if(ids.length){const {error}=await supabaseClient.from(table).delete().in('id',ids);if(error)throw error;}}
+
+            // Explicit delete queue only; never delete based on a possibly stale snapshot.
+            const pending=pendingRowDeletions[sheetName]||new Set();
+            const idsToDelete=snap
+                .filter(r=>r?.id!==undefined&&pending.has(stableRowKey(sheetName,r)))
+                .map(r=>Number(r.id)).filter(Number.isSafeInteger);
+            if(idsToDelete.length){
+                const {error}=await supabaseClient.from(table).delete().in('id',idsToDelete);
+                if(error) throw error;
+            }
             return savedRows;
         }
+
         async function runSheetSave(sheetName){
             const local=sheetLatestLocal[sheetName];if(!local)return true;sheetLatestLocal[sheetName]=null;sheetSyncInFlight[sheetName]=true;lastLocalSaveAt[sheetName]=Date.now();
             try{
@@ -1785,7 +2298,7 @@
         function subscribeSupabaseRealtime(){
             if(!supabaseClient||window._bomRealtimeChannelsBound)return;
             window._bomRealtimeChannelsBound=true;
-            const refresh=()=>{clearTimeout(window._bomRealtimeTimer);window._bomRealtimeTimer=setTimeout(()=>fetchAllDataFromSheet({background:true}),120);};
+            const refresh=()=>{clearTimeout(window._bomRealtimeTimer);window._bomRealtimeTimer=setTimeout(()=>fetchAllDataFromSheet({background:true,forceRender:true}),120);};
             window._bomRealtimeChannels=window._bomRealtimeChannels||[];
             Object.entries(SUPABASE_TABLES).forEach(([sheet,table])=>{
                 const ch=supabaseClient.channel(`bom-team-realtime-${sheet.toLowerCase()}`)
@@ -2145,7 +2658,8 @@
         }
 
         function getAdvancedFilterRows(table){
-            return Array.from(table?.querySelector('tbody')?.querySelectorAll('tr')||[]);
+            const rows=Array.from(table?.querySelector('tbody')?.querySelectorAll('tr')||[]);
+            return table?.id==='table-gantt' ? rows.filter(r=>!r.classList.contains('gantt-hours-used-row')) : rows;
         }
         function getTableCellFilterText(cell){
             if(!cell) return '';
@@ -2265,7 +2779,7 @@
                     <td class="py-2.5 px-4 font-bold text-slate-800">${escapeHtml(item.category||'')}</td>
                     <td class="py-2.5 px-4 text-slate-700">${escapeHtml(item.task||'')}</td>
                     <td class="py-2.5 px-2 text-center"><select onchange="updateCapacityField(${item.id},'scope',this.value)" class="w-full max-w-[190px] px-2 py-1 bg-white border border-slate-300 rounded text-[11px]">${CAPACITY_SCOPES.map(x=>`<option value="${escapeHtml(x)}" ${x===scope?'selected':''}>${escapeHtml(x)}</option>`).join('')}</select></td>
-                    <td class="py-2.5 px-2 text-center"><input type="number" step="0.1" min="0" value="${Number(item.workload||0)}" onchange="updateCapacityField(${item.id},'workload',this.value)" class="w-24 px-2 py-1 bg-white border border-slate-300 rounded text-center text-xs font-bold text-indigo-600"></td>
+                    <td class="py-2.5 px-2 text-center"><input type="number" step="0.01" min="0" value="${Number(item.workload||0)}" readonly disabled title="Calculated automatically from Daily Tracking average Usage Time" class="w-24 px-2 py-1 bg-slate-100 border border-slate-300 rounded text-center text-xs font-bold text-indigo-600 cursor-not-allowed"></td>
                     <td class="py-2.5 px-2 text-center">
                         <button type="button" onclick="openCapacityCategoryModal(${item.id})" class="text-slate-400 hover:text-indigo-600 mr-2" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
                         <button type="button" onclick="deleteCapacityItem(${item.id})" class="text-slate-400 hover:text-red-600" title="Delete"><i class="fa-solid fa-trash"></i></button>
@@ -2275,7 +2789,7 @@
         }
         async function updateCapacityField(id, field, val) {
             const item=capacityData.find(c=>String(c.id)===String(id)); if(!item) return;
-            if(field==='workload') item.workload=Math.max(0,Number(val)||0);
+            if(field==='workload') return; // Workload is calculated from Daily Tracking.
             if(field==='scope'){ item.scope=CAPACITY_SCOPES.includes(val)?val:CAPACITY_SCOPES[0]; }
             renderCapacityTable(); await saveSheetData('Capacity',capacityData); populateFilterOptions();
         }
@@ -2392,20 +2906,117 @@
         function onCapacityCategoryModeChange(){const isNew=document.getElementById('capacityCategorySelect').value==='__NEW__';const input=document.getElementById('capacityNewCategory');input.classList.toggle('hidden',!isNew);input.required=isNew;}
         async function saveCapacityCategory(e){
             e.preventDefault(); const editId=document.getElementById('capacityEditId').value; const sel=document.getElementById('capacityCategorySelect').value;
-            const category=(sel==='__NEW__'?document.getElementById('capacityNewCategory').value:sel).trim(); const task=document.getElementById('capacityTaskName').value.trim(); const scope=document.getElementById('capacityScope').value; const workload=Number(document.getElementById('capacityWorkload').value);
-            if(!category||!task||!CAPACITY_SCOPES.includes(scope)||!Number.isFinite(workload)||workload<0){showAppNotification('Please complete Category, Task Name, Scope and Workload.','Validation');return;}
+            const category=(sel==='__NEW__'?document.getElementById('capacityNewCategory').value:sel).trim(); const task=document.getElementById('capacityTaskName').value.trim(); const scope=document.getElementById('capacityScope').value; const workload=0;
+            if(!category||!task||!CAPACITY_SCOPES.includes(scope)){
+                validateRequiredFormFields(document.getElementById('capacityCategoryForm'));
+                return;
+            }
             const duplicate=capacityData.some(c=>String(c.id)!==String(editId)&&String(c.category||'').trim().toLowerCase()===category.toLowerCase()&&String(c.task||'').trim().toLowerCase()===task.toLowerCase());
             if(duplicate){showAppNotification('This Category + Task Name already exists.','Validation');return;}
+            const createFingerprint = !editId ? makeCreateFingerprint('capacity',[category,task,scope,workload]) : '';
+            if(!beginFormSave('capacityCategoryForm', createFingerprint)) return;
+            try {
+            const oldItem = editId ? capacityData.find(c=>String(c.id)===String(editId)) : null;
+            const oldCategory = String(oldItem?.category||'').trim();
+            const oldTaskName = String(oldItem?.task||'').trim();
             if(editId){const item=capacityData.find(c=>String(c.id)===String(editId)); if(item){item.category=category;item.task=task;item.scope=scope;item.workload=workload;}}
             else {const nextId=capacityData.reduce((m,c)=>Math.max(m,Number(c.id)||0),0)+1;capacityData.push({id:nextId,category,task,scope,workload});}
-            await saveSheetData('Capacity',capacityData); renderCapacityTable();populateFilterOptions();restoreAdvancedTableFilters();closeCapacityCategoryModal();showAppNotification('Capacity saved successfully.');
+            // When Task Name is renamed in Category Setup, propagate the new name to all
+            // existing tasks using the old Category + Task Name pair.
+            if(editId && oldTaskName && oldTaskName !== task){
+                const oldCatKey=normalizeWorkloadKey(oldCategory), oldTaskKey=normalizeWorkloadKey(oldTaskName);
+                dailyTasks=dailyTasks.map(t=>{
+                    if(normalizeWorkloadKey(t.category)===oldCatKey && normalizeWorkloadKey(t.name)===oldTaskKey){
+                        return calculateTaskMetadata({...t,name:task});
+                    }
+                    return t;
+                });
+            }
+            if(editId && oldTaskName && oldTaskName !== task) await saveSheetData('Tasks',dailyTasks);
+            recalculateCapacityWorkloadsFromTasks();
+            await saveSheetData('Capacity',capacityData);
+            renderCapacityTable();populateFilterOptions();restoreAdvancedTableFilters();closeCapacityCategoryModal();showAppNotification('Capacity saved successfully.');
+            } catch(err) {
+                forgetCreateFingerprint(createFingerprint);
+                console.error('Capacity save error:', err);
+                showAppNotification(`Unable to save capacity. ${err?.message || err || 'Unknown error'}`, 'Save Error');
+            } finally {
+                endFormSave('capacityCategoryForm');
+            }
         }
 
         /* ===== Unified page filters / actions ===== */
         const bomTopFilterState = { Year:new Set(), Month:new Set(), Week:new Set(), Category:new Set(), Member:new Set(), Status:new Set() };
-        const ganttFilterState={Project:new Set(),Timeline:new Set(),Owner:new Set()};
-        function getGanttFilterUniverse(key){const v=new Set();projectsList.forEach(p=>{if(key==='Project'&&p.name)v.add(String(p.name));if(key==='Owner')(Array.isArray(p.owners)?p.owners:String(p.owner||'').split(',')).map(x=>String(x).trim()).filter(Boolean).forEach(x=>v.add(x));if(key==='Timeline'&&p.startDate&&p.dueDate)v.add(`${formatDateMMDDYYYY(p.startDate)} - ${formatDateMMDDYYYY(p.dueDate)}`)});return [...v].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'}));}
-        function ganttFilterValues(key,p){if(key==='Project')return[String(p.name||'')];if(key==='Owner')return(Array.isArray(p.owners)?p.owners:String(p.owner||'').split(',')).map(x=>String(x).trim()).filter(Boolean);if(key==='Timeline')return[p.startDate&&p.dueDate?`${formatDateMMDDYYYY(p.startDate)} - ${formatDateMMDDYYYY(p.dueDate)}`:''];return[];}
+        const ganttFilterState={Project:new Set(),Start:new Set(),Plan:new Set(),Actual:new Set(),Status:new Set(),Progress:new Set(),Owner:new Set()};
+        const expandedGanttProjects = new Set();
+        function toggleGanttProjectHours(projectId){ const key=String(projectId); if(expandedGanttProjects.has(key)) expandedGanttProjects.delete(key); else expandedGanttProjects.add(key); renderGanttChart(); }
+        function getGanttCalculatedProgress(p){
+            if(String(p?.status||'').trim().toLowerCase()==='done') return 100;
+            const start=cleanDateStr(p?.startDate), plan=cleanDateStr(p?.dueDate), actual=cleanDateStr(p?.actualDate);
+            if(!start||!plan||plan<start) return Math.max(0,Math.min(100,Number(p?.progress)||0));
+            if(actual){
+                if(actual<=start) return 0;
+                if(actual>=plan) return 100;
+                const total=Math.max(1,Math.round((new Date(plan)-new Date(start))/86400000)+1);
+                const used=Math.max(0,Math.min(total,Math.round((new Date(actual)-new Date(start))/86400000)+1));
+                return Math.max(0,Math.min(100,Math.round(used/total*100)));
+            }
+            const today=cleanDateStr(formatDateLocal(new Date()));
+            if(today<=start) return 0;
+            if(today>=plan) return 100;
+            const total=Math.max(1,Math.round((new Date(plan)-new Date(start))/86400000)+1);
+            const used=Math.max(0,Math.min(total,Math.round((new Date(today)-new Date(start))/86400000)+1));
+            return Math.max(0,Math.min(100,Math.round(used/total*100)));
+        }
+        function getGanttProjectDailyStatuses(p){
+            const pid=String(p?.id ?? '');
+            const pname=String(p?.name || '').trim();
+            const statuses=new Set();
+            dailyTasks.forEach(t=>{
+                if(!isProjectHoursTask(t)) return;
+                const linked=pid && String(t.projectId ?? '')===pid;
+                const sameName=pname && String(t.items || '').trim()===pname;
+                if(linked || sameName){
+                    const st=String(t.status || '').trim();
+                    if(st) statuses.add(st);
+                }
+            });
+            return [...statuses];
+        }
+        function getGanttFilterUniverse(key){
+            const v=new Set();
+            projectsList.forEach(p=>{
+                const progress=getGanttCalculatedProgress(p);
+                if(key==='Project'&&p.name)v.add(String(p.name));
+                if(key==='Start'&&p.startDate)v.add(formatDateMMDDYYYY(p.startDate));
+                if(key==='Plan'&&p.dueDate)v.add(formatDateMMDDYYYY(p.dueDate));
+                if(key==='Actual'&&p.actualDate)v.add(formatDateMMDDYYYY(p.actualDate));
+                if(key==='Status'){
+                    if(p.status) v.add(String(p.status));
+                    getGanttProjectDailyStatuses(p).forEach(st=>v.add(st));
+                }
+                if(key==='Progress')v.add(`${progress}%`);
+                if(key==='Owner')(Array.isArray(p.owners)?p.owners:String(p.owner||'').split(',')).map(x=>String(x).trim()).filter(Boolean).forEach(x=>v.add(x));
+            });
+            // Always expose every Daily Tracking status in the Gantt Status filter,
+            // even when the current Gantt period has no linked Project Processing row.
+            if(key==='Status'){
+                ['Completed','Working','Overdue','Not Started'].forEach(st=>v.add(st));
+                dailyTasks.forEach(t=>{const st=String(t.status||'').trim();if(st)v.add(st);});
+            }
+            return [...v].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'}));
+        }
+        function ganttFilterValues(key,p){
+            const progress=getGanttCalculatedProgress(p);
+            if(key==='Project')return[String(p.name||'')];
+            if(key==='Start')return[p.startDate?formatDateMMDDYYYY(p.startDate):''];
+            if(key==='Plan')return[p.dueDate?formatDateMMDDYYYY(p.dueDate):''];
+            if(key==='Actual')return[p.actualDate?formatDateMMDDYYYY(p.actualDate):''];
+            if(key==='Status')return[String(p.status||''),...getGanttProjectDailyStatuses(p)];
+            if(key==='Progress')return[`${progress}%`];
+            if(key==='Owner')return(Array.isArray(p.owners)?p.owners:String(p.owner||'').split(',')).map(x=>String(x).trim()).filter(Boolean);
+            return[];
+        }
 
         function getIsoWeekRange(year, week) {
             // BOM/Vietnam reporting weeks follow Monday-Sunday.
@@ -2489,6 +3100,7 @@
         }
 
         function getBomFilterUniverse(key) {
+            if (key === 'Status') dailyTasks.forEach(t=>calculateTaskMetadata(t));
             if (key === 'Month') return Array.from({length:12}, (_,i)=>String(i+1));
             const values = new Set();
             if (key === 'Week') {
@@ -2631,6 +3243,9 @@
             });
         }
         function applyBomUnifiedFilters(){
+            // Recalculate Daily Tracking status before applying the top Status filter.
+            // This keeps the filter values and the displayed rows in sync with Start / Plan / Actual / today.
+            dailyTasks.forEach(t=>calculateTaskMetadata(t));
             const filtered=dailyTasks.filter(taskPassesBomTopFilters);
             window.bomFilteredTasks=filtered;
             updateDashboardCharts();
@@ -2656,6 +3271,19 @@
             if(c)c.textContent='$'+calcBomCostSaving().toLocaleString(undefined,{maximumFractionDigits:2});
             if(o)o.textContent=calcBomOvertimeHours().toLocaleString(undefined,{maximumFractionDigits:2})+' h';
         }
+        function getDashboardOrangeHeatmapStyle(pct){
+            const n=Math.max(0,Number(pct)||0);
+            if(n<=0) return 'background:#fffaf0;color:#a16207;';
+            const stops=[[0,'#fff7ed'],[25,'#ffedd5'],[50,'#fed7aa'],[75,'#fdba74'],[100,'#f97316'],[120,'#c2410c']];
+            let a=stops[0],b=stops[stops.length-1];
+            for(let i=0;i<stops.length-1;i++){if(n>=stops[i][0]&&n<=stops[i+1][0]){a=stops[i];b=stops[i+1];break;}}
+            const t=Math.max(0,Math.min(1,(n-a[0])/(b[0]-a[0])));
+            const rgb=h=>{h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
+            const ar=rgb(a[1]),br=rgb(b[1]),c=ar.map((v,i)=>Math.round(v+(br[i]-v)*t));
+            const lum=(0.299*c[0]+0.587*c[1]+0.114*c[2])/255;
+            return `background:rgb(${c.join(',')});color:${lum>0.60?'#7c2d12':'#ffffff'};transition:background .2s ease,color .2s ease;`;
+        }
+
         function renderDashboardWorkloadSummary(filteredTasks){
             const head=document.getElementById('dashWorkloadSummaryHeader'), body=document.getElementById('dashWorkloadSummaryBody');
             if(!head||!body)return;
@@ -2697,10 +3325,10 @@
                 });
             });
             const cls=p=>p<=0?'text-slate-300':p<5?'bg-blue-50 text-blue-800':p<15?'bg-blue-100 text-blue-900 font-semibold':p<30?'bg-indigo-100 text-indigo-900 font-semibold':p<50?'bg-amber-100 text-amber-900 font-bold':p<70?'bg-yellow-200 text-yellow-900 font-bold':p<85?'bg-emerald-100 text-emerald-900 font-bold':p<=100?'bg-green-300 text-green-950 font-extrabold':'bg-red-200 text-red-900 font-extrabold';
-            let h='<tr><th class="py-2.5 px-3 bg-slate-900 min-w-[180px]">Category</th>'+members.map(m=>`<th class="py-2.5 px-2 text-center bg-slate-900">${escapeHtml(m)}</th>`).join('')+'</tr>';
-            h+='<tr><th class="py-2.5 px-3 bg-slate-800 text-white">Total</th>'+members.map(m=>{const hours=Object.values(workload[m]).reduce((a,b)=>a+b,0),pct=cap[m]>0?hours/cap[m]*100:0;return `<th class="py-2 px-2 text-center" style="${getDashboardHeatmapStyle(pct)}" title="${hours.toFixed(2)} h / ${cap[m].toFixed(2)} h capacity">${pct.toFixed(1)}%</th>`;}).join('')+'</tr>';
+            let h='<tr><th class="py-2.5 px-3 bg-orange-700 min-w-[180px]">Category</th>'+members.map(m=>`<th class="py-2.5 px-2 text-center bg-orange-600 text-white">${escapeHtml(m)}</th>`).join('')+'</tr>';
+            h+='<tr><th class="py-2.5 px-3 bg-amber-700 text-white">Total</th>'+members.map(m=>{const hours=Object.values(workload[m]).reduce((a,b)=>a+b,0),pct=cap[m]>0?hours/cap[m]*100:0;return `<th class="py-2 px-2 text-center" style="${getDashboardOrangeHeatmapStyle(pct)}" title="${hours.toFixed(2)} h / ${cap[m].toFixed(2)} h capacity">${pct.toFixed(1)}%</th>`;}).join('')+'</tr>';
             head.innerHTML=h;
-            body.innerHTML=rows.map(row=>`<tr><td class="py-2 px-3 font-semibold">${escapeHtml(row)}</td>${members.map(m=>{const hours=workload[m][row]||0,pct=cap[m]>0?hours/cap[m]*100:0;return `<td class="py-2 px-2 text-center" style="${getDashboardHeatmapStyle(pct)}" title="${hours.toFixed(2)} h / ${cap[m].toFixed(2)} h capacity">${pct>0?pct.toFixed(1)+'%':'-'}</td>`;}).join('')}</tr>`).join('');
+            body.innerHTML=rows.map(row=>`<tr><td class="py-2 px-3 font-semibold">${escapeHtml(row)}</td>${members.map(m=>{const hours=workload[m][row]||0,pct=cap[m]>0?hours/cap[m]*100:0;return `<td class="py-2 px-2 text-center" style="${getDashboardOrangeHeatmapStyle(pct)}" title="${hours.toFixed(2)} h / ${cap[m].toFixed(2)} h capacity">${pct>0?pct.toFixed(1)+'%':'-'}</td>`;}).join('')}</tr>`).join('');
         }
 
         function copyTableToClipboard(tableId){
@@ -2761,13 +3389,14 @@
                 report.querySelectorAll('.bom-page-filter .bom-multi').forEach(el=>{el.style.minWidth='145px';el.style.flex='0 0 145px';el.style.overflow='visible';});
                 report.querySelectorAll('.bom-page-filter .bom-multi-btn').forEach(el=>{el.style.minWidth='150px';el.style.overflow='visible';el.style.whiteSpace='normal';el.style.textOverflow='clip';el.style.height='auto';el.style.minHeight='42px';el.style.lineHeight='18px';el.style.color='#334155';});
                 // Keep the dashboard's current width/layout. Do not widen or stretch either side.
-                report.style.width=''; report.style.margin=''; report.style.padding='';
-                report.querySelectorAll('.bom-page-filter').forEach(el=>{el.style.marginLeft='';el.style.marginRight='';el.style.width='';});
+                report.style.width='2700px'; report.style.minWidth='2700px'; report.style.maxWidth='2700px'; report.style.margin='0 auto'; report.style.padding='28px 32px';
+                report.querySelectorAll('.bom-page-filter').forEach(el=>{el.style.marginLeft='0';el.style.marginRight='0';el.style.width='100%';el.style.maxWidth='100%';});
                 await new Promise(r=>requestAnimationFrame(r));
-                const canvas=await html2canvas(report,{scale:2,useCORS:true,backgroundColor:'#f8fafc',logging:false,windowWidth:Math.max(document.documentElement.clientWidth,report.scrollWidth),width:report.scrollWidth,height:report.scrollHeight,scrollX:0,scrollY:0});
+                const exportWidth=2700, exportHeight=report.scrollHeight;
+                const canvas=await html2canvas(report,{scale:3,useCORS:true,backgroundColor:'#f8fafc',logging:false,windowWidth:exportWidth,width:exportWidth,height:exportHeight,scrollX:0,scrollY:0,imageTimeout:0});
                 const {jsPDF}=window.jspdf;
-                const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
-                const pageWidth=pdf.internal.pageSize.getWidth(), pageHeight=pdf.internal.pageSize.getHeight(), margin=5;
+                const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a3',compress:false});
+                const pageWidth=pdf.internal.pageSize.getWidth(), pageHeight=pdf.internal.pageSize.getHeight(), margin=4;
                 const usableWidth=pageWidth-margin*2, usableHeight=pageHeight-margin*2;
                 const sliceHeightPx=Math.max(1,Math.floor(canvas.width*(usableHeight/usableWidth)));
                 let yPx=0, pageNo=0;
@@ -2778,13 +3407,14 @@
                     const pctx=pageCanvas.getContext('2d');
                     pctx.fillStyle='#f8fafc'; pctx.fillRect(0,0,pageCanvas.width,pageCanvas.height);
                     pctx.drawImage(canvas,0,yPx,canvas.width,hPx,0,0,canvas.width,hPx);
-                    if(pageNo>0) pdf.addPage('a4','portrait');
+                    if(pageNo>0) pdf.addPage('a3','landscape');
                     const renderedHeight=usableWidth*(hPx/canvas.width);
-                    pdf.addImage(pageCanvas.toDataURL('image/png'),'PNG',margin,margin,usableWidth,renderedHeight,undefined,'FAST');
+                    const imageX=(pageWidth-usableWidth)/2;
+                    pdf.addImage(pageCanvas.toDataURL('image/png'),'PNG',imageX,margin,usableWidth,renderedHeight,undefined,'NONE');
                     yPx+=hPx; pageNo++;
                 }
                 pdf.save(`Dashboard_Report_${new Date().toISOString().slice(0,10)}.pdf`);
-                showAppNotification(`Dashboard report exported as A4 portrait (${pageNo} page${pageNo>1?'s':''}).`);
+                showAppNotification(`Dashboard report exported as A3 landscape (${pageNo} page${pageNo>1?'s':''}).`);
             }catch(err){
                 console.error('PDF export error:',err);
                 showAppNotification('Could not export report to PDF.','Error');
@@ -2793,8 +3423,8 @@
                 if(pdfHeader)pdfHeader.remove();
                 const originalReportHeader=report.querySelector('.report-page-header');
                 if(originalReportHeader)originalReportHeader.style.display='';
-                report.style.width=''; report.style.margin=''; report.style.padding='';
-                report.querySelectorAll('.bom-page-filter').forEach(el=>{el.style.marginLeft='';el.style.marginRight='';el.style.width='';});
+                report.style.width=''; report.style.minWidth=''; report.style.maxWidth=''; report.style.margin=''; report.style.padding='';
+                report.querySelectorAll('.bom-page-filter').forEach(el=>{el.style.marginLeft='';el.style.marginRight='';el.style.width='';el.style.maxWidth='';});
                 document.body.classList.remove('report-exporting');
                 if(loaderText)loaderText.textContent='Syncing data from Supabase...';
                 if(loader)loader.classList.add('opacity-0','pointer-events-none');
@@ -2817,6 +3447,20 @@
             tables.forEach((table,i)=>{
                 const clone=table.cloneNode(true);
                 clone.querySelectorAll('button,i').forEach(e=>e.remove());
+                if(tabId==='tab-projects' && table.id==='table-projects'){
+                    const headRow=clone.querySelector('thead tr');
+                    const timeTh=[...headRow.children].findIndex(th=>th.innerText.trim().toLowerCase()==='timeline');
+                    if(timeTh>=0){
+                        const th=headRow.children[timeTh]; th.textContent='Start';
+                        const planTh=document.createElement('th'); planTh.className=th.className; planTh.textContent='Plan'; th.parentNode.insertBefore(planTh,th.nextSibling);
+                        clone.querySelectorAll('tbody tr').forEach(tr=>{
+                            const td=tr.children[timeTh], text=(td?.innerText||'').split(/\s+-\s+/);
+                            const start=document.createElement('td'); start.className=td?.className||''; start.textContent=(text[0]||'-').trim();
+                            const plan=document.createElement('td'); plan.className=td?.className||''; plan.textContent=(text[1]||'-').trim();
+                            td?.replaceWith(start); start.parentNode.insertBefore(plan,start.nextSibling);
+                        });
+                    }
+                }
                 // Export only rows currently visible after the Excel-style column filter.
                 clone.querySelectorAll('tbody tr.hidden').forEach(e=>e.remove());
                 // Excel export should use the visible/current value of form controls, not every <option>.
@@ -2943,8 +3587,7 @@
                 search.value=selectedValue;
                 onTaskNameChange();
                 search.value=selectedValue;
-                const match=capacityData.find(c=>normalizeWorkloadKey(c.category)===normalizeWorkloadKey(cat)&&normalizeWorkloadKey(c.task)===normalizeWorkloadKey(selectedValue));
-                if(match) document.getElementById('taskUsageTime').value=match.workload||0;
+                // Usage Time is intentionally left blank on Create Task.
             }
             closeTaskLookups();
             document.activeElement?.blur?.();
@@ -2971,6 +3614,7 @@
 
         function onTaskCategoryChange() {
             const cat = document.getElementById('taskCategory').value;
+            updateTaskScopeField();
             const taskNameSelect = document.getElementById('taskNameSelect');
             const taskNameSearch = document.getElementById('taskNameSearch');
             const taskNameOptions = document.getElementById('taskNameOptions');
@@ -2988,6 +3632,7 @@
             }
             if (taskNameSearch) { taskNameSearch.value = ''; taskNameSearch.required = true; }
             document.getElementById('taskUsageTime').value = '';
+            updateTaskScopeSuggestion(false);
         }
 
         function onTaskNameSearch() {
@@ -3018,13 +3663,15 @@
                 taskNameOther.focus();
                 if (taskNameSearch) taskNameSearch.value = '';
                 document.getElementById('taskUsageTime').value = '';
+                updateTaskScopeSuggestion(false);
                 return;
             }
             taskNameOther.classList.add('hidden');
             taskNameOther.required = false;
             if (taskNameSearch) { taskNameSearch.required = true; taskNameSearch.value = selected; }
-            const match = capacityData.find(c => String(c.category || '').trim() === cat && String(c.task || '') === selected);
-            if (match) document.getElementById('taskUsageTime').value = match.workload;
+            // Do not suggest/copy Workload (Hour) into Create Task.
+            document.getElementById('taskUsageTime').value = '';
+            updateTaskScopeSuggestion(false);
         }
 
         function getSelectedTaskName() {
@@ -3032,22 +3679,27 @@
             if (select.value === '__OTHER_NEW__') return document.getElementById('taskNameOther').value.trim();
             return (document.getElementById('taskNameSearch')?.value || select.value || '').trim();
         }
-
-        async function ensureOtherTaskInCapacity(category, taskName, workload) {
-            if (String(category || '').trim().toLowerCase() !== 'other' || !taskName) return;
-            const exists = capacityData.some(c => String(c.category || '').trim().toLowerCase() === 'other' && String(c.task || '').trim().toLowerCase() === taskName.toLowerCase());
-            if (!exists) {
-                const nextId = capacityData.reduce((mx, c) => Math.max(mx, Number(c.id) || 0), 0) + 1;
-                capacityData.push({ id: nextId, category: 'Other', task: taskName, scope: "In BOM's scope", workload: Number(workload) || 0 });
-                await saveSheetData('Capacity', capacityData);
-            } else {
-                const item = capacityData.find(c => String(c.category || '').trim().toLowerCase() === 'other' && String(c.task || '').trim().toLowerCase() === taskName.toLowerCase());
-                if (item && Number(workload) > 0 && Number(item.workload || 0) === 0) {
-                    item.workload = Number(workload);
-                    await saveSheetData('Capacity', capacityData);
-                }
+        function updateTaskScopeSuggestion(preserveExplicit=false){
+            const wrap=document.getElementById('taskScopeWrap'), select=document.getElementById('taskScope');
+            if(!wrap||!select)return;
+            const category=String(document.getElementById('taskCategory')?.value||'').trim();
+            const taskName=getSelectedTaskName();
+            const isOther=category.toLowerCase()==='other';
+            wrap.classList.remove('hidden');
+            select.required=true;
+            if(isOther){
+                if(!preserveExplicit) select.value='';
+                return;
+            }
+            const match=capacityData.find(c=>normalizeWorkloadKey(c.category)===normalizeWorkloadKey(category)&&normalizeWorkloadKey(c.task)===normalizeWorkloadKey(taskName));
+            const suggested=String(match?.scope||'').trim();
+            if(suggested) {
+                if(!preserveExplicit || !String(select.value||'').trim()) select.value=suggested;
+            } else if(!preserveExplicit) {
+                select.value='';
             }
         }
+        function updateTaskScopeField(){ updateTaskScopeSuggestion(false); }
 
         function normalizeTaskPriority(value){
             if(value===null||value===undefined||String(value).trim()==='') return '';
@@ -3077,6 +3729,34 @@
                 task.discipline = 'On Track';
             }
             return task;
+        }
+
+        // Category Setup > Workload (Hour) is a calculated reference value.
+        // It stores the arithmetic average of Usage Time entered in Daily Tracking
+        // for the same Category + Task Name. It is never manually edited.
+        function recalculateCapacityWorkloadsFromTasks(){
+            const buckets=new Map();
+            dailyTasks.forEach(t=>{
+                const category=String(t?.category||'').trim();
+                const task=String(t?.name||'').trim();
+                const hours=Number(t?.usageTime);
+                if(!category||!task||!Number.isFinite(hours)||hours<=0)return;
+                const key=`${normalizeWorkloadKey(category)}|||${normalizeWorkloadKey(task)}`;
+                const b=buckets.get(key)||{sum:0,count:0};
+                b.sum+=hours; b.count+=1; buckets.set(key,b);
+            });
+            capacityData.forEach(c=>{
+                const key=`${normalizeWorkloadKey(c?.category)}|||${normalizeWorkloadKey(c?.task)}`;
+                const b=buckets.get(key);
+                c.workload=b ? +(b.sum/b.count).toFixed(2) : 0;
+            });
+            return capacityData;
+        }
+
+        async function syncCapacityWorkloadsFromTasks(){
+            recalculateCapacityWorkloadsFromTasks();
+            await saveSheetData('Capacity',capacityData);
+            renderCapacityTable();
         }
 
         function taskPICs(task) {
@@ -3172,7 +3852,7 @@
             const filtered = (window.bomFilteredTasks || dailyTasks).filter(taskPassesBomTopFilters).slice().sort(compareByCreationTimeDesc);
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="12" class="py-6 text-center text-slate-400 italic">No tasks logged.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="13" class="py-6 text-center text-slate-400 italic">No tasks logged.</td></tr>`;
                 return;
             }
 
@@ -3191,10 +3871,11 @@
 
                 tr.innerHTML = `
                     <td class="py-3 px-3 font-bold text-slate-800">${escapeHtml(task.category)}</td>
-                    <td class="py-3 px-3 text-slate-800 font-semibold">${escapeHtml(task.name)}</td>
+                    <td class="py-3 px-3 text-slate-800 font-semibold task-name-cell" title="${escapeHtml(task.name)}"><span class="task-name-text">${escapeHtml(task.name)}</span></td>
                     <td class="py-3 px-3 text-indigo-600 task-items-cell max-w-[200px] whitespace-nowrap align-top" title="Click row to expand">
                         <div class="task-items-text truncate">${itemsText}</div>
                     </td>
+                    <td class="py-3 px-2 text-center task-scope-cell" title="${escapeHtml(task.scope || getDailyTaskScope(task) || '-')}">${escapeHtml(task.scope || getDailyTaskScope(task) || '-')}</td>
                     <td class="py-3 px-2 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${priorityBadge}">${escapeHtml(task.priority)}</span></td>
                     <td class="py-3 px-3">${escapeHtml(picsList)}</td>
                     <td class="py-3 px-2 text-center text-slate-500">${formatDateMMDDYYYY(task.start)}</td>
@@ -3226,7 +3907,7 @@
             }).slice().sort(compareByCreationTimeDesc);
 
             if (myTasks.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" class="py-6 text-center text-slate-400 italic">No tasks assigned to you.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="12" class="py-6 text-center text-slate-400 italic">No tasks assigned to you.</td></tr>`;
                 return;
             }
 
@@ -3244,8 +3925,9 @@
 
                 tr.innerHTML = `
                     <td class="py-3 px-3 font-bold text-slate-800">${escapeHtml(task.category)}</td>
-                    <td class="py-3 px-3 text-slate-800 font-semibold">${escapeHtml(task.name)}</td>
+                    <td class="py-3 px-3 text-slate-800 font-semibold task-name-cell" title="${escapeHtml(task.name)}"><span class="task-name-text">${escapeHtml(task.name)}</span></td>
                     <td class="py-3 px-3 text-indigo-600 task-items-cell max-w-[200px] whitespace-nowrap align-top" title="Click row to expand"><div class="task-items-text truncate">${itemsText}</div></td>
+                    <td class="py-3 px-2 text-center task-scope-cell" title="${escapeHtml(task.scope || getDailyTaskScope(task) || '-')}">${escapeHtml(task.scope || getDailyTaskScope(task) || '-')}</td>
                     <td class="py-3 px-2 text-center">${escapeHtml(task.priority)}</td>
                     <td class="py-3 px-2 text-center text-slate-500">${formatDateMMDDYYYY(task.start)}</td>
                     <td class="py-3 px-2 text-center text-slate-500">${formatDateMMDDYYYY(task.plan)}</td>
@@ -3308,14 +3990,17 @@
                     rows.forEach((r,i)=>{
                         const category=String(find(r,'category','Category')).trim();
                         const name=String(find(r,'task name','Task Name','task','Task','name')).trim();
-                        const items=String(find(r,'items','Items','item')).trim();
+                        const items=String(find(r,'detail','Detail','items','Items','item')).trim();
                         const priority=normalizeTaskPriority(String(find(r,'priority','Priority')).trim()||'Medium');
                         const pic=String(find(r,'pic','PIC','pics','Assigned PICs','Assigned PIC')).trim();
                         const start=parseImportDate(find(r,'start','Start','start date','Start Date'));
                         const plan=parseImportDate(find(r,'plan','Plan','plan date','Plan Date','due date','Due Date'));
                         const actual=parseImportDate(find(r,'actual','Actual','actual date','Actual Date'));
                         const usageRaw=find(r,'usageTime','UsageTime','usage time','Usage Time','total usage time','Total Usage Time','hours','Hour');
+                        const importedScope=String(find(r,'scope','Scope')).trim();
                         const cap=capacityData.find(c=>String(c.category||'').trim().toLowerCase()===category.toLowerCase()&&String(c.task||'').trim().toLowerCase()===name.toLowerCase());
+                        const suggestedScope=String(cap?.scope||'').trim();
+                        const scope=category.toLowerCase()==='other' ? importedScope : (importedScope || suggestedScope);
                         const usage=usageRaw==='' ? Number(cap?.workload) : Number(usageRaw);
 
                         if(!category||!name||!cap) errors.push(`Row ${i+2}: Category + Task Name not found in Capacity Setup.`);
@@ -3324,6 +4009,7 @@
                         if(!start||!plan||plan<start) errors.push(`Row ${i+2}: invalid Start/Plan.`);
                         if(actual&&actual<start) errors.push(`Row ${i+2}: Actual cannot be before Start.`);
                         if(!Number.isFinite(usage)||usage<=0) errors.push(`Row ${i+2}: invalid Usage Time (or no Capacity workload found).`);
+                        if(!scope) errors.push(`Row ${i+2}: Scope is required.`);
                         if(!['High','Medium','Low'].includes(priority)) errors.push(`Row ${i+2}: Priority must be High, Medium or Low.`);
                         if(target==='my' && currentUser && !taskPICs({pic}).some(p=>p.toLowerCase()===currentUser.name.toLowerCase())) {
                             errors.push(`Row ${i+2}: My Tasks import must have PIC = ${currentUser.name}.`);
@@ -3332,7 +4018,7 @@
                         const pics=pic.split(',').map(x=>x.trim()).filter(Boolean);
                         const task={
                             id:`${Date.now()}-${i}-${Math.random().toString(36).slice(2,8)}`,
-                            category,name,items,priority,pic,pics,start,plan,actual,
+                            category,name,items,scope,priority,pic,pics,start,plan,actual,
                             startDate:start,planDate:plan,actualDate:actual,usageTime:usage,
                             createdBy:currentUser?.name||'',savedAt:new Date().toISOString()
                         };
@@ -3346,6 +4032,7 @@
 
                     dailyTasks=[...imported,...dailyTasks];
                     await saveSheetData('Tasks',dailyTasks);
+                    await syncCapacityWorkloadsFromTasks();
                     applyGlobalFilters();
                     showAppNotification(`${imported.length} task(s) imported and synchronized. Status & Discipline were auto-calculated.`);
                 }catch(err){showAppNotification(err.message,'Import Error');}
@@ -3371,6 +4058,8 @@
             document.getElementById('taskNameOther').value = '';
             document.getElementById('taskNameOther').classList.add('hidden');
             document.getElementById('taskNameOther').required = false;
+            const taskScope=document.getElementById('taskScope'); if(taskScope) taskScope.value='';
+            updateTaskScopeField();
             document.getElementById('taskModal').classList.remove('opacity-0', 'pointer-events-none');
             document.body.classList.add('modal-active');
         }
@@ -3492,30 +4181,38 @@
             const items = document.getElementById('taskItems').value.trim();
             const priority = normalizeTaskPriority(document.getElementById('taskPriority').value);
             const usageTime = parseFloat(document.getElementById('taskUsageTime').value);
+            const scope = String(document.getElementById('taskScope')?.value || '').trim();
             const startDate = cleanDateStr(document.getElementById('taskStart').value);
             const planDate = cleanDateStr(document.getElementById('taskPlan').value);
             const actualDate = cleanDateStr(document.getElementById('taskActual').value);
 
-            if (!category || !taskName || !items || selectedPics.length === 0 || !priority || !isFinite(usageTime) || usageTime <= 0 || !startDate || !planDate) {
-                showAppNotification('Please complete all required fields: Category, Task Name, Items, Assigned PICs, Priority, Total Usage Time, Start Date and Plan Date.', 'Validation');
+            if (!category || !taskName || !items || selectedPics.length === 0 || !priority || !isFinite(usageTime) || usageTime <= 0 || !startDate || !planDate || !scope) {
+                validateRequiredFormFields(document.getElementById('taskForm'));
+                if(selectedPics.length===0){
+                    const picWrap=document.querySelector('.task-pic-checkbox')?.closest('.grid');
+                    if(picWrap) markRequiredFieldInvalid(picWrap);
+                }
                 return;
             }
             if (planDate < startDate) {
-                showAppNotification('Plan Date cannot be earlier than Start Date.', 'Validation');
+                markRequiredFieldInvalid(document.getElementById('taskPlan'));
+                markRequiredFieldInvalid(document.getElementById('taskStart'));
                 return;
             }
             if (actualDate && actualDate < startDate) {
-                showAppNotification('Actual Date cannot be earlier than Start Date.', 'Validation');
+                markRequiredFieldInvalid(document.getElementById('taskActual'));
+                markRequiredFieldInvalid(document.getElementById('taskStart'));
                 return;
             }
 
-            ensureOtherTaskInCapacity(category, taskName, usageTime).catch(err => console.error(err));
-
+            const createFingerprint = !id ? makeCreateFingerprint('task',[category,taskName,items,selectedPics.join(','),startDate,planDate,actualDate,usageTime,scope]) : '';
+            if(!beginFormSave('taskForm', createFingerprint)) return;
+            try {
             const existingTask = id ? dailyTasks.find(t=>String(t.id)===String(id)) : null;
             let newId = existingTask ? existingTask.id : (id ? id : Date.now());
             if (!existingTask) while (dailyTasks.some(t=>String(t.id)===String(newId))) newId = Number(newId)+1 || `${newId}-1`;
             let newTask = {
-                id: newId, category, name: taskName, items, priority,
+                id: newId, category, name: taskName, items, scope, priority,
                 pic: selectedPics.join(', '), pics: selectedPics,
                 start: startDate, plan: planDate, actual: actualDate,
                 startDate, planDate, actualDate, usageTime,
@@ -3536,6 +4233,7 @@
                 if(!existingTask) {
                     // New task: normal batch save keeps the existing import/create workflow.
                     await saveSheetData('Tasks', dailyTasks);
+                    await syncCapacityWorkloadsFromTasks();
                     try {
                         await sendPowerAutomateAssignmentNotification({
                             type: 'task',
@@ -3553,13 +4251,18 @@
                 } else {
                     // Edit task: update exactly this Supabase record.
                     await saveTaskRecordDirect(newTask);
+                    await syncCapacityWorkloadsFromTasks();
                 }
                 showToast('Task saved');
             } catch(err) {
+                forgetCreateFingerprint(createFingerprint);
                 console.error('Task save error:', err);
                 showAppNotification(`Unable to save task. ${err?.message || err || 'Unknown error'}`, 'Save Error');
                 // Reload the authoritative task list so a failed optimistic edit does not leave stale UI.
                 await fetchAllDataFromSheet({background:false});
+            }
+            } finally {
+                endFormSave('taskForm');
             }
         }
 
@@ -3583,6 +4286,7 @@
             try {
                 // Delete exactly this Task record instead of relying on the full-table snapshot diff.
                 await deleteTaskRecordDirect(task);
+                await syncCapacityWorkloadsFromTasks();
                 if(projectChanged) await saveSheetData('Projects', projectsList);
                 pendingRowDeletions.Tasks.delete(deletedKey);
                 showToast('Task deleted');
@@ -3632,6 +4336,7 @@
             document.getElementById('taskPlan').value = task.plan;
             document.getElementById('taskActual').value = task.actual;
             document.getElementById('taskUsageTime').value = task.usageTime;
+            const taskScopeEl=document.getElementById('taskScope'); if(taskScopeEl){ taskScopeEl.value=task.scope || getDailyTaskScope(task) || ''; updateTaskScopeSuggestion(true); }
             document.getElementById('taskModal').classList.remove('opacity-0', 'pointer-events-none');
             document.body.classList.add('modal-active');
         }
@@ -3736,7 +4441,11 @@
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
                 if (type === 'Over Time' || type === 'Time Off') {
-                    if(!hoursInput.value || hoursInput.value <= 0) {
+                    hoursInput.min = '0.25';
+                    hoursInput.max = '24';
+                    hoursInput.step = '0.25';
+                    hoursInput.inputMode = 'decimal';
+                    if(!hoursInput.value || Number(hoursInput.value) <= 0) {
                         hoursInput.value = type === 'Over Time' ? 2 : 1;
                     }
                 } else {
@@ -3753,11 +4462,19 @@
             const type = document.getElementById('timeoffType').value;
             const pic = document.getElementById('timeoffPIC').value;
             const editId = document.getElementById('timeoffEditId').value;
-
+            const hoursRaw = document.getElementById('timeoffHours')?.value ?? '';
+            const startRaw = document.getElementById('timeoffStartDate')?.value ?? '';
+            const endRaw = document.getElementById('timeoffEndDate')?.value ?? '';
+            const reasonRaw = document.getElementById('timeoffReason')?.value ?? '';
+            const checkedRaw = type === 'Saturday Off' ? Array.from(document.querySelectorAll('input[name="satDates"]:checked')).map(c=>c.value).sort().join(',') : '';
+            const createFingerprint = !editId ? makeCreateFingerprint('timeoff',[type,pic,startRaw,endRaw,hoursRaw,reasonRaw,checkedRaw]) : '';
+            if(!beginFormSave('timeoffOtForm', createFingerprint)) return;
+            try {
             if (type === 'Saturday Off') {
                 const checkedSats = Array.from(document.querySelectorAll('input[name="satDates"]:checked')).map(c => c.value);
                 if (checkedSats.length === 0) {
-                    showAppNotification("Please select at least one Saturday!", "Validation");
+                    const satWrap=document.getElementById('saturdaySelectContainer');
+                    if(satWrap) markRequiredFieldInvalid(satWrap);
                     return;
                 }
                 if (editId) timeoffOtList = timeoffOtList.filter(item => String(item.id) !== String(editId));
@@ -3771,7 +4488,7 @@
                         timeoffOtList.unshift({
                             id: Date.now() + Math.random(),
                             type: 'Saturday Off', pic, startDate: cleanDateStr(sDate), endDate: cleanDateStr(sDate),
-                            hours: 7, reason: 'Saturday Off Registration'
+                            hours: 6.5, reason: 'Saturday Off Registration'
                         });
                     }
                 });
@@ -3779,8 +4496,11 @@
                 const hoursVal = parseFloat(document.getElementById('timeoffHours').value) || 0;
                 const start = cleanDateStr(document.getElementById('timeoffStartDate').value);
                 const end = cleanDateStr(document.getElementById('timeoffEndDate').value);
-                if (!start || !end || end < start || hoursVal <= 0) {
-                    showAppNotification('Please complete valid dates and amount.', 'Validation');
+                if (!start || !end || end < start || !Number.isFinite(hoursVal) || hoursVal <= 0 || hoursVal > 24) {
+                    validateRequiredFormFields(document.getElementById('timeoffOtForm'));
+                    if(!start) markRequiredFieldInvalid(document.getElementById('timeoffStartDate'));
+                    if(!end || end < start) markRequiredFieldInvalid(document.getElementById('timeoffEndDate'));
+                    if(!Number.isFinite(hoursVal) || hoursVal <= 0 || hoursVal > 24) markRequiredFieldInvalid(document.getElementById('timeoffHours'));
                     return;
                 }
                 const payload = { id: editId || Date.now(), type, pic, startDate:start, endDate:end, hours:hoursVal, reason:document.getElementById('timeoffReason').value };
@@ -3801,6 +4521,13 @@
             renderWeeklyCalendar();
             renderSaturdayMatrixTable();
             showAppNotification(editId ? "Request updated successfully." : "Submitted & saved successfully.");
+            } catch(err) {
+                forgetCreateFingerprint(createFingerprint);
+                console.error('Time Off / Overtime save error:', err);
+                showAppNotification(`Unable to save request. ${err?.message || err || 'Unknown error'}`, 'Save Error');
+            } finally {
+                endFormSave('timeoffOtForm');
+            }
         }
 
         function populateTimeoffEditOptions(){
@@ -3811,7 +4538,7 @@
         }
         function onTimeoffEditTypeChange(){
             const type=document.getElementById('timeoffEditType')?.value||'Day Off', hours=document.getElementById('timeoffEditHours'), label=document.getElementById('timeoffEditAmountLabel'), reason=document.getElementById('timeoffEditReasonWrap'), end=document.getElementById('timeoffEditEnd'), start=document.getElementById('timeoffEditStart');
-            if(type==='Saturday Off'){label.textContent='Hours'; hours.value=hours.value||7; hours.readOnly=true; end.readOnly=true; end.value=start.value||end.value; reason.classList.remove('hidden');}
+            if(type==='Saturday Off'){label.textContent='Hours'; hours.value=hours.value||6.5; hours.readOnly=true; end.readOnly=true; end.value=start.value||end.value; reason.classList.remove('hidden');}
             else {hours.readOnly=false; label.textContent=(type==='Over Time'||type==='Time Off')?'Hours':'Days'; reason.classList.toggle('hidden',type!=='Over Time'); end.readOnly=type==='Over Time'; if(type==='Over Time'&&start.value)end.value=start.value;}
         }
         function openTimeoffEditModal(id){
@@ -3825,7 +4552,7 @@
         async function saveTimeoffEdit(e){
             e.preventDefault(); const id=document.getElementById('timeoffEditModalId').value, idx=timeoffOtList.findIndex(i=>String(i.id)===String(id)); if(idx<0)return;
             const type=document.getElementById('timeoffEditType').value, pic=document.getElementById('timeoffEditPIC').value, start=cleanDateStr(document.getElementById('timeoffEditStart').value), end=cleanDateStr(document.getElementById('timeoffEditEnd').value||start), hours=Number(document.getElementById('timeoffEditHours').value)||0, reason=document.getElementById('timeoffEditReason').value.trim();
-            if(!start||!end||end<start||hours<=0||(type==='Over Time'&&!reason)){showAppNotification('Please complete valid dates, amount and reason.','Validation');return;}
+            if(!start||!end||end<start||hours<=0||(type==='Over Time'&&!reason)){validateRequiredFormFields(document.getElementById('timeoffEditForm'));if(!start)markRequiredFieldInvalid(document.getElementById('timeoffEditStart'));if(!end||end<start)markRequiredFieldInvalid(document.getElementById('timeoffEditEnd'));if(hours<=0)markRequiredFieldInvalid(document.getElementById('timeoffEditHours'));if(type==='Over Time'&&!reason)markRequiredFieldInvalid(document.getElementById('timeoffEditReason'));return;}
             timeoffOtList[idx]={...timeoffOtList[idx],type,pic,startDate:start,endDate:(type==='Over Time'||type==='Saturday Off')?start:end,hours,reason:type==='Saturday Off'?(reason||'Saturday Off Registration'):reason};
             await saveSheetData('TimeOff_OT',timeoffOtList); closeTimeoffEditModal(); renderTimeoffOtTable(); renderWeeklyCalendar(); renderSaturdayMatrixTable(); showAppNotification('Request updated successfully.');
         }
@@ -3862,13 +4589,17 @@
                 `;
                 tbody.appendChild(tr);
             });
+            restoreAdvancedTableFilters();
         }
 
         async function deleteTimeoffOt(id) {
             const ok = await showAppConfirm("Delete this record?");
             if (!ok) return;
+            const deletedTimeoff=timeoffOtList.find(i=>String(i.id)===String(id));
+            if(deletedTimeoff) pendingRowDeletions.TimeOff_OT.add(stableRowKey('TimeOff_OT',deletedTimeoff));
             timeoffOtList = timeoffOtList.filter(i => i.id != id);
             await saveSheetData("TimeOff_OT", timeoffOtList);
+            if(deletedTimeoff) pendingRowDeletions.TimeOff_OT.delete(stableRowKey('TimeOff_OT',deletedTimeoff));
             renderTimeoffOtTable();
             renderWeeklyCalendar();
             renderSaturdayMatrixTable();
@@ -3937,7 +4668,7 @@
                         pic: pic,
                         startDate: cleanDateStr(sDate),
                         endDate: cleanDateStr(sDate),
-                        hours: 7,
+                        hours: 6.5,
                         reason: 'Saturday Matrix Registration'
                     });
                 }
@@ -4028,10 +4759,10 @@
                 const barColorClass = actualDate ? 'bg-emerald-500' : 'bg-indigo-600';
 
                 tr.innerHTML = `
-                    <td class="py-3 px-3 font-bold text-slate-800">
-                        <span class="inline-flex items-center space-x-2">
-                            <i class="fa-solid fa-diagram-project text-indigo-500"></i>
-                            <span>${p.name}</span>
+                    <td class="py-3 px-3 font-bold text-slate-800 project-name-cell">
+                        <span class="inline-flex items-start space-x-2">
+                            <i class="fa-solid fa-diagram-project text-indigo-500 shrink-0 mt-0.5"></i>
+                            <span class="project-name-text">${escapeHtml(p.name || '-')}</span>
                         </span>
                     </td>
                     <td class="py-3 px-3 text-slate-600 truncate max-w-[150px] project-detail-cell" title="Click row to expand">${escapeHtml(p.detail || '-')}</td>
@@ -4042,15 +4773,15 @@
                     <td class="py-3 px-3 text-center">
                         <span class="px-2.5 py-1 rounded-md text-[10px] font-bold ${statusBg}">${p.status || 'Working on it'}</span>
                     </td>
-                    <td class="py-3 px-3 text-center">
+                    <td class="py-3 px-3 text-center project-timeline-cell">
                         <div class="flex flex-col items-center space-y-1">
-                            <div class="text-[10px] text-slate-500 flex justify-between w-40">
+                            <div class="text-[10px] text-slate-500 flex justify-between w-full gap-3">
                                 <span>${formatDateMMDDYYYY(startDate) || '-'}</span>
                                 <span>${formatDateMMDDYYYY(planDate) || '-'}</span>
                             </div>
-                            <div class="w-40 h-3 rounded-full bg-slate-200 relative overflow-hidden">
+                            <div class="project-timeline-bar w-full relative">
                                 <div class="absolute inset-0 bg-indigo-100"></div>
-                                <div class="absolute inset-y-0 left-0 ${barColorClass}" style="width:${usedWidth}"></div>
+                                <div class="project-timeline-fill absolute inset-y-0 left-0 ${barColorClass}" style="width:${usedWidth}"></div>
                             </div>
                             <div class="text-[10px] text-slate-600">${usedPct}% of planned days</div>
                         </div>
@@ -4068,6 +4799,7 @@
                 tbody.appendChild(tr);
                 applyExpandedProjectRowState(tr,p.id);
             });
+            restoreAdvancedTableFilters();
         }
 
         function openAddProjectModal(existingProjectId = null) {
@@ -4123,20 +4855,19 @@
             const projectPriority = Number(document.getElementById('projectPriority').value);
             const projectStartDate = cleanDateStr(document.getElementById('projectStartDate').value);
             const projectDueDate = cleanDateStr(document.getElementById('projectDueDate').value);
-            if (!projectName || !Number.isInteger(projectPriority) || projectPriority < 1 || projectPriority > 5 || !projectStartDate || !projectDueDate) {
-                showAppNotification('Please complete Project Name, Priority, Start Date and Plan Due Date.', 'Validation');
+            if (!projectName || !Number.isInteger(projectPriority) || projectPriority < 1 || projectPriority > 5 || !projectStartDate || !projectDueDate || !CAPACITY_SCOPES.includes(scope)) {
+                validateRequiredFormFields(document.getElementById('projectForm'));
                 return;
             }
             if (projectDueDate < projectStartDate) {
-                showAppNotification('Plan Due Date cannot be earlier than Start Date.', 'Validation');
-                return;
-            }
-            if (!CAPACITY_SCOPES.includes(scope)) {
-                showAppNotification('Please select a Scope before saving the project.', 'Validation');
-                document.getElementById('projectScope').focus();
+                markRequiredFieldInvalid(document.getElementById('projectStartDate'));
+                markRequiredFieldInvalid(document.getElementById('projectDueDate'));
                 return;
             }
 
+            const createFingerprint = !id ? makeCreateFingerprint('project',[projectName,scope,projectStartDate,projectDueDate,owners.join(',')]) : '';
+            if(!beginFormSave('projectForm', createFingerprint)) return;
+            try {
             const existingProject = id ? projectsList.find(p => p.id == id) : null;
             const existingProgress = existingProject && Number.isFinite(Number(existingProject.progress))
                 ? Math.max(0, Math.min(100, Number(existingProject.progress)))
@@ -4187,13 +4918,23 @@
             renderProjectsTable();
             updateDashboardCharts();
             showAppNotification("Project saved successfully.");
+            } catch(err) {
+                forgetCreateFingerprint(createFingerprint);
+                console.error('Project save error:', err);
+                showAppNotification(`Unable to save project. ${err?.message || err || 'Unknown error'}`, 'Save Error');
+            } finally {
+                endFormSave('projectForm');
+            }
         }
 
         async function deleteProject(id) {
             const ok = await showAppConfirm("Delete this project?");
             if (!ok) return;
+            const deletedProject=projectsList.find(p=>p.id!=null && String(p.id)===String(id));
+            if(deletedProject) pendingRowDeletions.Projects.add(stableRowKey('Projects',deletedProject));
             projectsList = projectsList.filter(p => p.id != id);
             await saveSheetData("Projects", projectsList);
+            if(deletedProject) pendingRowDeletions.Projects.delete(stableRowKey('Projects',deletedProject));
             renderProjectsTable();
             updateDashboardCharts();
         }
@@ -4260,7 +5001,7 @@
 
             const headerDaysHtml = days.map(d => {
                 const iso=formatDateLocal(d), isToday=iso===todayIso, isWeekend=d.getDay()===0||d.getDay()===6;
-                return `<th class="py-2 px-1 text-center border-b border-r border-slate-200 text-[10px] min-w-[36px] ${isWeekend?'bg-slate-50 text-slate-400':'bg-white text-slate-500'} ${isToday?'!bg-red-100 !text-red-700 font-bold':''}">${d.getDate()}<br><span class="text-[9px] font-normal">${["S","M","T","W","T","F","S"][d.getDay()]}</span></th>`;
+                return `<th class="py-2 px-1 text-center border-b border-r border-slate-200 text-[10px] min-w-0 ${isWeekend?'bg-slate-50 text-slate-400':'bg-white text-slate-500'} ${isToday?'!bg-red-100 !text-red-700 font-bold':''}">${d.getDate()}<br><span class="text-[9px] font-normal">${["S","M","T","W","T","F","S"][d.getDay()]}</span></th>`;
             }).join('');
 
             const table=document.createElement('table');
@@ -4268,8 +5009,13 @@
             table.className='w-full text-left border-collapse whitespace-nowrap';
             table.innerHTML=`<thead><tr>
                 <th class="py-2 px-3 bg-white border-b border-r border-slate-200 text-xs font-bold text-slate-700 w-56">Project <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-gantt',0)"></i></th>
-                <th class="py-2 px-3 bg-white border-b border-r border-slate-200 text-xs font-bold text-slate-700 w-32 text-center">Timeline <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-gantt',1)"></i></th>
-                <th class="py-2 px-3 bg-white border-b border-r border-slate-200 text-xs font-bold text-slate-700 w-40">Owner <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-gantt',2)"></i></th>
+                <th class="py-2 px-3 bg-white border-b border-r border-slate-200 text-xs font-bold text-slate-700 w-32 text-center">Start <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-gantt',1)"></i></th>
+                <th class="py-2 px-3 bg-white border-b border-r border-slate-200 text-xs font-bold text-slate-700 w-40 text-center">Plan <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-gantt',2)"></i></th>
+                <th class="py-2 px-3 bg-white border-b border-r border-slate-200 text-xs font-bold text-slate-700 w-40 text-center">Actual <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-gantt',3)"></i></th>
+                <th class="py-2 px-2 bg-white border-b border-r border-slate-200 text-xs font-bold text-slate-700 text-center">Lead time <span class="text-[9px] font-normal opacity-70">days</span></th>
+                <th class="py-2 px-2 bg-white border-b border-r border-slate-200 text-xs font-bold text-slate-700 text-center">Status <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-gantt',5)"></i></th>
+                <th class="py-2 px-2 bg-white border-b border-r border-slate-200 text-xs font-bold text-slate-700 text-center">Progress <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-gantt',6)"></i></th>
+                <th class="py-2 px-2 bg-white border-b border-r border-slate-200 text-xs font-bold text-slate-700">Owner <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-gantt',7)"></i></th>
                 ${headerDaysHtml}</tr></thead><tbody id="ganttBody"></tbody>`;
             const tbody=table.querySelector('#ganttBody');
 
@@ -4281,17 +5027,11 @@
                 const actual=p.actual ? new Date(p.actual+'T00:00:00') : null;
                 const today=new Date(todayIso+'T00:00:00');
                 const plannedDays=hasTimeline?Math.max(1,Math.round((plan-start)/86400000)+1):1;
-                let usedDays=0, progressPct=0, barClass='bg-slate-200';
-                if(actual && hasTimeline){
-                    usedDays=Math.max(1, Math.min(plannedDays, Math.round((actual-start)/86400000)+1));
-                    progressPct=Math.min(100, Math.round((usedDays/plannedDays)*100));
-                    barClass='bg-emerald-500';
-                } else if (hasTimeline && today > plan) {
-                    usedDays=plannedDays; progressPct=100; barClass='bg-rose-300';
-                } else if (hasTimeline && today >= start) {
-                    usedDays=Math.max(1, Math.round((today-start)/86400000)+1);
-                    progressPct=Math.min(100, Math.round((usedDays/plannedDays)*100));
-                    barClass='bg-orange-300';
+                let usedDays=0, progressPct=0, barClass='bg-indigo-600';
+                if(hasTimeline){
+                    usedDays=Math.max(0, Math.min(plannedDays, Math.round((today-start)/86400000)+1));
+                    progressPct=Math.max(0, Math.min(100, Math.round((usedDays/plannedDays)*100)));
+                    barClass='bg-indigo-600';
                 }
 
                 const startIdx = hasTimeline ? days.findIndex(d => formatDateLocal(d) >= p.start) : -1;
@@ -4299,35 +5039,41 @@
                 const visibleStart = Math.max(0, startIdx < 0 ? 0 : startIdx);
                 const visibleEnd = Math.min(days.length-1, endIdx < 0 ? days.length-1 : endIdx-1);
                 const overlap = hasTimeline && visibleStart <= visibleEnd;
-                const barCells=[];
-                for(let i=0;i<days.length;i++){
-                    const iso=formatDateLocal(days[i]);
-                    const todayBg=iso===todayIso?'!bg-red-50':'';
-                    if(!overlap || i<visibleStart || i>visibleEnd){ barCells.push(`<td class="py-1 px-0 gantt-bar-cell ${todayBg}"></td>`); continue; }
-                    const dayOffset=i-startIdx;
-                    const fillWidth=`${Math.max(0,Math.min(1,usedDays-dayOffset))*100}%`;
-                    const radius=`${i===visibleStart?'8px':'0'} ${i===visibleEnd?'8px':'0'} ${i===visibleEnd?'8px':'0'} ${i===visibleStart?'8px':'0'}`;
-                    barCells.push(`<td class="py-1 px-0 gantt-bar-cell ${todayBg}"><div class="gantt-progress-track" style="border-radius:${radius};background:rgba(148,163,184,.10)" title="${progressPct}% elapsed"><div class="gantt-progress-fill ${barClass}" style="width:${fillWidth};"></div></div></td>`);
-                }
+                const projectProgress=getGanttCalculatedProgress(p);
+                // Planned tube = Start -> Plan (small gray track). Dark purple = Start -> Today, clipped to Plan.
+                const barStartIndex = hasTimeline ? Math.max(0, Math.min(days.length, startIdx < 0 ? (p.start < firstVisible ? 0 : days.length) : startIdx)) : 0;
+                const barEndIndex = hasTimeline ? Math.max(barStartIndex, Math.min(days.length, endIdx < 0 ? days.length : endIdx)) : 0;
+                const barLeft = days.length ? (barStartIndex / days.length * 100) : 0;
+                const barWidth = days.length ? ((barEndIndex - barStartIndex) / days.length * 100) : 0;
+                const progressEndDate = hasTimeline ? (today > plan ? plan : today) : null;
+                const progressEndIdx = hasTimeline && progressEndDate && today>=start ? days.findIndex(d => formatDateLocal(d) > formatDateLocal(progressEndDate)) : -1;
+                const progressEndIndex = hasTimeline ? (today < start ? barStartIndex : Math.max(barStartIndex, Math.min(days.length, progressEndIdx < 0 ? (formatDateLocal(progressEndDate||today) >= p.plan ? barEndIndex : barStartIndex) : progressEndIdx))) : 0;
+                const progressWidth = days.length ? Math.max(0, (progressEndIndex - barStartIndex) / days.length * 100) : 0;
+                const timelineBarHtml = overlap && barWidth>0 ? `<div class="gantt-planned-tube" style="left:${barLeft}%;width:${barWidth}%" title="Planned: ${p.start} → ${p.plan}"><div class="gantt-planned-fill" style="width:${progressWidth}%" title="Progress through today"></div></div>` : '';
+                const timelineCell = `<td colspan="${days.length}" class="gantt-timeline-cell border-b border-slate-200 align-middle"><div class="gantt-timeline-grid" style="--gantt-days:${days.length}">${timelineBarHtml}</div></td>`;
                 const projectCellClass=actual?'bg-emerald-50':'bg-white';
-                tr.innerHTML=`<td class="py-2 px-3 font-semibold text-xs text-slate-800 border-b border-r border-slate-200 ${projectCellClass} align-top"><div class="flex items-center justify-between gap-2 h-6"><span class="text-[10px] font-bold text-slate-800 truncate" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="shrink-0 px-1.5 py-0.5 rounded ${actual?'bg-emerald-100 text-emerald-700':'bg-slate-100 text-slate-600'} text-[9px] font-extrabold">${hasTimeline?progressPct+'%':'-'}</span></div></td><td class="py-2 px-2 text-center font-semibold text-[10px] text-slate-500 border-b border-r border-slate-200 bg-white align-top">${hasTimeline?formatDateMMDDYYYY(p.start)+' - '+formatDateMMDDYYYY(p.plan):'-'}</td><td class="py-2 px-3 font-medium text-xs text-slate-600 border-b border-r border-slate-200 bg-white align-top">${escapeHtml(p.owners.join(', ')||'-')}</td>${barCells.join('')}`;
+                const statusBg=p.status==='Done'?'bg-emerald-100 text-emerald-700':(p.status==='Stuck'?'bg-rose-100 text-rose-700':'bg-amber-100 text-amber-700');
+                const leadEnd = hasTimeline ? (actual && actual > plan ? actual : plan) : null;
+                const leadTimeDays = hasTimeline && leadEnd ? Math.max(0, Math.round((leadEnd-start)/86400000)) + 1 : null;
+                tr.className='cursor-pointer hover:bg-indigo-50/40 transition';
+                tr.onclick=()=>toggleGanttProjectHours(p.id);
+                tr.title=expandedGanttProjects.has(String(p.id))?'Click to hide Hours used':'Click to show Hours used';
+                tr.innerHTML=`<td class="py-2 px-3 font-semibold text-xs text-slate-800 border-b border-r border-slate-200 ${projectCellClass} align-top"><div class="flex items-start gap-2 min-h-6"><i class="fa-solid fa-chevron-${expandedGanttProjects.has(String(p.id))?'down':'right'} text-[9px] text-slate-400 shrink-0 mt-1"></i><span class="text-[10px] font-bold text-slate-800 gantt-project-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span></div></td><td class="py-2 px-3 text-center font-semibold text-[10px] text-slate-500 border-b border-r border-slate-200 bg-white align-top">${hasTimeline?formatDateMMDDYYYY(p.start):'-'}</td><td class="py-2 px-3 text-center font-semibold text-[10px] text-slate-500 border-b border-r border-slate-200 bg-white align-top">${hasTimeline?formatDateMMDDYYYY(p.plan):'-'}</td><td class="py-2 px-3 text-center font-semibold text-[10px] text-slate-500 border-b border-r border-slate-200 bg-white align-top">${p.actual?formatDateMMDDYYYY(p.actual):'-'}</td><td class="py-2 px-2 text-center font-extrabold text-[10px] text-slate-700 border-b border-r border-slate-200 bg-white align-top">${leadTimeDays===null?'-':leadTimeDays}</td><td class="py-2 px-2 text-center border-b border-r border-slate-200 bg-white align-top"><span class="inline-flex px-2 py-1 rounded-full ${statusBg} text-[9px] font-extrabold">${escapeHtml(p.status||'Working on it')}</span></td><td class="py-2 px-2 text-center font-extrabold text-[10px] text-indigo-700 border-b border-r border-slate-200 bg-white align-top">${projectProgress}%</td><td class="py-2 px-2 font-medium text-[10px] text-slate-600 border-b border-r border-slate-200 bg-white align-top">${escapeHtml(p.owners.join(', ')||'-')}</td>${timelineCell}`;
                 tbody.appendChild(tr);
 
                 const hoursRow=document.createElement('tr');
-                hoursRow.className='gantt-hours-used-row bg-slate-50/80 border-b border-slate-200';
+                hoursRow.className='gantt-hours-used-row bg-slate-50/80 border-b border-slate-200'+(expandedGanttProjects.has(String(p.id))?'':' hidden');
                 const used=getProjectHoursUsedMap(p);
                 const totalUsed=Object.values(used).reduce((sum,v)=>sum+(Number(v)||0),0);
-                const hoursCells=days.map(d=>{
+                const hoursInputs=days.map(d=>{
                     const iso=formatDateLocal(d), val=Number(used[iso]||0);
                     const allowed=hasTimeline && iso>=p.start && iso<=p.plan;
                     const inputClass=allowed?'':'cursor-not-allowed';
-                    return `<td class="py-1 px-0.5 ${val>0?'bg-amber-50':'bg-white'} border border-slate-200">
-                        <input type="number" min="0" max="24" step="0.25" value="${val||''}" ${allowed?'':'disabled'} title="${allowed?'Enter hours for '+iso:'Only Start to Plan dates can receive hours'}"
-                            class="gantt-hours-input w-full min-w-[34px] text-center px-1 border ${inputClass} appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                            onchange="updateGanttHoursUsed(${JSON.stringify(p.id)},'${iso}',this.value,this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="this.title='Enter hours for ${iso}'">
-                    </td>`;
+                    return `<input type="number" min="0" max="24" step="0.25" value="${val||''}" ${allowed?'':'disabled'} title="${allowed?'Enter hours for '+iso:'Only Start to Plan dates can receive hours'}"
+                        class="gantt-hours-input ${val>0?'has-hours':''} ${inputClass}"
+                        onchange="updateGanttHoursUsed(${JSON.stringify(p.id)},'${iso}',this.value,this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="this.title='Enter hours for ${iso}'">`;
                 }).join('');
-                hoursRow.innerHTML=`<td class="py-2 px-3 bg-slate-50 border-r border-slate-200 align-middle"><div class="gantt-hours-label text-[9px] font-extrabold text-indigo-700"><i class="fa-solid fa-clock"></i><span>Hours used</span></div></td><td class="py-2 px-2 bg-slate-50 border-r border-slate-200"></td><td class="py-2 px-3 bg-slate-50 border-r border-slate-200 text-[9px] text-slate-500 align-middle"><span class="font-semibold text-slate-600">Total:</span> <span class="font-extrabold text-indigo-700">${totalUsed.toFixed(2)} h</span></td>${hoursCells}`;
+                hoursRow.innerHTML=`<td class="py-2 px-3 bg-slate-50 border-r border-slate-200 align-middle"><div class="gantt-hours-label text-[9px] font-extrabold text-indigo-700"><i class="fa-solid fa-clock"></i><span>Hours used</span></div></td><td class="py-2 px-3 bg-slate-50 border-r border-slate-200"></td><td class="py-2 px-3 bg-slate-50 border-r border-slate-200"></td><td class="py-2 px-3 bg-slate-50 border-r border-slate-200"></td><td class="py-2 px-2 bg-slate-50 border-r border-slate-200 text-[9px] text-slate-500 text-center align-middle"><span class="font-semibold text-slate-600">Lead:</span> <span class="font-extrabold text-indigo-700">${leadTimeDays===null?'-':leadTimeDays+' d'}</span></td><td class="py-2 px-2 bg-slate-50 border-r border-slate-200 text-[9px] text-slate-500 text-center align-middle"><span class="font-semibold text-slate-600">Total:</span> <span class="font-extrabold text-indigo-700">${totalUsed.toFixed(2)} h</span></td><td class="py-2 px-2 bg-slate-50 border-r border-slate-200"></td><td class="py-2 px-2 bg-slate-50 border-r border-slate-200"></td><td colspan="${days.length}" class="gantt-hours-timeline-cell"><div class="gantt-hours-grid" style="--gantt-days:${days.length}">${hoursInputs}</div></td>`;
                 tbody.appendChild(hoursRow);
             });
             container.appendChild(table);
@@ -4383,6 +5129,7 @@
 
             try{
                 await Promise.all([saveSheetData('Tasks',dailyTasks),saveSheetData('Projects',projectsList)]);
+                await syncCapacityWorkloadsFromTasks();
                 if(pendingGanttHours.get(key)===entry) pendingGanttHours.delete(key);
                 delKeys.forEach(k=>pendingRowDeletions.Tasks.delete(k));
             }catch(err){
@@ -4423,7 +5170,7 @@
         function getStandardDayHours(dateObj) {
             const day = dateObj.getDay();
             if (day === 0) return 0;
-            if (day === 6) return 7.0;
+            if (day === 6) return 6.5;
             return 7.5;
         }
 
@@ -4507,12 +5254,16 @@
         }
 
         function getWorkloadGradientColor(pct) {
-            if (pct <= 30) return 'bg-white text-slate-600';
-            if (pct <= 50) return 'bg-amber-100 text-amber-900 font-semibold';
-            if (pct <= 70) return 'bg-yellow-200 text-yellow-900 font-bold';
-            if (pct <= 90) return 'bg-emerald-200 text-emerald-900 font-bold';
-            if (pct <= 100) return 'bg-orange-200 text-orange-900 font-bold';
-            return 'bg-red-200 text-red-900 font-extrabold animate-pulse';
+            const n=Math.max(0,Number(pct)||0);
+            if(n<=0) return 'calendar-workload-cell bg-white text-slate-400';
+            if(n<=25) return 'calendar-workload-cell bg-gradient-to-r from-slate-50 to-blue-50 text-slate-700';
+            if(n<=50) return 'calendar-workload-cell bg-gradient-to-r from-blue-50 to-cyan-100 text-cyan-900 font-semibold';
+            if(n<=70) return 'calendar-workload-cell bg-gradient-to-r from-cyan-100 to-emerald-100 text-emerald-900 font-bold';
+            if(n<=85) return 'calendar-workload-cell bg-gradient-to-r from-emerald-100 to-lime-100 text-lime-900 font-bold';
+            if(n<=100) return 'calendar-workload-cell bg-gradient-to-r from-lime-100 to-green-300 text-green-950 font-extrabold';
+            if(n<=110) return 'calendar-workload-cell bg-gradient-to-r from-orange-200 to-red-400 text-red-950 font-extrabold';
+            if(n<=125) return 'calendar-workload-cell bg-gradient-to-r from-red-300 to-red-600 text-white font-extrabold';
+            return 'calendar-workload-cell bg-gradient-to-r from-red-500 to-red-800 text-white font-extrabold';
         }
 
         function renderWeeklyCalendar() {
@@ -4579,9 +5330,9 @@
                     totalWeekCapHours += totalDayCapacity;
 
                     if (isDayOffForPIC(u.name, dateIso)) {
-                        rowHtml += `<td class="py-3 px-2 text-center font-extrabold text-rose-700 bg-rose-50 cursor-pointer" title="Day Off" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">OFF</td>`;
+                        rowHtml += `<td class="py-3 px-2 text-center font-extrabold calendar-off-cell cursor-pointer" title="Day Off" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">OFF</td>`;
                     } else if (isSaturdayOffForPIC(u.name, dateIso)) {
-                        rowHtml += `<td class="py-3 px-2 text-center font-bold text-purple-700 bg-purple-50 cursor-pointer" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">SO</td>`;
+                        rowHtml += `<td class="py-3 px-2 text-center font-bold calendar-sat-off-cell cursor-pointer" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">SO</td>`;
                     } else if (totalDayCapacity > 0) {
                         let pct = Math.round((dayTaskHours / totalDayCapacity) * 100);
                         if (pct > 0) {
@@ -4639,9 +5390,9 @@
                     monthCapTotal += totalDayCapacity;
 
                     if (isDayOffForPIC(u.name, dateIso)) {
-                        rowHtml += `<td class="py-1 px-0.5 text-center text-[10px] border-r font-extrabold text-rose-700 bg-rose-50 cursor-pointer" title="Day Off" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">OFF</td>`;
+                        rowHtml += `<td class="py-1 px-0.5 text-center text-[10px] border-r font-extrabold calendar-off-cell cursor-pointer" title="Day Off" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">OFF</td>`;
                     } else if (isSaturdayOffForPIC(u.name, dateIso)) {
-                        rowHtml += `<td class="py-1 px-0.5 text-center text-[10px] border-r font-bold text-purple-700 bg-purple-50 cursor-pointer" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">SO</td>`;
+                        rowHtml += `<td class="py-1 px-0.5 text-center text-[10px] border-r font-bold calendar-sat-off-cell cursor-pointer" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">SO</td>`;
                     } else if (totalDayCapacity > 0) {
                         let pct = Math.round((dayTaskHours / totalDayCapacity) * 100);
                         if (pct > 0) {
@@ -4788,10 +5539,10 @@
                 if(chart.canvas?.id!=='chartTaskStatus') return;
                 const meta=chart.getDatasetMeta(0), vals=chart.data.datasets?.[0]?.data||[];
                 const total=vals.reduce((a,v)=>a+(Number(v)||0),0); if(!total)return;
-                const ctx=chart.ctx,items=[]; ctx.save(); ctx.font='700 10px Arial'; ctx.textBaseline='middle';
-                const gap=3,elbowGap=6,labelGap=7;
+                const ctx=chart.ctx,items=[]; ctx.save(); ctx.font='700 11px Arial'; ctx.textBaseline='middle';
+                const gap=5,elbowGap=6,labelGap=7;
                 meta.data.forEach((arc,i)=>{
-                    const v=Number(vals[i])||0,pct=v/total*100; if(v<=0||pct<0.5)return;
+                    const v=Number(vals[i])||0,pct=v/total*100; if(v<=0)return;
                     const angle=arc.startAngle+(arc.endAngle-arc.startAngle)/2;
                     const cos=Math.cos(angle),sin=Math.sin(angle),side=cos>=0?1:-1;
                     const text=`${pct.toFixed(1)}%`;
@@ -4815,6 +5566,10 @@
                     ctx.lineTo(elbowX,item.ey); ctx.lineTo(lineEndX,item.ey); ctx.stroke();
                     ctx.font='700 10px Arial'; ctx.textAlign=side>0?'left':'right'; ctx.fillStyle='#1e293b';
                     ctx.fillText(item.text,labelX,item.ey);
+                    // Keep very small slices (especially Overdue) visibly identifiable.
+                    if(item.pct < 2){
+                        ctx.fillStyle=color; ctx.beginPath(); ctx.arc(item.arc.x + side*(item.arc.outerRadius+2), item.arc.y + Math.sin(item.arc.startAngle+(item.arc.endAngle-item.arc.startAngle)/2)*(item.arc.outerRadius-2), 4, 0, Math.PI*2); ctx.fill();
+                    }
                 });
                 ctx.restore();
             }
@@ -4874,7 +5629,7 @@
                     scales: {
                         x: { stacked: false },
                         y: { stacked: false, beginAtZero: true },
-                        yWorkload: { position: 'right', beginAtZero: true, suggestedMax: 100, max: 100, grid: { drawOnChartArea: false }, ticks: { callback: value => value + '%' } }
+                        yWorkload: { position: 'right', beginAtZero: true, suggestedMax: 100, max: 115, grid: { drawOnChartArea: false }, ticks: { callback: value => value + '%' } }
                     },
                     plugins: {
                         legend: { position: 'top' },
@@ -4985,6 +5740,7 @@
         }
 
         let chartAverageWorkloadTrend=null;
+        let chartWorkloadHoursTrend=null;
         function getTeamReportingPeriods(){
             const years=[...bomTopFilterState.Year].map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
             const months=[...bomTopFilterState.Month].map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
@@ -5032,6 +5788,60 @@
             }
             (years.length?years:[fallbackYear]).forEach(y=>{for(let m=1;m<=12;m++)addMonth(y,m);});
             return periods;
+        }
+
+        function renderTeamWorkloadHoursTrend(filteredTasks){
+            const canvas=document.getElementById('dashWorkloadHoursTrend');
+            if(!canvas)return;
+            const ps=getTeamReportingPeriods();
+            const members=users.filter(u=>u.status==='Active' && String(u.name||'').trim().toLowerCase()!=='anny').map(u=>u.name);
+            const vals=ps.map(p=>{
+                let hours=0;
+                filteredTasks.forEach(t=>{
+                    const usage=Number(t?.usageTime);
+                    if(!Number.isFinite(usage)||usage<=0)return;
+                    const st=cleanDateStr(t.start||t.plan||t.actual), en=cleanDateStr(t.actual||t.plan||t.start);
+                    if(!st||!en||en<p.start||st>p.end)return;
+                    const a=Math.max(new Date(st+'T00:00:00').getTime(),new Date(p.start+'T00:00:00').getTime());
+                    const b=Math.min(new Date(en+'T00:00:00').getTime(),new Date(p.end+'T00:00:00').getTime());
+                    const taskDays=Math.max(1,Math.round((new Date(en+'T00:00:00')-new Date(st+'T00:00:00'))/86400000)+1);
+                    const overlapDays=Math.max(0,Math.round((b-a)/86400000)+1);
+                    const pics=bomTaskValues('Member',t).filter(m=>String(m).trim().toLowerCase()!=='anny');
+                    hours+=usage*(overlapDays/taskDays)*(pics.length?1/pics.length:0);
+                });
+                return hours;
+            });
+            const availability=ps.map(p=>{
+                let total=0;
+                const st=new Date(p.start+'T00:00:00'), en=new Date(p.end+'T00:00:00');
+                for(let d=new Date(st);d<=en;d.setDate(d.getDate()+1)){
+                    const iso=formatDateLocal(d);
+                    members.forEach(m=>{ total += Math.max(0,getDailyCapacityForPIC(m,iso)); });
+                }
+                return total;
+            });
+            if(!chartWorkloadHoursTrend){
+                chartWorkloadHoursTrend=new Chart(canvas,{type:'bar',data:{labels:[],datasets:[
+                    {label:'Workload Hours',data:[],backgroundColor:'#3b82f6',borderColor:'#3b82f6',borderWidth:0,borderRadius:5},
+                    {type:'line',label:'Available Team Hours',data:[],borderColor:'#f97316',backgroundColor:'#f97316',pointBackgroundColor:'#f97316',pointBorderColor:'#f97316',pointRadius:3,pointHoverRadius:4,borderWidth:2.5,tension:.2,fill:false,order:0},
+                    {type:'line',label:'Standard Time',data:[],borderColor:'#64748b',backgroundColor:'#64748b',pointRadius:0,pointHoverRadius:0,borderWidth:2,borderDash:[6,4],tension:0,fill:false,order:0}
+                ]},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9}}},tooltip:{enabled:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>`${v}h`}},x:{ticks:{font:{size:8},maxRotation:0,autoSkip:true}}}}});
+            }
+            chartWorkloadHoursTrend.data.labels=ps.map(x=>[x.labelTop,x.labelBottom]);
+            chartWorkloadHoursTrend.data.datasets[0].data=vals.map(x=>+x.toFixed(1));
+            chartWorkloadHoursTrend.data.datasets[1].data=availability.map(x=>+x.toFixed(1));
+            // Standard time is fixed at 7.5h x 9 people = 67.5h. No value label is shown for this line.
+            chartWorkloadHoursTrend.data.datasets[2].data=ps.map(()=>67.5);
+            if(!chartWorkloadHoursTrend._bomHoursLabels){
+                const plugin={id:'bomTeamWorkloadHoursLabels',afterDatasetsDraw(chart){if(chart.canvas?.id!=='dashWorkloadHoursTrend')return;const ctx=chart.ctx;ctx.save();ctx.font='700 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+                    const barMeta=chart.getDatasetMeta(0),barData=chart.data.datasets[0].data||[];
+                    ctx.fillStyle='#ffffff';barMeta.data.forEach((pt,i)=>{const v=Number(barData[i]);if(Number.isFinite(v)&&v>0)ctx.fillText(`${v.toFixed(1)}h`,pt.x,(pt.y+pt.base)/2);});
+                    const lineMeta=chart.getDatasetMeta(1),lineData=chart.data.datasets[1].data||[];
+                    ctx.font='700 9px Arial';ctx.textBaseline='bottom';ctx.fillStyle='#f97316';lineMeta.data.forEach((pt,i)=>{const v=Number(lineData[i]);if(Number.isFinite(v))ctx.fillText(`${v.toFixed(1)}h`,pt.x,pt.y-7);});
+                    ctx.restore();}};
+                Chart.register(plugin); chartWorkloadHoursTrend._bomHoursLabels=true;
+            }
+            chartWorkloadHoursTrend.update('none');
         }
 
         function renderAverageWorkloadTrend(filteredTasks){
@@ -5148,6 +5958,7 @@
             renderOvertimeByMemberTable();
             renderScopeWorkloadHeatmap(filteredTasks);
             renderAverageWorkloadTrend(filteredTasks);
+            renderTeamWorkloadHoursTrend(filteredTasks);
             updateDashboardFinancialKpis();
         }
 
@@ -5172,10 +5983,11 @@
             });
 
             const otHours = otReq.reduce((sum, o) => sum + (parseFloat(o.hours) || 0), 0);
-            const timeOffHours = timeOffReq.reduce((sum, o) => sum + (parseFloat(o.hours) || 0), 0);
-            // Day Off is a date-based registration, so the sidebar shows 1d
-            // for the selected Day Off date instead of converting it to hours.
-            const dayOffDays = dayOffReq.length > 0 ? 1 : 0;
+            // Day Off is displayed as Time off in hours in this sidebar.
+            // Normal Day Off = 7.5h; Saturday Off = 6.5h.
+            const dayOffHours = dayOffReq.reduce((sum, o) => sum + (dateIso && new Date(dateIso + 'T00:00:00').getDay() === 6 ? 6.5 : 7.5), 0);
+            const registeredTimeOffHours = timeOffReq.reduce((sum, o) => sum + (parseFloat(o.hours) || 0), 0);
+            const timeOffHours = dayOffHours + registeredTimeOffHours;
 
             const totalCapacity = getDailyCapacityForPIC(userName, dateIso);
             const tasksForDay = dailyTasks.filter(t => {
@@ -5206,11 +6018,6 @@
                     <div class="flex justify-between">
                         <span>Standard hours:</span><span class="font-bold">${stdHours.toFixed(2)} h</span>
                     </div>
-                    ${dayOffDays > 0 ? `
-                    <div class="flex justify-between">
-                        <span>Day off:</span><span class="font-bold text-rose-700">${dayOffDays}d</span>
-                    </div>
-                    ` : ''}
                     ${timeOffHours > 0 ? `
                     <div class="flex justify-between">
                         <span>Time off:</span><span class="font-bold text-cyan-700">${timeOffHours.toFixed(2)} h</span>
@@ -5339,6 +6146,8 @@
             return capacityData.find(c=>normalizeWorkloadKey(c.category)===cat&&normalizeWorkloadKey(c.task)===name)||null;
         }
         function getDailyTaskScope(task){
+            const explicit=String(task?.scope||'').trim();
+            if(explicit) return explicit;
             const c=getCapacityTaskForDailyTask(task);
             return String(c?.scope||c?.unit||"In BOM's scope").trim()||"In BOM's scope";
         }
@@ -5494,6 +6303,110 @@
             }));
             return clone;
         }
+    </script>
+
+    <!-- Restore interactive gaze-tracking background from the BOM C&S login design. -->
+    <script>
+    (function restoreLoginGazeTracking(){
+        const gazeFrames = [
+          [0.037186,2.54167],[0.130722,2.58333],[0.234912,2.625],[0.321399,2.66667],
+          [0.419378,2.70833],[0.493296,2.75],[0.597784,2.79167],[0.763067,2.83333],
+          [0.778708,2.875],[0.878749,2.91667],[0.993308,2.95833],[1.262791,3.0],
+          [1.388902,3.04167],[1.466609,0.25],[1.473318,0.29167],[1.520011,3.08333],
+          [1.53824,0.33333],[1.6056,0.375],[1.640696,3.125],[1.691747,0.41667],
+          [1.779194,0.45833],[1.869867,0.5],[1.984485,0.54167],[2.07265,0.58333],
+          [2.183915,0.625],[2.267155,0.66667],[2.36138,0.70833],[2.44749,0.75],
+          [2.517676,0.79167],[2.605329,0.83333],[2.670889,0.875],[2.809991,0.91667],
+          [2.918365,0.95833],[3.134177,1.0],[3.240289,1.04167],[3.35949,1.08333],
+          [3.464119,1.125],[3.549317,1.16667],[3.663539,1.20833],[3.78152,1.25],
+          [3.878742,1.29167],[3.989446,1.33333],[4.066996,1.375],[4.225574,1.45833],
+          [4.260255,1.41667],[4.276468,1.5],[4.404025,1.54167],[4.487075,1.58333],
+          [4.552949,1.625],[4.628837,1.66667],[4.701131,1.70833],[4.773675,1.75],
+          [4.833089,1.79167],[4.894145,1.83333],[4.962593,1.875],[5.028737,1.91667],
+          [5.090028,1.95833],[5.212041,2.0],[5.28302,2.04167],[5.349352,2.08333],
+          [5.412121,2.125],[5.473636,2.16667],[5.573871,2.20833],[5.656364,2.25],
+          [5.759153,2.29167],[5.85261,2.33333],[5.938647,2.375],[6.048453,2.41667],
+          [6.153327,2.45833],[6.222603,2.5]
+        ];
+        const TAU=Math.PI*2;
+        const wrappedAngle=angle=>(angle%TAU+TAU)%TAU;
+        const timeForAngle=angle=>{
+            const target=wrappedAngle(angle);
+            let nearestTime=gazeFrames[0][1], nearestDistance=Infinity;
+            for(const [sampleAngle,time] of gazeFrames){
+                const difference=Math.abs(target-sampleAngle);
+                const distance=Math.min(difference,TAU-difference);
+                if(distance<nearestDistance){nearestDistance=distance;nearestTime=time;}
+            }
+            return nearestTime+1/240;
+        };
+
+        const init=()=>{
+            const video=document.getElementById('scrubVideo');
+            if(!video || video.dataset.gazeTrackingBound==='1') return;
+            video.dataset.gazeTrackingBound='1';
+
+            let frame=0;
+            let desiredTime=0;
+            let pointer=null;
+            let disposed=false;
+            const mobile=window.matchMedia('(max-width:700px)');
+            const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+
+            const seek=()=>{
+                frame=0;
+                if(disposed || mobile.matches || video.readyState<2 || video.seeking) return;
+                const maxTime=Math.max(0,(video.duration||7.04)-1/24);
+                if(Math.abs(video.currentTime-desiredTime)>1/48){
+                    video.currentTime=Math.min(Math.max(0,desiredTime),maxTime);
+                }
+            };
+            const schedule=()=>{ if(!frame) frame=requestAnimationFrame(seek); };
+
+            const updateTarget=()=>{
+                if(mobile.matches || !pointer || !video.getBoundingClientRect) return;
+                const rect=video.getBoundingClientRect();
+                const scale=Math.max(rect.width/1920,rect.height/1080);
+                // Eye position in the original 1920x1080 source video.
+                const eyeX=rect.left+rect.width/2+(948-960)*scale;
+                const eyeY=rect.top+rect.height/2+(418-540)*scale;
+                const dx=pointer.x-eyeX;
+                const dy=pointer.y-eyeY;
+                if(Math.hypot(dx,dy)>8){
+                    desiredTime=timeForAngle(Math.atan2(dy,dx));
+                    schedule();
+                }
+            };
+
+            const move=event=>{
+                pointer={x:event.clientX,y:event.clientY};
+                updateTarget();
+            };
+
+            const ready=()=>{
+                video.loop=mobile.matches;
+                if(mobile.matches && !reducedMotion.matches){
+                    video.play().catch(()=>{});
+                }else{
+                    video.pause();
+                    if(!mobile.matches){updateTarget();schedule();}
+                }
+            };
+
+            video.addEventListener('seeked',schedule);
+            video.addEventListener('loadeddata',ready);
+            mobile.addEventListener?.('change',ready);
+            reducedMotion.addEventListener?.('change',ready);
+            window.addEventListener('pointermove',move,{passive:true});
+            window.addEventListener('resize',updateTarget);
+            window.addEventListener('scroll',updateTarget,{passive:true});
+
+            if(video.readyState>=2) ready();
+        };
+
+        if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
+        else init();
+    })();
     </script>
 </body>
 </html>
