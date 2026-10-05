@@ -384,6 +384,147 @@
         #chartWorkloadMember{font-variant-numeric:tabular-nums;}
         #chartTaskStatus{font-variant-numeric:tabular-nums;}
         .task-status-chart-wrap canvas{z-index:1 !important;}
+
+/* === PDF A4 FINAL FIT / NO OVERFLOW === */
+body.report-exporting #tab-dashboard{
+  width:1200px !important;
+  min-width:1200px !important;
+  max-width:1200px !important;
+  margin:0 !important;
+  padding:0 !important;
+  box-sizing:border-box !important;
+  overflow:visible !important;
+}
+body.report-exporting #contentArea{
+  width:1200px !important;
+  min-width:1200px !important;
+  max-width:1200px !important;
+  padding:0 !important;
+  margin:0 !important;
+  overflow:visible !important;
+}
+body.report-exporting #tab-dashboard > .grid.grid-cols-1.lg\:grid-cols-3{
+  grid-template-columns:minmax(0,2fr) minmax(0,1fr) !important;
+  width:100% !important;
+}
+body.report-exporting #tab-dashboard > .grid.grid-cols-1.lg\:grid-cols-3 > div{
+  min-width:0 !important;
+  max-width:100% !important;
+  overflow:hidden !important;
+}
+body.report-exporting #tab-dashboard .h-72,
+body.report-exporting #tab-dashboard .task-status-chart-wrap{
+  width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+  overflow:hidden !important;
+}
+body.report-exporting #tab-dashboard .h-72{height:330px !important;}
+body.report-exporting #tab-dashboard .task-status-chart-wrap{height:300px !important; padding:0 8px !important;}
+body.report-exporting #tab-dashboard canvas{
+  display:block !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+}
+body.report-exporting #chartWorkloadMember{width:100% !important;height:330px !important;}
+body.report-exporting #chartTaskStatus{width:100% !important;height:300px !important;}
+body.report-exporting #tab-dashboard .dashboard-workload-analysis-row{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(0,2fr) !important;
+  gap:24px !important;
+  width:100% !important;
+}
+body.report-exporting #tab-dashboard .dashboard-workload-side{
+  width:100% !important;
+  min-width:0 !important;
+}
+body.report-exporting #tab-dashboard .dashboard-workload-summary-card{
+  width:100% !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+}
+body.report-exporting #tab-dashboard .dashboard-workload-side-card{
+  width:100% !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+}
+body.report-exporting #tab-dashboard .dashboard-workload-mini-chart{
+  width:100% !important;
+  height:300px !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+}
+body.report-exporting #tab-dashboard #dashAverageWorkloadTrend,
+body.report-exporting #tab-dashboard #dashWorkloadHoursTrend{
+  width:100% !important;
+  height:300px !important;
+  max-width:100% !important;
+}
+body.report-exporting #tab-dashboard .dashboard-workload-summary-card > div.flex-1{
+  overflow:visible !important;
+  min-width:0 !important;
+}
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable{
+  width:100% !important;
+  max-width:100% !important;
+  table-layout:fixed !important;
+  font-size:11px !important;
+}
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable th,
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable td{
+  min-width:0 !important;
+  max-width:none !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+  padding:5px 4px !important;
+}
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable th:first-child,
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable td:first-child{
+  width:155px !important;
+  min-width:155px !important;
+  max-width:155px !important;
+  text-align:left !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+}
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable th:not(:first-child),
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable td:not(:first-child){
+  width:auto !important;
+}
+body.report-exporting #tab-dashboard .overflow-x-auto,
+body.report-exporting #tab-dashboard .custom-scrollbar{
+  overflow:visible !important;
+}
+body.report-exporting #tab-dashboard .dashboard-workload-dashboard-calendar{
+  width:100% !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+}
+body.report-exporting #tab-dashboard #dashCalendarWorkloadScroll{
+  width:100% !important;
+  overflow:visible !important;
+}
+body.report-exporting #tab-dashboard #dashCalendarWorkloadScroll table{
+  width:100% !important;
+  min-width:0 !important;
+  table-layout:fixed !important;
+}
+body.report-exporting #tab-dashboard #dashCalendarWorkloadScroll th,
+body.report-exporting #tab-dashboard #dashCalendarWorkloadScroll td{
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+  padding:4px 3px !important;
+}
+body.report-exporting #tab-dashboard .grid.grid-cols-1.lg\:grid-cols-2{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+}
+
 #pdfExportHeader{display:none;}
         /* Dashboard filter is the fixed top control bar. */
         #tab-dashboard > .bom-page-filter{position:sticky !important;top:0 !important;z-index:120 !important;margin-top:0 !important;}
@@ -811,6 +952,106 @@
         /* Dashboard Calendar & Workload: full-width row directly below Team Workload Hours + Category Workload Distribution By Member. */
         .dashboard-workload-dashboard-calendar { min-width: 0; }
         .dashboard-workload-dashboard-calendar #dashCalendarWorkloadScroll { width: 100%; }
+
+        /* PDF export: preserve the same desktop Dashboard layout, then uniformly scale it to A4.
+           Do NOT reflow cards/charts into a different layout during export. */
+        body.report-exporting #tab-dashboard{
+            box-sizing:border-box!important;
+            width:1280px!important;
+            min-width:1280px!important;
+            max-width:1280px!important;
+            overflow:visible!important;
+            font-size:inherit!important;
+        }
+        body.report-exporting #tab-dashboard .bom-page-filter{
+            display:flex!important;
+            flex-wrap:wrap!important;
+            width:100%!important;
+            box-sizing:border-box!important;
+        }
+        body.report-exporting #tab-dashboard .bom-multi{min-width:0!important;}
+        body.report-exporting #tab-dashboard .bom-multi-btn{white-space:nowrap!important;}
+        body.report-exporting #tab-dashboard .grid.grid-cols-2.md\:grid-cols-4.xl\:grid-cols-7{grid-template-columns:repeat(7,minmax(0,1fr))!important;}
+        body.report-exporting #tab-dashboard .grid.grid-cols-1.lg\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-analysis-row{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:24px!important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-side{display:flex!important;flex-direction:column!important;width:100%!important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-side-card{width:100%!important;height:auto!important;min-height:0!important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-summary-card{width:100%!important;min-width:0!important;height:auto!important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-dashboard-calendar{width:100%!important;min-width:0!important;}
+        body.report-exporting #tab-dashboard .grid.grid-cols-1.lg\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+        body.report-exporting #tab-dashboard .overflow-x-auto{overflow:visible!important;}
+        body.report-exporting #tab-dashboard canvas{max-width:none!important;}
+        body.report-exporting #tab-dashboard .rounded-xl{box-shadow:none!important;}
+
+        /* === PDF EXPORT: FIT TO A4 WITHOUT CHANGING APP LAYOUT === */
+        body.report-exporting #tab-dashboard{width:100% !important;min-width:0 !important;max-width:none !important;box-sizing:border-box !important;margin:0 !important;padding:0 !important;overflow:visible !important;}
+        body.report-exporting #contentArea{width:100% !important;min-width:0 !important;max-width:none !important;overflow:visible !important;}
+        body.report-exporting #tab-dashboard > *{min-width:0 !important;max-width:100% !important;}
+        body.report-exporting #tab-dashboard .grid{min-width:0 !important;}
+        body.report-exporting #tab-dashboard canvas{display:block !important;width:100% !important;max-width:100% !important;height:100% !important;}
+        body.report-exporting #tab-dashboard .h-72{height:320px !important;}
+        body.report-exporting #tab-dashboard .task-status-chart-wrap{height:270px !important;padding:0 8px !important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-analysis-row{grid-template-columns:minmax(0,1fr) minmax(0,2fr) !important;gap:12px !important;min-height:0 !important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-side{min-height:0 !important;gap:12px !important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-side-card{min-height:220px !important;height:220px !important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-mini-chart{height:185px !important;min-height:0 !important;padding-top:4px !important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-summary-card{min-height:0 !important;height:auto !important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-dashboard-calendar{grid-column:1 / -1 !important;min-width:0 !important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-dashboard-calendar table,body.report-exporting #tab-dashboard #dashWorkloadSummaryTable,body.report-exporting #tab-dashboard #dashScopeHeatmapTable,body.report-exporting #tab-dashboard #dashTablePicStatus,body.report-exporting #tab-dashboard #dashOvertimeTable{width:100% !important;min-width:0 !important;max-width:100% !important;table-layout:fixed !important;}
+        body.report-exporting #tab-dashboard #dashCalendarWorkloadScroll{overflow:visible !important;width:100% !important;}
+        body.report-exporting #tab-dashboard th,body.report-exporting #tab-dashboard td{max-width:none !important;overflow:visible !important;text-overflow:clip !important;white-space:normal !important;overflow-wrap:anywhere !important;word-break:break-word !important;}
+        body.report-exporting #tab-dashboard #dashWorkloadSummaryTable th,body.report-exporting #tab-dashboard #dashWorkloadSummaryTable td,body.report-exporting #tab-dashboard #dashScopeHeatmapTable th,body.report-exporting #tab-dashboard #dashScopeHeatmapTable td{font-size:8px !important;line-height:1.2 !important;padding:4px 3px !important;}
+        body.report-exporting #tab-dashboard #dashCalendarWorkloadScroll th,body.report-exporting #tab-dashboard #dashCalendarWorkloadScroll td{font-size:7px !important;line-height:1.15 !important;padding:3px 2px !important;}
+        body.report-exporting #tab-dashboard #dashTablePicStatus th,body.report-exporting #tab-dashboard #dashTablePicStatus td,body.report-exporting #tab-dashboard #dashOvertimeTable th,body.report-exporting #tab-dashboard #dashOvertimeTable td{font-size:8px !important;line-height:1.2 !important;padding:4px 3px !important;}
+        body.report-exporting #tab-dashboard .overflow-x-auto{overflow:visible !important;}
+        body.report-exporting #tab-dashboard .bom-page-filter{position:static !important;width:100% !important;min-width:0 !important;}
+        body.report-exporting #tab-dashboard .bom-page-filter .bom-multi{min-width:0 !important;flex:1 1 0 !important;}
+        body.report-exporting #tab-dashboard .bom-page-filter .bom-multi-btn{min-width:0 !important;width:100% !important;white-space:nowrap !important;overflow:hidden !important;text-overflow:ellipsis !important;}
+        body.report-exporting #tab-dashboard .rounded-xl{box-shadow:none !important;}
+        body.report-exporting #tab-dashboard .dashboard-workload-analysis-row > *{min-width:0 !important;}
+
+
+/* === PDF EXPORT V4: preserve Dashboard desktop grid exactly; fit uniformly to A4 === */
+body.report-exporting #tab-dashboard{width:1400px!important;min-width:1400px!important;max-width:1400px!important;margin:0!important;padding:0!important;box-sizing:border-box!important;overflow:visible!important}
+body.report-exporting #contentArea{width:1400px!important;min-width:1400px!important;max-width:1400px!important;padding:0!important;margin:0!important;overflow:visible!important}
+body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:grid-cols-7{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:16px!important;width:100%!important}
+body.report-exporting #tab-dashboard > .grid.grid-cols-1.lg\\:grid-cols-3{display:grid!important;grid-template-columns:minmax(0,2fr) minmax(0,1fr)!important;gap:24px!important;width:100%!important;align-items:stretch!important}
+body.report-exporting #tab-dashboard > .grid.grid-cols-1.lg\\:grid-cols-3 > div{min-width:0!important;width:auto!important;max-width:none!important;overflow:hidden!important}
+body.report-exporting #tab-dashboard .h-72{height:330px!important;width:100%!important;min-width:0!important}
+body.report-exporting #tab-dashboard .task-status-chart-wrap{height:300px!important;width:100%!important;min-width:0!important;overflow:hidden!important}
+body.report-exporting #tab-dashboard #chartWorkloadMember,
+body.report-exporting #tab-dashboard #chartTaskStatus{display:block!important;width:100%!important;max-width:100%!important;height:100%!important;min-width:0!important}
+body.report-exporting #tab-dashboard .dashboard-workload-analysis-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,2fr)!important;gap:24px!important;width:100%!important;align-items:stretch!important}
+body.report-exporting #tab-dashboard .dashboard-workload-analysis-row > .dashboard-workload-side{min-width:0!important;width:auto!important;display:flex!important;flex-direction:column!important;gap:16px!important}
+body.report-exporting #tab-dashboard .dashboard-workload-summary-card{min-width:0!important;width:auto!important;overflow:hidden!important}
+body.report-exporting #tab-dashboard .dashboard-workload-side-card{width:100%!important;min-width:0!important;height:300px!important;overflow:hidden!important}
+body.report-exporting #tab-dashboard .dashboard-workload-mini-chart{width:100%!important;height:245px!important;min-width:0!important;overflow:hidden!important}
+body.report-exporting #tab-dashboard #dashAverageWorkloadTrend,
+body.report-exporting #tab-dashboard #dashWorkloadHoursTrend{display:block!important;width:100%!important;max-width:100%!important;height:100%!important}
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important}
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable th:first-child,
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable td:first-child{width:180px!important;min-width:180px!important;max-width:180px!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;word-break:normal!important;overflow-wrap:anywhere!important}
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable th:not(:first-child),
+body.report-exporting #tab-dashboard #dashWorkloadSummaryTable td:not(:first-child){width:auto!important;min-width:0!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;word-break:break-word!important}
+body.report-exporting #tab-dashboard #dashScopeHeatmapTable{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important}
+body.report-exporting #tab-dashboard #dashScopeHeatmapTable th:first-child,
+body.report-exporting #tab-dashboard #dashScopeHeatmapTable td:first-child{width:180px!important;min-width:180px!important;max-width:180px!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;word-break:normal!important;overflow-wrap:anywhere!important}
+body.report-exporting #tab-dashboard #dashScopeHeatmapTable th:not(:first-child),
+body.report-exporting #tab-dashboard #dashScopeHeatmapTable td:not(:first-child){min-width:0!important;width:auto!important;white-space:normal!important;overflow:visible!important}
+body.report-exporting #tab-dashboard .grid.grid-cols-1.lg\\:grid-cols-2{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:24px!important}
+body.report-exporting #tab-dashboard .dashboard-workload-dashboard-calendar{grid-column:1/-1!important;width:100%!important;min-width:0!important}
+body.report-exporting #tab-dashboard #dashCalendarWorkloadScroll{width:100%!important;overflow:visible!important}
+body.report-exporting #tab-dashboard #dashCalendarWorkloadScroll table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+body.report-exporting #tab-dashboard canvas{display:block!important;max-width:100%!important;box-sizing:border-box!important}
+body.report-exporting #tab-dashboard .grid{min-width:0!important}
+body.report-exporting #tab-dashboard .bom-page-filter{width:100%!important;box-sizing:border-box!important;display:flex!important;flex-wrap:nowrap!important;align-items:flex-end!important;gap:10px!important;min-height:64px!important;height:64px!important;padding:10px!important;overflow:visible!important}
+body.report-exporting #tab-dashboard .bom-page-filter > .text-\\[10px\\]{flex:0 0 58px!important;min-width:58px!important}
+body.report-exporting #tab-dashboard .bom-page-filter .bom-multi{flex:1 1 0!important;min-width:0!important;width:auto!important}
+body.report-exporting #tab-dashboard .bom-page-filter .bom-multi-btn{width:100%!important;min-width:0!important;height:40px!important;min-height:40px!important;white-space:nowrap!important;overflow:visible!important;padding:8px 9px!important}
+body.report-exporting #tab-dashboard .bom-page-filter > .ml-auto{margin-left:0!important;flex:0 0 auto!important}
+body.report-exporting #tab-dashboard .bom-page-filter > .ml-auto .bom-action-btn{height:40px!important;min-height:40px!important;white-space:nowrap!important}
+body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:grid-cols-7 > div{min-width:0!important;overflow:hidden!important}
+body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:grid-cols-7 > div .text-2xl{font-size:26px!important}
 </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased h-screen flex overflow-hidden">
@@ -3407,73 +3648,263 @@ function setupInlineRequiredValidation(){
         async function exportReportPdf(){
             const report=document.getElementById('tab-dashboard');
             if(!report||!window.html2canvas||!window.jspdf){showAppNotification('PDF export library is not available.','Error');return;}
-            const loader=document.getElementById('loadingOverlay');
-            const loaderText=document.getElementById('loadingOverlayText');
-            if(loaderText)loaderText.textContent='Exporting report...';
-            if(loader)loader.classList.remove('opacity-0','pointer-events-none');
+            const loader=document.getElementById('loadingOverlay'), loaderText=document.getElementById('loadingOverlayText');
+            if(loaderText)loaderText.textContent='Exporting report...'; if(loader)loader.classList.remove('opacity-0','pointer-events-none');
             try{
+                // Close open filter menus before export. The live Dashboard is NOT rearranged;
+                // all export-only changes are applied inside html2canvas's cloned document.
                 report.querySelectorAll('.bom-multi-menu').forEach(m=>m.classList.add('hidden'));
-                document.body.classList.add('report-exporting');
-                // PDF-only report heading: keep the app header out of the PDF.
-                const originalReportHeader=report.querySelector('.report-page-header');
-                let pdfHeader=null;
-                if(originalReportHeader){
-                    originalReportHeader.style.display='none';
-                    pdfHeader=document.createElement('div');
-                    pdfHeader.id='pdfExportHeader';
-                    pdfHeader.style.cssText='display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:8px 0 12px 0;background:#f8fafc;border-bottom:1px solid #cbd5e1;box-sizing:border-box;';
-                    const now=new Date();
-                    const pad=n=>String(n).padStart(2,'0');
-                    const exportDate=`${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-                    pdfHeader.innerHTML=`<div style="font-size:18px;font-weight:800;color:#0f172a;letter-spacing:.2px;">BOM Team Workload Report</div><div style="font-size:10px;font-weight:600;color:#475569;white-space:nowrap;">Exported: ${exportDate}</div>`;
-                    report.insertBefore(pdfHeader,report.firstChild);
-                }
-                report.querySelectorAll('.bom-page-filter').forEach(el=>{el.style.position='static';el.style.overflow='visible';el.style.width='100%';el.style.flexWrap='wrap';el.style.minHeight='76px';el.style.height='auto';el.style.padding='12px';el.style.alignItems='center';});
-                report.querySelectorAll('.bom-page-filter .bom-multi').forEach(el=>{el.style.minWidth='145px';el.style.flex='0 0 145px';el.style.overflow='visible';});
-                report.querySelectorAll('.bom-page-filter .bom-multi-btn').forEach(el=>{el.style.minWidth='150px';el.style.overflow='visible';el.style.whiteSpace='normal';el.style.textOverflow='clip';el.style.height='auto';el.style.minHeight='42px';el.style.lineHeight='18px';el.style.color='#334155';});
-                // Keep the dashboard's current width/layout. Do not widen or stretch either side.
-                report.style.width='2700px'; report.style.minWidth='2700px'; report.style.maxWidth='2700px'; report.style.margin='0 auto'; report.style.padding='28px 32px';
-                report.querySelectorAll('.bom-page-filter').forEach(el=>{el.style.marginLeft='0';el.style.marginRight='0';el.style.width='100%';el.style.maxWidth='100%';});
-                await new Promise(r=>requestAnimationFrame(r));
-                const exportWidth=2700, exportHeight=report.scrollHeight;
-                const canvas=await html2canvas(report,{scale:3,useCORS:true,backgroundColor:'#f8fafc',logging:false,windowWidth:exportWidth,width:exportWidth,height:exportHeight,scrollX:0,scrollY:0,imageTimeout:0});
                 const {jsPDF}=window.jspdf;
-                const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a3',compress:false});
-                const pageWidth=pdf.internal.pageSize.getWidth(), pageHeight=pdf.internal.pageSize.getHeight(), margin=4;
-                const usableWidth=pageWidth-margin*2, usableHeight=pageHeight-margin*2;
-                const sliceHeightPx=Math.max(1,Math.floor(canvas.width*(usableHeight/usableWidth)));
-                let yPx=0, pageNo=0;
-                while(yPx<canvas.height){
-                    const hPx=Math.min(sliceHeightPx,canvas.height-yPx);
-                    const pageCanvas=document.createElement('canvas');
-                    pageCanvas.width=canvas.width; pageCanvas.height=hPx;
-                    const pctx=pageCanvas.getContext('2d');
-                    pctx.fillStyle='#f8fafc'; pctx.fillRect(0,0,pageCanvas.width,pageCanvas.height);
-                    pctx.drawImage(canvas,0,yPx,canvas.width,hPx,0,0,canvas.width,hPx);
-                    if(pageNo>0) pdf.addPage('a3','landscape');
-                    const renderedHeight=usableWidth*(hPx/canvas.width);
-                    const imageX=(pageWidth-usableWidth)/2;
-                    pdf.addImage(pageCanvas.toDataURL('image/png'),'PNG',imageX,margin,usableWidth,renderedHeight,undefined,'NONE');
-                    yPx+=hPx; pageNo++;
+                const EXPORT_WIDTH=1600;
+
+                const pdfHeader=document.createElement('div');
+                pdfHeader.id='pdfExportHeader';
+                pdfHeader.style.cssText='display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:10px 18px 12px;margin:0;background:#f8fafc;border-bottom:1px solid #cbd5e1;box-sizing:border-box;width:100%;';
+                const now=new Date(),pad=n=>String(n).padStart(2,'0');
+                const exportDate=`${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+                pdfHeader.innerHTML=`<div style="font-size:20px;font-weight:800;color:#0f172a;letter-spacing:.2px;">BOM Team Workload Report</div><div style="font-size:10px;font-weight:600;color:#475569;white-space:nowrap;">Exported: ${exportDate}</div>`;
+
+                const originalHeader=report.querySelector('.report-page-header');
+                if(originalHeader) originalHeader.style.display='none';
+                report.insertBefore(pdfHeader,report.firstChild);
+
+                const canvas=await html2canvas(report,{
+                    scale:2,
+                    useCORS:true,
+                    backgroundColor:'#f8fafc',
+                    logging:false,
+                    width:EXPORT_WIDTH,
+                    windowWidth:EXPORT_WIDTH,
+                    windowHeight:Math.max(window.innerHeight,report.scrollHeight),
+                    scrollX:0,
+                    scrollY:0,
+                    imageTimeout:0,
+                    allowTaint:false,
+                    onclone: async (doc)=>{
+                        const cloneReport=doc.getElementById('tab-dashboard');
+                        if(!cloneReport) return;
+
+                        // Export-only base sizing. The actual app layout remains untouched.
+                        cloneReport.style.width=EXPORT_WIDTH+'px';
+                        cloneReport.style.minWidth=EXPORT_WIDTH+'px';
+                        cloneReport.style.maxWidth=EXPORT_WIDTH+'px';
+                        cloneReport.style.margin='0';
+                        cloneReport.style.padding='0';
+
+                        const cloneContent=doc.getElementById('contentArea');
+                        if(cloneContent){
+                            cloneContent.style.width=EXPORT_WIDTH+'px';
+                            cloneContent.style.minWidth=EXPORT_WIDTH+'px';
+                            cloneContent.style.maxWidth=EXPORT_WIDTH+'px';
+                            cloneContent.style.padding='0';
+                            cloneContent.style.overflow='visible';
+                        }
+
+                        // 1) Export must not show Export / Copy / Export Data / Reset action buttons.
+                        cloneReport.querySelectorAll('button.bom-action-btn').forEach(btn=>{
+                            const txt=String(btn.textContent||'').trim().toLowerCase();
+                            const onclick=String(btn.getAttribute('onclick')||'').toLowerCase();
+                            if(txt.includes('export') || txt.includes('copy') || onclick.includes('exportreportpdf') || onclick.includes('copytabletoclipboard') || onclick.includes('exportstyledtable')){
+                                btn.style.display='none';
+                            }
+                        });
+
+                        // 2) Do not show the literal "Filters" label, but keep the selected filter values.
+                        cloneReport.querySelectorAll('[data-bom-filter-bar]').forEach(bar=>{
+                            const label=[...bar.children].find(el=>String(el.textContent||'').trim().toLowerCase()==='filters');
+                            if(label) label.style.display='none';
+                        });
+
+                        // 3) Task Status (%) doughnut is intentionally omitted from the PDF.
+                        const statusCanvas=doc.getElementById('chartTaskStatus');
+                        const statusCard=statusCanvas ? statusCanvas.closest('.bg-white') : null;
+                        if(statusCard) statusCard.style.display='none';
+
+                        // With the status card removed, the first chart uses the full row width.
+                        const topCharts=cloneReport.querySelector(':scope > .grid.grid-cols-1.lg\\:grid-cols-3');
+                        if(topCharts){
+                            topCharts.style.display='block';
+                            topCharts.style.width='100%';
+                        }
+                        const workloadCard=doc.getElementById('chartWorkloadMember')?.closest('.bg-white');
+                        if(workloadCard){
+                            workloadCard.style.width='100%';
+                            workloadCard.style.minWidth='0';
+                            workloadCard.style.maxWidth='100%';
+                            workloadCard.style.overflow='hidden';
+                        }
+
+                        // 4) Export-only workload analysis layout:
+                        //    Team Workload % + Team Workload Hours = SAME ROW.
+                        //    Category Workload Distribution By Member = SEPARATE FULL-WIDTH ROW.
+                        const analysis=cloneReport.querySelector('.dashboard-workload-analysis-row');
+                        if(analysis){
+                            analysis.style.display='block';
+                            analysis.style.width='100%';
+                            analysis.style.minWidth='0';
+                        }
+                        const side=analysis?.querySelector('.dashboard-workload-side');
+                        const summary=analysis?.querySelector('.dashboard-workload-summary-card');
+                        if(side){
+                            side.style.display='grid';
+                            side.style.gridTemplateColumns='minmax(0,1fr) minmax(0,1fr)';
+                            side.style.gap='24px';
+                            side.style.width='100%';
+                            side.style.minWidth='0';
+                            side.style.margin='0 0 24px 0';
+                        }
+                        if(summary){
+                            summary.style.display='block';
+                            summary.style.width='100%';
+                            summary.style.maxWidth='100%';
+                            summary.style.minWidth='0';
+                            summary.style.margin='0 0 24px 0';
+                        }
+                        cloneReport.querySelectorAll('.dashboard-workload-side-card').forEach(card=>{
+                            card.style.width='100%';
+                            card.style.minWidth='0';
+                            card.style.height='320px';
+                            card.style.minHeight='320px';
+                            card.style.overflow='hidden';
+                        });
+                        cloneReport.querySelectorAll('.dashboard-workload-mini-chart').forEach(w=>{
+                            w.style.width='100%';
+                            w.style.height='265px';
+                            w.style.minWidth='0';
+                            w.style.overflow='hidden';
+                        });
+
+                        // 5) All table values are centered. Long values may wrap rather than disappear.
+                        cloneReport.querySelectorAll('table').forEach(table=>{
+                            table.style.width='100%';
+                            table.style.maxWidth='100%';
+                            table.style.tableLayout='fixed';
+                            table.querySelectorAll('th,td').forEach(cell=>{
+                                cell.style.textAlign='center';
+                                cell.style.verticalAlign='middle';
+                                cell.style.whiteSpace='normal';
+                                cell.style.wordBreak='break-word';
+                                cell.style.overflow='visible';
+                            });
+                        });
+                        const categoryTable=doc.getElementById('dashWorkloadSummaryTable');
+                        if(categoryTable){
+                            categoryTable.style.tableLayout='fixed';
+                            categoryTable.style.width='100%';
+                            const firstCells=categoryTable.querySelectorAll('tr > th:first-child, tr > td:first-child');
+                            firstCells.forEach(cell=>{
+                                cell.style.width='180px';
+                                cell.style.minWidth='180px';
+                                cell.style.maxWidth='180px';
+                                cell.style.whiteSpace='normal';
+                                cell.style.wordBreak='break-word';
+                                cell.style.textAlign='center';
+                            });
+                        }
+
+                        // Calendar table should also stay inside the PDF width.
+                        cloneReport.querySelectorAll('.dashboard-workload-dashboard-calendar, #dashCalendarWorkloadScroll').forEach(el=>{
+                            el.style.width='100%';
+                            el.style.maxWidth='100%';
+                            el.style.overflow='visible';
+                        });
+                        cloneReport.querySelectorAll('.dashboard-workload-dashboard-calendar table').forEach(t=>{
+                            t.style.width='100%';
+                            t.style.minWidth='0';
+                            t.style.tableLayout='fixed';
+                        });
+
+                        // FINAL PDF EXPORT OVERRIDES — applied last to beat earlier export CSS.
+                        const exportStyle=doc.createElement('style');
+                        exportStyle.textContent=`
+                            #tab-dashboard{width:1600px!important;min-width:1600px!important;max-width:1600px!important;margin:0!important;padding:0!important;overflow:visible!important;}
+                            #contentArea{width:1600px!important;min-width:1600px!important;max-width:1600px!important;padding:0!important;margin:0!important;overflow:visible!important;}
+                            #tab-dashboard .bom-page-filter{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr)) 92px!important;align-items:center!important;gap:10px!important;width:100%!important;height:58px!important;min-height:58px!important;padding:8px 10px!important;overflow:visible!important;box-sizing:border-box!important;}
+                            #tab-dashboard .bom-page-filter .text-\\[10px\\]{display:none!important;}
+                            #tab-dashboard .bom-page-filter .bom-multi{min-width:0!important;width:100%!important;}
+                            #tab-dashboard .bom-page-filter .bom-multi-btn{height:38px!important;min-height:38px!important;width:100%!important;padding:8px 10px!important;font-size:10px!important;line-height:20px!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;}
+                            #tab-dashboard .bom-page-filter > .ml-auto{display:contents!important;}
+                            #tab-dashboard .bom-page-filter > .ml-auto > button{grid-column:7!important;width:92px!important;height:38px!important;}
+                            #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:grid-cols-7{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:14px!important;width:100%!important;}
+                            #tab-dashboard > .grid.grid-cols-1.lg\\:grid-cols-3{display:block!important;width:100%!important;}
+                            #tab-dashboard > .grid.grid-cols-1.lg\\:grid-cols-3 > div{width:100%!important;max-width:none!important;min-width:0!important;}
+                            #tab-dashboard #chartWorkloadMember{width:100%!important;max-width:100%!important;}
+                            #tab-dashboard .h-72{height:330px!important;}
+                            #tab-dashboard .dashboard-workload-analysis-row{display:block!important;width:100%!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;}
+                            #tab-dashboard .dashboard-workload-side{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:16px!important;width:100%!important;height:auto!important;min-height:0!important;margin:0 0 16px 0!important;padding:0!important;}
+                            #tab-dashboard .dashboard-workload-side-card{width:100%!important;height:380px!important;min-height:380px!important;max-height:380px!important;min-width:0!important;margin:0!important;overflow:hidden!important;}
+                            #tab-dashboard .dashboard-workload-mini-chart{height:320px!important;min-height:320px!important;max-height:320px!important;width:100%!important;overflow:hidden!important;}
+                            #tab-dashboard .dashboard-workload-summary-card{display:block!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;margin:0 0 16px 0!important;padding:16px!important;overflow:visible!important;}
+                            #tab-dashboard .dashboard-workload-summary-card > div.flex-1{display:block!important;height:auto!important;min-height:0!important;overflow:visible!important;}
+                            #tab-dashboard #dashWorkloadSummaryTable{width:100%!important;max-width:100%!important;min-width:0!important;table-layout:fixed!important;}
+                            #tab-dashboard #dashWorkloadSummaryTable th,#tab-dashboard #dashWorkloadSummaryTable td{padding:5px 4px!important;line-height:1.15!important;text-align:center!important;vertical-align:middle!important;white-space:normal!important;word-break:break-word!important;overflow:visible!important;}
+                            #tab-dashboard #dashWorkloadSummaryTable th:first-child,#tab-dashboard #dashWorkloadSummaryTable td:first-child{width:220px!important;min-width:220px!important;max-width:220px!important;}
+                            #tab-dashboard table th,#tab-dashboard table td{text-align:center!important;vertical-align:middle!important;}
+                            #tab-dashboard .dashboard-workload-dashboard-calendar{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;margin-top:0!important;}
+                            #tab-dashboard .dashboard-workload-dashboard-calendar table{width:100%!important;min-width:0!important;table-layout:fixed!important;}
+                            #tab-dashboard canvas{max-width:100%!important;box-sizing:border-box!important;}
+                            /* FINAL: taller paired workload charts + tight gap before category table + small A4 margins */
+                            #tab-dashboard .dashboard-workload-analysis-row{display:block!important;margin:0!important;padding:0!important;min-height:0!important;height:auto!important;}
+                            #tab-dashboard .dashboard-workload-side{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:16px!important;width:100%!important;height:380px!important;min-height:380px!important;margin:0 0 16px 0!important;padding:0!important;}
+                            #tab-dashboard .dashboard-workload-side-card{height:380px!important;min-height:380px!important;max-height:380px!important;margin:0!important;}
+                            #tab-dashboard .dashboard-workload-mini-chart{height:320px!important;min-height:320px!important;max-height:320px!important;width:100%!important;}
+                            #tab-dashboard .dashboard-workload-summary-card{margin:0!important;width:100%!important;min-height:0!important;height:auto!important;}
+                            #tab-dashboard .dashboard-workload-summary-card > div.flex-1{min-height:0!important;height:auto!important;}
+                        `;
+                        doc.head.appendChild(exportStyle);
+
+                        // 6) KPI cards remain on one row in the PDF.
+                        const kpi=cloneReport.querySelector(':scope > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:grid-cols-7');
+                        if(kpi){
+                            kpi.style.display='grid';
+                            kpi.style.gridTemplateColumns='repeat(7,minmax(0,1fr))';
+                            kpi.style.gap='16px';
+                            kpi.style.width='100%';
+                            kpi.querySelectorAll(':scope > *').forEach(card=>{
+                                card.style.minWidth='0';
+                                card.style.width='100%';
+                            });
+                        }
+
+                        // Force chart canvases to fit their final export boxes.
+                        cloneReport.querySelectorAll('canvas').forEach(c=>{
+                            c.style.display='block';
+                            c.style.width='100%';
+                            c.style.maxWidth='100%';
+                            c.style.height='100%';
+                        });
+                    }
+                });
+
+                const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+                const pageWidth=pdf.internal.pageSize.getWidth(),pageHeight=pdf.internal.pageSize.getHeight();
+                const margin=4,usableWidth=pageWidth-2*margin,usableHeight=pageHeight-2*margin;
+                const sourceWidth=canvas.width;
+                const sourcePageHeight=Math.max(1,Math.floor(sourceWidth*(usableHeight/usableWidth)));
+                let y=0,page=0;
+                while(y<canvas.height){
+                    const h=Math.min(sourcePageHeight,canvas.height-y);
+                    const pc=document.createElement('canvas');
+                    pc.width=sourceWidth; pc.height=h;
+                    const ctx=pc.getContext('2d');
+                    ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,sourceWidth,h);
+                    ctx.drawImage(canvas,0,y,sourceWidth,h,0,0,sourceWidth,h);
+                    if(page>0) pdf.addPage('a4','portrait');
+                    const ph=usableWidth*(h/sourceWidth);
+                    pdf.addImage(pc.toDataURL('image/jpeg',0.92),'JPEG',margin,margin,usableWidth,ph,undefined,'FAST');
+                    y+=h; page++;
                 }
                 pdf.save(`Dashboard_Report_${new Date().toISOString().slice(0,10)}.pdf`);
-                showAppNotification(`Dashboard report exported as A3 landscape (${pageNo} page${pageNo>1?'s':''}).`);
+                showAppNotification(`Dashboard report exported as A4 portrait (${page} page${page>1?'s':''}).`);
             }catch(err){
                 console.error('PDF export error:',err);
                 showAppNotification('Could not export report to PDF.','Error');
             }finally{
-                const pdfHeader=document.getElementById('pdfExportHeader');
-                if(pdfHeader)pdfHeader.remove();
-                const originalReportHeader=report.querySelector('.report-page-header');
-                if(originalReportHeader)originalReportHeader.style.display='';
-                report.style.width=''; report.style.minWidth=''; report.style.maxWidth=''; report.style.margin=''; report.style.padding='';
-                report.querySelectorAll('.bom-page-filter').forEach(el=>{el.style.marginLeft='';el.style.marginRight='';el.style.width='';el.style.maxWidth='';});
-                document.body.classList.remove('report-exporting');
-                if(loaderText)loaderText.textContent='Syncing data from Supabase...';
+                const pdfHeader=document.getElementById('pdfExportHeader'); if(pdfHeader)pdfHeader.remove();
+                const originalHeader=report.querySelector('.report-page-header'); if(originalHeader)originalHeader.style.display='';
                 if(loader)loader.classList.add('opacity-0','pointer-events-none');
             }
         }
-
         function exportCurrentPageData(tabId){
             const root=document.getElementById(tabId); if(!root)return;
             const tables=[...root.querySelectorAll('table[id]')];
