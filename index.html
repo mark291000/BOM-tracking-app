@@ -456,7 +456,7 @@
         .dashboard-workload-analysis-row{min-height:420px;}
         .dashboard-workload-side{display:grid;grid-template-rows:1fr 1fr;gap:12px;min-height:420px;}
         .dashboard-workload-side-card{min-height:0;overflow:hidden;}
-        .dashboard-workload-mini-chart{height:calc(100% - 24px);min-height:145px;position:relative;}
+        .dashboard-workload-mini-chart{height:calc(100% - 24px);min-height:170px;position:relative;padding-top:8px;}
         .dashboard-workload-mini-chart canvas{width:100% !important;height:100% !important;}
         .dashboard-workload-summary-card{min-height:420px;}
         @media(max-width:1024px){.dashboard-workload-side{min-height:520px;}.dashboard-workload-summary-card{min-height:520px;}}
@@ -807,7 +807,11 @@
         #loginScreen .login-overlay form { margin:0; }
         #loginScreen .login-msg { margin-top:0; }
         @media (max-width:700px){ #loginScreen{overflow:auto;} #loginScreen > .footer{height:auto;min-height:100%;} }
-    </style>
+    
+        /* Dashboard Calendar & Workload: full-width row directly below Team Workload Hours + Category Workload Distribution By Member. */
+        .dashboard-workload-dashboard-calendar { min-width: 0; }
+        .dashboard-workload-dashboard-calendar #dashCalendarWorkloadScroll { width: 100%; }
+</style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased h-screen flex overflow-hidden">
 
@@ -1056,6 +1060,18 @@
                         </div>
                         <div class="flex-1 min-h-0 overflow-hidden"><table class="w-full text-left text-[10px] leading-tight border-collapse workload-summary-nowrap" id="dashWorkloadSummaryTable"><thead id="dashWorkloadSummaryHeader" class="bg-slate-800 text-white uppercase text-[10px] font-semibold"></thead><tbody id="dashWorkloadSummaryBody" class="divide-y divide-slate-100 font-medium"><tr><td class="py-4 text-center text-slate-400">No data</td></tr></tbody></table></div>
                     </div>
+                            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 dashboard-workload-dashboard-calendar lg:col-span-3">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider"><i class="fa-solid fa-calendar-days mr-2 text-indigo-600"></i>Calendar &amp; Workload</h3>
+                                    <span id="dashCalendarWorkloadRange" class="text-[10px] font-semibold text-slate-500"></span>
+                                </div>
+                                <div id="dashCalendarWorkloadScroll" class="overflow-x-auto custom-scrollbar">
+                                    <table class="w-full text-left text-xs border-collapse min-w-max">
+                                        <thead><tr id="dashCalendarWorkloadHeader" class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200"></tr></thead>
+                                        <tbody id="dashCalendarWorkloadBody" class="divide-y divide-slate-100 font-medium"></tbody>
+                                    </table>
+                                </div>
+                            </div>
                 </div>
 
                 <!-- Tracking Tables -->
@@ -5414,6 +5430,32 @@ function setupInlineRequiredValidation(){
             } else if (currentCalendarView === 'year') {
                 renderWeeklyCalendarYearView(headerRow, tbody, rangeLabel, activeUsers);
             }
+
+            // Keep the Dashboard & Reports copy synchronized with the main Calendar & Workload table.
+            renderDashboardCalendarWorkload();
+        }
+
+        function renderDashboardCalendarWorkload() {
+            const headerRow = document.getElementById('dashCalendarWorkloadHeader');
+            const tbody = document.getElementById('dashCalendarWorkloadBody');
+            const rangeLabel = document.getElementById('dashCalendarWorkloadRange');
+            if (!headerRow || !tbody) return;
+
+            headerRow.innerHTML = '';
+            tbody.innerHTML = '';
+
+            const activeUsers = users.filter(u =>
+                u.status === 'Active' &&
+                String(u.name).trim().toLowerCase() !== 'anny'
+            );
+
+            if (currentCalendarView === 'week') {
+                renderWeeklyCalendarWeekView(headerRow, tbody, rangeLabel, activeUsers);
+            } else if (currentCalendarView === 'month') {
+                renderWeeklyCalendarMonthView(headerRow, tbody, rangeLabel, activeUsers);
+            } else if (currentCalendarView === 'year') {
+                renderWeeklyCalendarYearView(headerRow, tbody, rangeLabel, activeUsers);
+            }
         }
 
         function renderWeeklyCalendarWeekView(headerRow, tbody, rangeLabel, activeUsers) {
@@ -5943,7 +5985,18 @@ function setupInlineRequiredValidation(){
                 const st=new Date(p.start+'T00:00:00'), en=new Date(p.end+'T00:00:00');
                 for(let d=new Date(st);d<=en;d.setDate(d.getDate()+1)){
                     const iso=formatDateLocal(d);
-                    members.forEach(m=>{ total += Math.max(0,getDailyCapacityForPIC(m,iso)); });
+                    members.forEach(m=>{
+                        const standard = getStandardDayHours(new Date(iso+'T00:00:00'));
+                        const timeOff = getTimeOffHoursForPIC(m, iso);
+                        const overtime = timeoffOtList.filter(o => {
+                            const type=String(o.type||'').trim().toLowerCase();
+                            const pic=String(o.pic||'').trim().toLowerCase();
+                            const start=cleanDateStr(o.startDate), end=cleanDateStr(o.endDate||o.startDate);
+                            return type==='over time' && pic===String(m||'').trim().toLowerCase() && start && end && start<=iso && iso<=end;
+                        }).reduce((sum,o)=>sum+(Number(o.hours)||0),0);
+                        const available = Math.max(0, standard - timeOff + overtime);
+                        total += available;
+                    });
                 }
                 return total;
             });
@@ -5952,7 +6005,7 @@ function setupInlineRequiredValidation(){
                     {label:'Workload Hours',data:[],backgroundColor:'#3b82f6',borderColor:'#3b82f6',borderWidth:0,borderRadius:5},
                     {type:'line',label:'Available Team Hours',data:[],borderColor:'#f97316',backgroundColor:'#f97316',pointBackgroundColor:'#f97316',pointBorderColor:'#f97316',pointRadius:3,pointHoverRadius:4,borderWidth:2.5,tension:.2,fill:false,order:0},
                     {type:'line',label:'Standard Time',data:[],borderColor:'#64748b',backgroundColor:'#64748b',pointRadius:0,pointHoverRadius:0,borderWidth:2,borderDash:[6,4],tension:0,fill:false,order:0}
-                ]},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9}}},tooltip:{enabled:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>`${v}h`}},x:{ticks:{font:{size:8},maxRotation:0,autoSkip:true}}}}});
+                ]},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:9},padding:8}},tooltip:{enabled:false}},layout:{padding:{top:18,bottom:6}},scales:{y:{beginAtZero:true,ticks:{callback:v=>`${v}h`}},x:{ticks:{font:{size:8},maxRotation:0,autoSkip:true}}}}});
             }
             chartWorkloadHoursTrend.data.labels=ps.map(x=>[x.labelTop,x.labelBottom]);
             chartWorkloadHoursTrend.data.datasets[0].data=vals.map(x=>+x.toFixed(1));
@@ -5964,7 +6017,7 @@ function setupInlineRequiredValidation(){
                     const barMeta=chart.getDatasetMeta(0),barData=chart.data.datasets[0].data||[];
                     ctx.fillStyle='#ffffff';barMeta.data.forEach((pt,i)=>{const v=Number(barData[i]);if(Number.isFinite(v)&&v>0)ctx.fillText(`${v.toFixed(1)}h`,pt.x,(pt.y+pt.base)/2);});
                     const lineMeta=chart.getDatasetMeta(1),lineData=chart.data.datasets[1].data||[];
-                    ctx.font='700 9px Arial';ctx.textBaseline='bottom';ctx.fillStyle='#f97316';lineMeta.data.forEach((pt,i)=>{const v=Number(lineData[i]);if(Number.isFinite(v))ctx.fillText(`${v.toFixed(1)}h`,pt.x,pt.y-7);});
+                    ctx.font='700 9px Arial';ctx.textBaseline='bottom';ctx.fillStyle='#f97316';lineMeta.data.forEach((pt,i)=>{const v=Number(lineData[i]);if(Number.isFinite(v))ctx.fillText(`${v.toFixed(1)}h`,pt.x,Math.max(14,pt.y-9));});
                     ctx.restore();}};
                 Chart.register(plugin); chartWorkloadHoursTrend._bomHoursLabels=true;
             }
@@ -5977,14 +6030,14 @@ function setupInlineRequiredValidation(){
             const selectedMembers=[...bomTopFilterState.Member];
             const members=(selectedMembers.length?users.filter(u=>u.status==='Active'&&selectedMembers.includes(String(u.name))&&String(u.name).trim().toLowerCase()!=='anny'):users.filter(u=>u.status==='Active'&&String(u.name).trim().toLowerCase()!=='anny')).map(u=>u.name);
             const vals=ps.map(p=>{let sum=0,n=0;members.forEach(m=>{const cap=calculateMemberCapacityForPeriod(m,p.start,p.end);if(cap<=0)return;let h=0;filteredTasks.forEach(t=>{if(!bomTaskValues('Member',t).includes(m))return;const capTask=getCapacityTaskForDailyTask(t),usage=Number(t.usageTime),raw=(Number.isFinite(usage)&&usage>0)?usage:Number(t.workload??capTask?.workload??0)||0,st=cleanDateStr(t.start||t.plan||t.actual),en=cleanDateStr(t.actual||t.plan||t.start);if(!raw||!st||!en||en<p.start||st>p.end)return;const a=Math.max(new Date(st+'T00:00:00').getTime(),new Date(p.start+'T00:00:00').getTime()),b=Math.min(new Date(en+'T00:00:00').getTime(),new Date(p.end+'T00:00:00').getTime()),td=Math.max(1,Math.round((new Date(en)-new Date(st))/86400000)+1),od=Math.max(0,Math.round((new Date(b)-new Date(a))/86400000)+1);h+=raw*(od/td)/Math.max(1,bomTaskValues('Member',t).length);});sum+=h/cap*100;n++;});return n?sum/n:0;});
-            if(!chartAverageWorkloadTrend)chartAverageWorkloadTrend=new Chart(canvas,{type:'line',data:{labels:[],datasets:[{label:'Average % Workload',data:[],borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.12)',fill:true,tension:.25,borderWidth:2,pointRadius:4,pointHoverRadius:5}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${Math.round(c.parsed.y)}%`}}},scales:{y:{beginAtZero:true,suggestedMax:100,ticks:{callback:v=>v+'%'}}}}});
+            if(!chartAverageWorkloadTrend)chartAverageWorkloadTrend=new Chart(canvas,{type:'line',data:{labels:[],datasets:[{label:'Average % Workload',data:[],borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.12)',fill:true,tension:.25,borderWidth:2,pointRadius:4,pointHoverRadius:5}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${Math.round(c.parsed.y)}%`}}},layout:{padding:{top:22,bottom:4}},scales:{y:{beginAtZero:true,suggestedMax:100,ticks:{callback:v=>v+'%'}}}}});
             chartAverageWorkloadTrend.data.labels=ps.map(x=>[x.labelTop,x.labelBottom]);
             chartAverageWorkloadTrend.data.datasets[0].data=vals.map(x=>+x.toFixed(1));
             chartAverageWorkloadTrend.options.plugins.datalabels=undefined;
             chartAverageWorkloadTrend.update('none');
             // Draw the exact percentage above every point.
             if(!chartAverageWorkloadTrend._bomPctPlugin){
-                const plugin={id:'bomTeamWorkloadLabels',afterDatasetsDraw(chart){if(chart.canvas?.id!=='dashAverageWorkloadTrend')return;const ctx=chart.ctx,meta=chart.getDatasetMeta(0);ctx.save();ctx.font='700 10px Arial';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillStyle='#334155';meta.data.forEach((pt,i)=>{const v=Number(chart.data.datasets[0].data[i]);if(Number.isFinite(v))ctx.fillText(`${Math.round(v)}%`,pt.x,pt.y-7);});ctx.restore();}};
+                const plugin={id:'bomTeamWorkloadLabels',afterDatasetsDraw(chart){if(chart.canvas?.id!=='dashAverageWorkloadTrend')return;const ctx=chart.ctx,meta=chart.getDatasetMeta(0);ctx.save();ctx.font='700 10px Arial';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillStyle='#334155';meta.data.forEach((pt,i)=>{const v=Number(chart.data.datasets[0].data[i]);if(Number.isFinite(v))ctx.fillText(`${Math.round(v)}%`,pt.x,Math.max(14,pt.y-9));});ctx.restore();}};
                 chartAverageWorkloadTrend.config.plugins=(chartAverageWorkloadTrend.config.plugins||[]).concat(plugin);chartAverageWorkloadTrend._bomPctPlugin=true;Chart.register(plugin);
             }
             chartAverageWorkloadTrend.update('none');
