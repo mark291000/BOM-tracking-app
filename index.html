@@ -5216,12 +5216,17 @@ function setupInlineRequiredValidation(){
             });
         }
 
+        // Calendar & Workload standard capacity.
+        // IMPORTANT:
+        // - Mon-Fri = 7.5h standard.
+        // - Saturday = 6.5h standard.
+        // - Overtime is NOT added to the denominator.
+        // - Partial Time Off is NOT deducted from the denominator.
+        // Therefore workload % = actual hours / standard hours.
+        // Example: 7.5h standard + 2h OT = 9h actual => 9 / 7.5 = 120%.
         function getDailyCapacityForPIC(picName, dateIso) {
             const d = new Date(dateIso + 'T00:00:00');
-            const standard = getStandardDayHours(d);
-            const ot = timeoffOtList.filter(o => o.pic === picName && o.type === 'Over Time' && cleanDateStr(o.startDate) <= dateIso && dateIso <= cleanDateStr(o.endDate || o.startDate))
-                .reduce((sum, o) => sum + (Number(o.hours) || 0), 0);
-            return Math.max(0, standard + ot - getTimeOffHoursForPIC(picName, dateIso));
+            return getStandardDayHours(d);
         }
 
         function getProjectHoursUsedForPIC(picName, dateIso){
@@ -5236,21 +5241,69 @@ function setupInlineRequiredValidation(){
             return total;
         }
 
+        // Single source of truth for Calendar & Workload Utilization.
+        // Utilization = TOTAL TASK WORKLOAD / STANDARD HOURS * 100.
+        // Overtime is NEVER included in either side of this formula.
+        // Example: 9.00h task workload / 7.50h standard = 120%.
+        function getDailyUtilizationForPIC(picName, dateIso) {
+            const standardHours = getStandardDayHours(new Date(dateIso + 'T00:00:00'));
+            const totalTaskWorkload = getDailyTaskHoursForPIC(picName, dateIso);
+            return standardHours > 0
+                ? Math.round((totalTaskWorkload / standardHours) * 100)
+                : 0;
+        }
+
+        // Total task workload = ONLY hours assigned to actual tasks/projects.
+        // Overtime is deliberately excluded from this value.
         function getDailyTaskHoursForPIC(picName, dateIso) {
             let totalHours = 0;
+
+            // Actual working hours from Daily Tracking tasks.
             dailyTasks.forEach(t => {
-                const pics = t.pics && t.pics.length > 0 ? t.pics : (t.pic ? String(t.pic).split(',').map(s => s.trim()).filter(Boolean) : []);
-                if (!pics.includes(picName)) return;
-                if (String(t.category || '').trim().toLowerCase() === 'project' && String(t.name || '').trim().toLowerCase() === 'project processing') return;
+                const pics = t.pics && t.pics.length > 0
+                    ? t.pics
+                    : (t.pic ? String(t.pic).split(',').map(s => s.trim()).filter(Boolean) : []);
+                if (!pics.some(p => String(p).trim().toLowerCase() === String(picName).trim().toLowerCase())) return;
+
+                if (
+                    String(t.category || '').trim().toLowerCase() === 'project' &&
+                    String(t.name || '').trim().toLowerCase() === 'project processing'
+                ) return;
+
                 const startDate = cleanDateStr(t.start);
                 const endDate = cleanDateStr(t.actual || t.plan);
                 if (!startDate || !endDate || startDate > endDate || dateIso < startDate || dateIso > endDate) return;
+
                 const sD = new Date(startDate + 'T00:00:00');
                 const eD = new Date(endDate + 'T00:00:00');
                 const diffDays = Math.max(1, Math.round((eD - sD) / 86400000) + 1);
                 totalHours += (Number(t.usageTime) || 0) / diffDays;
             });
-            return totalHours + getProjectHoursUsedForPIC(picName, dateIso);
+
+            // Project hours are actual hours as well.
+            totalHours += getProjectHoursUsedForPIC(picName, dateIso);
+
+            return totalHours;
+        }
+
+        // Actual hours used for Utilization = task workload + overtime.
+        // Overtime is added only here, never to Total task workload and never
+        // to the standard-hour denominator.
+        function getDailyActualHoursForPIC(picName, dateIso) {
+            const taskHours = getDailyTaskHoursForPIC(picName, dateIso);
+            const overtimeHours = timeoffOtList
+                .filter(o => {
+                    const type = String(o.type || '').trim().toLowerCase();
+                    const itemPic = String(o.pic || '').trim().toLowerCase();
+                    const start = cleanDateStr(o.startDate);
+                    const end = cleanDateStr(o.endDate || o.startDate);
+                    return type === 'over time' &&
+                           itemPic === String(picName || '').trim().toLowerCase() &&
+                           start && end && start <= dateIso && dateIso <= end;
+                })
+                .reduce((sum, o) => sum + (Number(o.hours) || 0), 0);
+
+            return taskHours + overtimeHours;
         }
 
         function getWorkloadGradientColor(pct) {
@@ -5334,7 +5387,7 @@ function setupInlineRequiredValidation(){
                     } else if (isSaturdayOffForPIC(u.name, dateIso)) {
                         rowHtml += `<td class="py-3 px-2 text-center font-bold calendar-sat-off-cell cursor-pointer" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">SO</td>`;
                     } else if (totalDayCapacity > 0) {
-                        let pct = Math.round((dayTaskHours / totalDayCapacity) * 100);
+                        let pct = getDailyUtilizationForPIC(u.name, dateIso);
                         if (pct > 0) {
                             let colorClass = getWorkloadGradientColor(pct);
                             rowHtml += `<td class="py-3 px-2 text-center cursor-pointer ${colorClass}" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">${pct}%</td>`;
@@ -5394,7 +5447,7 @@ function setupInlineRequiredValidation(){
                     } else if (isSaturdayOffForPIC(u.name, dateIso)) {
                         rowHtml += `<td class="py-1 px-0.5 text-center text-[10px] border-r font-bold calendar-sat-off-cell cursor-pointer" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">SO</td>`;
                     } else if (totalDayCapacity > 0) {
-                        let pct = Math.round((dayTaskHours / totalDayCapacity) * 100);
+                        let pct = getDailyUtilizationForPIC(u.name, dateIso);
                         if (pct > 0) {
                             let colorClass = getWorkloadGradientColor(pct);
                             rowHtml += `<td class="py-1 px-0.5 text-center text-[10px] border-r cursor-pointer ${colorClass}" onclick="openWorkloadSidebar('${u.name}', '${dateIso}')">${pct}%</td>`;
@@ -6006,8 +6059,10 @@ function setupInlineRequiredValidation(){
                 return { task: t, hours: shareHours };
             });
 
-            const totalTaskHours = taskDetails.reduce((sum, td) => sum + td.hours, 0);
-            const pct = totalCapacity > 0 ? Math.round((totalTaskHours / totalCapacity) * 100) : 0;
+            // Use exactly the same Total task workload value shown below
+            // to calculate Utilization. OT is deliberately excluded.
+            const totalTaskHours = getDailyTaskHoursForPIC(userName, dateIso);
+            const pct = stdHours > 0 ? Math.round((totalTaskHours / stdHours) * 100) : 0;
 
             let html = `
                 <div class="space-y-1">
