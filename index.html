@@ -3242,6 +3242,32 @@ function setupInlineRequiredValidation(){
                 return vals.some(v=>selected.has(v));
             });
         }
+        function syncCalendarToBomWeekFilter(){
+            // Calendar & Workload has its own visual period, so the unified Week
+            // filter must also move the calendar to the selected reporting week.
+            // Previously the filter only filtered dailyTasks; renderWeeklyCalendar()
+            // continued using currentCalendarAnchor, making the Calendar appear
+            // unchanged when Week was selected.
+            const weeks=[...bomTopFilterState.Week];
+            if (weeks.length !== 1) return;
+
+            let year = new Date().getFullYear();
+            const years=[...bomTopFilterState.Year];
+            if (years.length === 1 && /^\d{4}$/.test(String(years[0]))) {
+                year=Number(years[0]);
+            } else {
+                // Prefer the year from a task belonging to the selected week.
+                const selectedWeek=String(weeks[0]);
+                const match=dailyTasks.find(t=>String(getTaskWeekNumber(t) || '')===selectedWeek);
+                const d=match ? cleanDateStr(match.start || match.plan || match.actual || '') : '';
+                if (d) year=Number(d.slice(0,4));
+            }
+
+            const range=getIsoWeekRange(year,Number(weeks[0]));
+            if(!range) return;
+            currentCalendarAnchor=new Date(range.start+'T00:00:00');
+        }
+
         function applyBomUnifiedFilters(){
             // Recalculate Daily Tracking status before applying the top Status filter.
             // This keeps the filter values and the displayed rows in sync with Start / Plan / Actual / today.
@@ -3251,6 +3277,7 @@ function setupInlineRequiredValidation(){
             updateDashboardCharts();
             renderDailyTrackingTable();
             renderMyTasksTable();
+            syncCalendarToBomWeekFilter();
             renderWeeklyCalendar();
             renderProjectsTable();
             renderGanttChart();
@@ -4655,34 +4682,81 @@ function setupInlineRequiredValidation(){
         }
 
         async function toggleSaturdayMatrix(pic, sDate, isChecked) {
+            const normalizedPic = String(pic || '').trim().toLowerCase();
+            const normalizedDate = cleanDateStr(sDate);
+            const pending = pendingRowDeletions.TimeOff_OT || (pendingRowDeletions.TimeOff_OT = new Set());
+
             if (isChecked) {
                 const exists = timeoffOtList.some(item =>
-                    item.type === 'Saturday Off' &&
-                    item.pic === pic &&
-                    cleanDateStr(item.startDate) === sDate
+                    String(item.type || '').trim().toLowerCase() === 'saturday off' &&
+                    String(item.pic || '').trim().toLowerCase() === normalizedPic &&
+                    cleanDateStr(item.startDate) === normalizedDate
                 );
                 if (!exists) {
                     timeoffOtList.unshift({
                         id: Date.now(),
                         type: 'Saturday Off',
                         pic: pic,
-                        startDate: cleanDateStr(sDate),
-                        endDate: cleanDateStr(sDate),
+                        startDate: normalizedDate,
+                        endDate: normalizedDate,
                         hours: 6.5,
                         reason: 'Saturday Matrix Registration'
                     });
                 }
             } else {
-                timeoffOtList = timeoffOtList.filter(item => !(
-                    String(item.type || '').trim().toLowerCase() === 'saturday off' &&
-                    String(item.pic || '').trim().toLowerCase() === String(pic || '').trim().toLowerCase() &&
-                    cleanDateStr(item.startDate) <= sDate &&
-                    sDate <= cleanDateStr(item.endDate || item.startDate)
-                ));
+                // IMPORTANT: removing the row from the local array is not enough.
+                // runSimpleTableSave() only deletes database rows that are explicitly
+                // placed in pendingRowDeletions, so mark every matching existing row
+                // for deletion before removing it locally. This keeps the checkbox and
+                // Supabase database state synchronized.
+                const rowsToDelete = timeoffOtList.filter(item => {
+                    const type = String(item.type || '').trim().toLowerCase();
+                    const itemPic = String(item.pic || '').trim().toLowerCase();
+                    const start = cleanDateStr(item.startDate);
+                    const end = cleanDateStr(item.endDate || item.startDate);
+                    return type === 'saturday off' &&
+                           itemPic === normalizedPic &&
+                           start && end && start <= normalizedDate && normalizedDate <= end;
+                });
+
+                rowsToDelete.forEach(item => {
+                    if (item && item.id !== undefined && item.id !== null && String(item.id) !== '') {
+                        pending.add(stableRowKey('TimeOff_OT', item));
+                    }
+                });
+
+                timeoffOtList = timeoffOtList.filter(item => !rowsToDelete.includes(item));
             }
-            await saveSheetData("TimeOff_OT", timeoffOtList);
-            renderTimeoffOtTable();
-            renderWeeklyCalendar();
+
+            try {
+                await saveSheetData('TimeOff_OT', timeoffOtList);
+
+                // The database deletion has completed successfully, so clear only the
+                // deletion keys that belong to this Saturday/PIC.
+                if (!isChecked) {
+                    // Use the original database rows from the current sync snapshot to
+                    // clear the exact keys that were just processed.
+                    const snapshot = sheetSyncSnapshots.TimeOff_OT || [];
+                    snapshot.forEach(item => {
+                        const type = String(item.type || '').trim().toLowerCase();
+                        const itemPic = String(item.pic || '').trim().toLowerCase();
+                        const start = cleanDateStr(item.startDate);
+                        const end = cleanDateStr(item.endDate || item.startDate);
+                        if (type === 'saturday off' && itemPic === normalizedPic && start && end && start <= normalizedDate && normalizedDate <= end) {
+                            pending.delete(stableRowKey('TimeOff_OT', item));
+                        }
+                    });
+                }
+
+                renderTimeoffOtTable();
+                renderWeeklyCalendar();
+                renderSaturdayMatrixTable();
+            } catch (err) {
+                // If persistence fails, refresh from the database so the checkbox does
+                // not falsely indicate that the change was saved.
+                await fetchAllDataFromSheet({background: true, forceRender: true}).catch(() => {});
+                throw err;
+            }
         }
 
         const expandedProjectRows = new Set();
