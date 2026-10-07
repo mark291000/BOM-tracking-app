@@ -1552,6 +1552,26 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
 }
 
 </style>
+
+<style>
+#tab-projects .pm-reference-actions{display:flex!important;align-items:center!important;gap:8px!important;width:100%!important;justify-content:flex-start!important;flex-wrap:nowrap!important;min-width:0!important}
+#tab-projects .pm-ref-view-switch{flex:0 0 auto!important;margin-right:0!important}
+#tab-projects .pm-ref-toolbar-spacer{flex:1 1 auto!important;min-width:12px!important}
+#tab-projects .pm-ref-search{flex:0 1 300px!important;width:300px!important;min-width:220px!important}
+#tab-projects .pm-ref-new-project,#tab-projects .pm-ref-import,#tab-projects .pm-ref-icon-btn{flex:0 0 auto!important;white-space:nowrap!important;box-sizing:border-box!important}
+#tab-projects .pm-ref-new-project{min-width:112px!important}
+#tab-projects .pm-ref-import{min-width:118px!important}
+#tab-projects .pm-ref-export-data{min-width:100px!important}
+#tab-projects .pm-ref-expand-btn{min-width:108px!important}
+#tab-projects .pm-ref-project-table th:nth-child(8),#tab-projects .pm-ref-project-table td:nth-child(8){text-align:center!important}
+#tab-projects .pm-ref-project-table-wrap,#tab-projects .pm-shared-table-wrap{overflow-x:auto!important;overflow-y:visible!important;max-width:100%!important}
+#tab-projects .pm-project-stack{overflow-x:hidden!important;overflow-y:auto!important}
+#tab-projects .pm-horizontal-scrollbar{display:none!important}
+#tab-projects .pm-filter-popup{height:360px!important;max-height:360px!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+#tab-projects .pm-filter-popup-search{position:sticky!important;top:0!important;flex:0 0 30px!important}
+#tab-projects .pm-filter-values{flex:1 1 auto!important;min-height:0!important;height:auto!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important}
+#tab-projects .pm-filter-popup-actions{flex:0 0 auto!important;position:sticky!important;bottom:0!important;background:#fff!important}
+</style>
 <style id="projectManagementFinalOverride">
 /* === PROJECT MANAGEMENT FINAL UI OVERRIDE === */
 #tab-projects{position:relative!important;display:block!important;background:#f4f8fc!important;color:#183b5b!important;height:100%!important;min-height:0!important;overflow:hidden!important;padding:0!important}
@@ -2978,18 +2998,15 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
             <!-- TAB 5: PROJECT TASK / PHASE MANAGEMENT -->
             <div id="tab-projects" class="tab-content hidden space-y-3">
                 <div class="pm-reference-toolbar" data-bom-filter-bar="1">
-                    <div class="pm-reference-title">
-                        <span class="pm-reference-icon"><i class="fa-solid fa-diagram-project"></i></span>
-                        <span>Project Task / Phase Management</span>
-                    </div>
                     <div class="pm-reference-actions">
-                        <button type="button" class="pm-ref-import" onclick="document.getElementById('projectImportInput').click()">
-                            <i class="fa-solid fa-cloud-arrow-up"></i><span>Import from File</span>
+                        <div class="project-view-switch pm-ref-view-switch" role="tablist" aria-label="Project view">
+                            <button type="button" id="projectViewTableBtn" class="active" onclick="setProjectView('table')"><i class="fa-solid fa-table-list"></i> Table</button>
+                            <button type="button" id="projectViewGanttBtn" onclick="setProjectView('gantt')"><i class="fa-solid fa-chart-gantt"></i> Timeline</button>
+                        </div>
+                        <button type="button" id="projectExpandCollapseBtn" class="pm-ref-icon-btn pm-ref-expand-btn" title="Expand all" onclick="toggleAllProjectRows()">
+                            <i class="fa-solid fa-up-right-and-down-left-from-center"></i><span>Expand all</span>
                         </button>
-                        <input id="projectImportInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleProjectImport(event)">
-                        <button type="button" class="pm-ref-icon-btn" title="Download / Export" onclick="exportProjectManagementData()">
-                            <i class="fa-solid fa-download"></i>
-                        </button>
+                        <div class="pm-ref-toolbar-spacer"></div>
                         <div class="pm-ref-search">
                             <i class="fa-solid fa-magnifying-glass"></i>
                             <input id="projectTableSearch" type="search" placeholder="Search project, task, or owner..." oninput="setProjectTableSearch(this.value)">
@@ -2997,21 +3014,24 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                         <button type="button" class="pm-ref-new-project" onclick="openAddProjectModal()">
                             <i class="fa-solid fa-plus"></i><span>New Project</span>
                         </button>
-                        <div class="project-view-switch pm-ref-view-switch" role="tablist" aria-label="Project view">
-                            <button type="button" id="projectViewTableBtn" class="active" onclick="setProjectView('table')"><i class="fa-solid fa-table-list"></i> Table</button>
-                            <button type="button" id="projectViewGanttBtn" onclick="setProjectView('gantt')"><i class="fa-solid fa-chart-gantt"></i> Timeline</button>
-                        </div>
+                        <button type="button" class="pm-ref-import" onclick="document.getElementById('projectImportInput').click()">
+                            <i class="fa-solid fa-cloud-arrow-up"></i><span>Import project</span>
+                        </button>
+                        <input id="projectImportInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleProjectImport(event)">
+                        <button type="button" class="pm-ref-icon-btn pm-ref-export-data" title="Download / Export" onclick="openProjectExportOptions()">
+                            <i class="fa-solid fa-download"></i><span>Export data</span>
+                        </button>
                     </div>
                 </div>
 
                 <div id="projectTableView" class="project-view-panel pm-panel pm-active pm-reference-table-panel">
-                    <div id="projectsTableBody" class="pm-project-stack custom-scrollbar"></div>
+                    <div id="projectsTableBody" class="pm-project-stack"></div>
                 </div>
 
                 <div id="projectGanttView" class="project-view-panel pm-panel pm-transition hidden">
                     <div class="pm-gantt-toolbar">
                         <div></div>
-                        <div class="pm-gantt-controls"><span id="projectGanttRangeLabel">Current year</span></div>
+                        <div class="pm-gantt-controls"><span id="projectGanttRangeLabel" class="hidden"></span></div>
                     </div>
                     <div id="ganttChartContainer" class="project-gantt-scroll custom-scrollbar"></div>
                 </div>
@@ -3345,7 +3365,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div class="space-y-4">
                         <div><label class="block text-xs font-semibold text-slate-700 mb-1">Project Name <span class="text-rose-500">*</span></label><input type="text" id="projectName" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600" placeholder="Enter project name..."></div>
-                        <div><label class="block text-xs font-semibold text-slate-700 mb-1">Detail</label><textarea id="projectDetail" rows="4" class="w-full block min-w-0 box-border min-h-28 resize-none p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600" placeholder="Project detail..."></textarea></div>
+                        <div><label class="block text-xs font-semibold text-slate-700 mb-1">Description</label><textarea id="projectDetail" rows="4" class="w-full block min-w-0 box-border min-h-28 resize-none p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600" placeholder="Project detail..."></textarea></div>
                     </div>
                     <div><label class="block text-xs font-semibold text-slate-700 mb-1">Owner(s) / PICs</label><div id="projectPICsWrapper" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs min-h-28 overflow-visible"></div></div>
                 </div>
@@ -3573,14 +3593,30 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
             if (dStr === null || dStr === undefined || dStr === '') return '';
             if (dStr instanceof Date && !isNaN(dStr.getTime())) return formatDateLocal(dStr);
 
+            // SheetJS may return an Excel serial number when the source cell is a
+            // real Excel date. Convert it before doing any string parsing.
+            if (typeof dStr === 'number' && Number.isFinite(dStr)) {
+                if (window.XLSX?.SSF?.parse_date_code) {
+                    const dc = XLSX.SSF.parse_date_code(dStr);
+                    if (dc && dc.y && dc.m && dc.d) {
+                        return `${String(dc.y).padStart(4,'0')}-${String(dc.m).padStart(2,'0')}-${String(dc.d).padStart(2,'0')}`;
+                    }
+                }
+                // Excel's common 1900 date system fallback.
+                const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+                const dt = new Date(excelEpoch.getTime() + Math.floor(dStr) * 86400000);
+                if (!isNaN(dt.getTime())) return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,'0')}-${String(dt.getUTCDate()).padStart(2,'0')}`;
+            }
+
             const raw = String(dStr).trim();
-            // Date-only values must stay exactly on their stored calendar day.
+            if (!raw || raw === '-' || raw === '—' || raw.toLowerCase() === 'null' || raw.toLowerCase() === 'n/a') return '';
+
+            // Date-only ISO values must stay exactly on their stored calendar day.
             let m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
             if (m) return `${m[1]}-${m[2]}-${m[3]}`;
 
             // Supabase/API can return a date as an ISO timestamp in UTC.
-            // Convert that timestamp to the app's Vietnam calendar date so a stored
-            // 17th at 00:00 local time is not rendered as the 16th.
+            // Convert that timestamp to the app's Vietnam calendar date.
             if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
                 const dt = new Date(raw);
                 if (!isNaN(dt.getTime())) {
@@ -3590,14 +3626,43 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                     }).formatToParts(dt).reduce((o,p)=>{o[p.type]=p.value; return o;},{});
                     if (parts.year && parts.month && parts.day) return `${parts.year}-${parts.month}-${parts.day}`;
                 }
-                return raw.split('T')[0];
+                return '';
             }
 
-            // Handle common spreadsheet display values such as M/D/YYYY or M-D-YYYY.
+            // Common spreadsheet text formats: M/D/YYYY, M-D-YYYY, DD/MM/YYYY.
             m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-            if (m) return `${m[3]}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`;
+            if (m) {
+                const a=Number(m[1]), b=Number(m[2]), y=Number(m[3]);
+                // For slash dates, retain the existing app convention (month/day/year).
+                // For dash dates, also accept day-month-year when the first value > 12.
+                const month = a > 12 ? b : a;
+                const day = a > 12 ? a : b;
+                if (month>=1 && month<=12 && day>=1 && day<=31) return `${y}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            }
 
-            return raw.split('T')[0];
+            // Excel/text exports frequently contain values such as "4-Aug" or
+            // "04-Aug-2026". If the year is omitted, use the current year.
+            const monthNames='Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|August|Sep|Sept|September|Oct|October|Nov|November|Dec|December';
+            m = raw.match(new RegExp(`^(\d{1,2})[-\s](${monthNames})(?:[-\s,]+(\d{2,4}))?$`,'i'));
+            if (m) {
+                const day=Number(m[1]);
+                const monthText=m[2].toLowerCase();
+                const months={jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,may:5,jun:6,june:6,jul:7,july:7,aug:8,august:8,sep:9,sept:9,september:9,oct:10,october:10,nov:11,november:11,dec:12,december:12};
+                const month=months[monthText];
+                let year=m[3]?Number(m[3]):new Date().getFullYear();
+                if (year<100) year += year>=70 ? 1900 : 2000;
+                if (month && day>=1 && day<=31) return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            }
+
+            // Also accept "Aug-4", "Aug 4, 2026", and similar human-readable values.
+            const parsed=Date.parse(raw);
+            if (!isNaN(parsed)) {
+                const dt=new Date(parsed);
+                return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+            }
+
+            // Never return an arbitrary non-date string to a PostgreSQL DATE column.
+            return '';
         }
 
         function mapDbUserToApp(r){
@@ -3768,7 +3833,7 @@ function normalizeProjectTasks(tasks,project){
                 applyPendingGanttHoursToState();
                 const curState={Users:users,Capacity:capacityData,Tasks:dailyTasks,TimeOff_OT:timeoffOtList,Projects:projectsList};
                 Object.keys(curState).forEach(k=>sheetSyncSnapshots[k]=JSON.parse(JSON.stringify(curState[k])));
-                if(!background||changedSheets.length||forceRender){populateFilterOptions();if(!background&&!window._bomDefaultsInitialized){setBomCurrentPeriodDefaults();window._bomDefaultsInitialized=true;}updateDashboardFinancialKpis();updateBomFilterButtons();window.bomFilteredTasks=dailyTasks.filter(taskPassesBomTopFilters);renderCapacityTable();renderDailyTrackingTable();renderMyTasksTable();renderTimeoffOtTable();renderGanttChart();renderProjectsTable();renderWeeklyCalendar();renderUserManagementTable();renderSaturdayMatrixTable();initDashboardCharts();onTimeoffTypeChange();restoreAdvancedTableFilters();}
+                if(!background||changedSheets.length||forceRender){populateFilterOptions();if(!window._bomDefaultsInitialized){setBomCurrentPeriodDefaults();window._bomDefaultsInitialized=true;}updateDashboardFinancialKpis();updateBomFilterButtons();window.bomFilteredTasks=dailyTasks.filter(taskPassesBomTopFilters);renderCapacityTable();renderDailyTrackingTable();renderMyTasksTable();renderTimeoffOtTable();renderGanttChart();renderProjectsTable();renderWeeklyCalendar();renderUserManagementTable();renderSaturdayMatrixTable();initDashboardCharts();onTimeoffTypeChange();restoreAdvancedTableFilters();}
                 return true;
             }catch(err){console.error('Supabase Fetch Error:',err);if(!background)showAppNotification(`Unable to load data from Supabase. ${err.message||''}`,'Database Error');return false;}
             finally{if(!background){if(initLoader){initLoader.classList.add('opacity-0','pointer-events-none');setTimeout(()=>{initLoader.style.display='none';},500);}if(syncLoader)syncLoader.classList.add('opacity-0','pointer-events-none');}}
@@ -4080,7 +4145,14 @@ function setupInlineRequiredValidation(){
         function subscribeSupabaseRealtime(){
             if(!supabaseClient||window._bomRealtimeChannelsBound)return;
             window._bomRealtimeChannelsBound=true;
-            const refresh=()=>{clearTimeout(window._bomRealtimeTimer);window._bomRealtimeTimer=setTimeout(()=>fetchAllDataFromSheet({background:true,forceRender:true}),120);};
+            const refresh=()=>{
+                clearTimeout(window._bomRealtimeTimer);
+                window._bomRealtimeTimer=setTimeout(()=>{
+                    if(sheetSyncInFlight?.Projects || sheetLatestLocal?.Projects){ refresh(); return; }
+                    if(Date.now()-(lastLocalSaveAt?.Projects||0)<900){ refresh(); return; }
+                    fetchAllDataFromSheet({background:true,forceRender:true});
+                },180);
+            };
             window._bomRealtimeChannels=window._bomRealtimeChannels||[];
             Object.entries(SUPABASE_TABLES).forEach(([sheet,table])=>{
                 const ch=supabaseClient.channel(`bom-team-realtime-${sheet.toLowerCase()}`)
@@ -4196,10 +4268,22 @@ function setupInlineRequiredValidation(){
                 activeNav.classList.add('bg-indigo-600', 'text-white');
                 activeNav.classList.remove('text-slate-400', 'hover:bg-slate-800', 'hover:text-slate-200');
             }
+            if (['dashboard','daily-tracking','my-tasks','weekly-calendar','timeoff-ot','workload'].includes(tabId) && !window._bomDefaultsInitialized) {
+                setBomCurrentPeriodDefaults();
+                window._bomDefaultsInitialized=true;
+                window.bomFilteredTasks=dailyTasks.filter(taskPassesBomTopFilters);
+            }
             if (tabId === 'dashboard') updateDashboardCharts();
             else if (tabId === 'my-tasks') renderMyTasksTable();
             else if (tabId === 'weekly-calendar') renderWeeklyCalendar();
-            else if (tabId === 'projects') { renderProjectsTable(); renderGanttChart(); setProjectView(projectCurrentView, true); }
+            else if (tabId === 'projects') {
+                expandedProjectRows.clear();
+                collapsedProjectPhases.clear();
+                projectExpandedInitialized=true;
+                renderProjectsTable();
+                renderGanttChart();
+                setProjectView(projectCurrentView, true);
+            }
             else if (tabId === 'timeoff-ot') {
                 renderSaturdayMatrixTable();
                 onTimeoffTypeChange();
@@ -4731,6 +4815,7 @@ function setupInlineRequiredValidation(){
         /* ===== Unified page filters / actions ===== */
         const bomTopFilterState = { Year:new Set(), Month:new Set(), Week:new Set(), Category:new Set(), Member:new Set(), Status:new Set() };
         const ganttFilterState={Project:new Set(),Start:new Set(),Plan:new Set(),Actual:new Set(),Status:new Set(),Progress:new Set(),Owner:new Set()};
+        const ganttFilterDraftState={Project:new Set(),Owner:new Set(),Status:new Set()};
         const expandedGanttProjects = new Set();
         function toggleGanttProjectHours(projectId){ const key=String(projectId); if(expandedGanttProjects.has(key)) expandedGanttProjects.delete(key); else expandedGanttProjects.add(key); renderGanttChart(); }
         function getGanttCalculatedProgress(p){
@@ -4904,8 +4989,10 @@ function setupInlineRequiredValidation(){
             const menu=bar.querySelector('.bom-multi-menu');
             if (!menu) return;
             const isGantt=Object.prototype.hasOwnProperty.call(ganttFilterState,key);
-            const selected=isGantt?ganttFilterState[key]:bomTopFilterState[key];
-            const values=isGantt?getGanttFilterUniverse(key):getBomFilterUniverse(key);
+            const state=isGantt?ganttFilterState:bomTopFilterState;
+            const rawSelected=state?.[key];
+            const selected=rawSelected instanceof Set ? rawSelected : new Set(Array.isArray(rawSelected)?rawSelected:(rawSelected==null||rawSelected===''?[]:[String(rawSelected)]));
+            const values=(isGantt?getGanttFilterUniverse(key):getBomFilterUniverse(key)) || [];
             menu.innerHTML=`<input type="search" placeholder="Search ${key}..." oninput="filterBomOptionSearch(this)">${values.map(v=>`
                 <label class="bom-multi-option" data-label="${String(v).toLowerCase()}">
                     <input type="checkbox" value="${escapeHtml(String(v))}" ${selected.has(String(v))?'checked':''} onchange="changeBomTopFilter('${key}', this)">
@@ -4966,28 +5053,34 @@ function setupInlineRequiredValidation(){
         function updateBomFilterButtons(){
             document.querySelectorAll('[data-bom-filter-bar="1"] .bom-multi').forEach(bar=>{
                 const key=bar.dataset.filterKey;
-                const selected=Object.prototype.hasOwnProperty.call(ganttFilterState,key)?ganttFilterState[key]:bomTopFilterState[key];
+                const state=Object.prototype.hasOwnProperty.call(ganttFilterState,key)?ganttFilterState:bomTopFilterState;
+                const rawSelected=state?.[key];
+                const selected=rawSelected instanceof Set ? rawSelected : new Set(Array.isArray(rawSelected)?rawSelected:(rawSelected==null||rawSelected===''?[]:[String(rawSelected)]));
                 const btn=bar.querySelector('.bom-multi-btn');
-                const values=[...selected].map(String);
+                if(!btn)return;
+                const values=Array.from(selected).map(String);
                 const label=values.length ? `${key}: ${values.join(', ')}` : key;
                 btn.innerHTML=`<span class="truncate max-w-[220px]" title="${escapeHtml(label)}">${escapeHtml(label)}</span><i class="fa-solid fa-chevron-down text-[9px] ml-auto shrink-0"></i>`;
             });
         }
         function setBomCurrentPeriodDefaults(){
+            // The shared filters on Dashboard / Daily Tracking / My Task / Calendar /
+            // Workload always start on the actual current Year / Month / ISO Week.
+            // Project Management intentionally does not use these filters.
             const now=new Date();
             const currentYear=String(now.getFullYear());
-            const years=getBomFilterUniverse('Year');
-            const year=years.includes(currentYear)?currentYear:(years.length?years[years.length-1]:currentYear);
-            bomTopFilterState.Year.clear(); bomTopFilterState.Month.clear(); bomTopFilterState.Week.clear();
-            bomTopFilterState.Year.add(year);
-            const weekUniverse=getBomFilterUniverse('Week');
+            const currentMonth=String(now.getMonth()+1);
             const currentWeek=String(getIsoWeekNumber(formatDateLocal(now)));
-            const week=weekUniverse.includes(currentWeek)?currentWeek:(weekUniverse.length?weekUniverse[weekUniverse.length-1]:currentWeek);
-            bomTopFilterState.Week.add(week);
-            const range=getIsoWeekRange(Number(year),Number(week));
-            const month=range ? String(Number(range.end.slice(5,7))) : String(now.getMonth()+1);
-            bomTopFilterState.Month.add(month);
-            document.querySelectorAll('.bom-multi').forEach(bar=>bomFilterBarOptions(bar,bar.dataset.filterKey));
+            bomTopFilterState.Year.clear();
+            bomTopFilterState.Month.clear();
+            bomTopFilterState.Week.clear();
+            bomTopFilterState.Year.add(currentYear);
+            bomTopFilterState.Month.add(currentMonth);
+            bomTopFilterState.Week.add(currentWeek);
+            document.querySelectorAll('.bom-multi').forEach(bar=>{
+                if(bar.closest('#tab-projects')) return;
+                bomFilterBarOptions(bar,bar.dataset.filterKey);
+            });
             updateBomFilterButtons();
         }
         function syncBomMonthToSelectedWeek(){
@@ -5068,10 +5161,7 @@ function setupInlineRequiredValidation(){
         }
 
         function calcBomCostSaving(){
-            return projectsList.reduce((sum,p)=>{
-                const hasActual = p.actualSaving !== undefined && p.actualSaving !== '' && isFinite(Number(p.actualSaving));
-                return sum + (hasActual ? Number(p.actualSaving) : 0);
-            },0);
+            return (projectsList||[]).reduce((sum,p)=>sum+calcProjectEffectiveSaving(p),0);
         }
         function calcBomOvertimeHours(){
             return timeoffOtList.filter(x=>x.type==='Over Time').reduce((sum,x)=>sum+(parseFloat(x.hours)||0),0);
@@ -6780,8 +6870,44 @@ function setupInlineRequiredValidation(){
             return 'Not Started';
         }
         function projectIncompleteTaskDetails(project){
-            const tasks=[...(Array.isArray(project?.phases)?project.phases:[]).flatMap(ph=>Array.isArray(ph?.tasks)?ph.tasks.map(t=>({...t,_phaseName:ph.name})):[]),...(Array.isArray(project?.tasks)?project.tasks:[])];
-            const out=[]; tasks.forEach(t=>{const st=calculateProjectTaskStatus(t);const detail=String(t.detail||'').trim();const name=String(t.name||'').trim();if(st!=='Completed'&&detail)out.push(`${out.length+1}. ${name}: ${detail}`);}); return out.join('\n');
+            const tasks=[...(Array.isArray(project?.phases)?project.phases:[]).flatMap(ph=>Array.isArray(ph?.tasks)?ph.tasks:[]),...(Array.isArray(project?.tasks)?project.tasks:[])];
+            if(!tasks.length) return '';
+            const incomplete=tasks.filter(t=>calculateProjectTaskStatus(t)!=='Completed');
+            if(!incomplete.length) return 'Completed';
+            const details=[];
+            incomplete.forEach(t=>{
+                const detail=String(t?.detail||'').trim();
+                if(detail) details.push({name:String(t?.name||'').trim(),detail});
+            });
+            if(!details.length) return '';
+            if(details.length===1) return details[0].detail;
+            return details.map((x,i)=>`${i+1}. ${x.name ? x.name+': ' : ''}${x.detail}`).join('\n');
+        }
+        function projectDetailedStatusHtml(value){
+            const v=String(value||'').trim();
+            if(!v) return '<span class="pm-ref-empty">-</span>';
+            if(v==='Completed') return '<span class="pm-ref-detail-badge on-track">Completed</span>';
+            const lines=v.split('\n').filter(Boolean);
+            return `<div class="pm-project-detail-list">${lines.map(line=>`<span class="pm-detail-line">${escapeHtml(line)}</span>`).join('')}</div>`;
+        }
+        function refreshProjectDetailedStatusDisplay(projectId){
+            const p=projectsList.find(x=>String(x.id)===String(projectId));
+            if(!p)return;
+            const row=document.querySelector(`#projectsTableBody .pm-ref-project-data-row[data-project-id="${CSS.escape(String(projectId))}"]`);
+            if(!row)return;
+            const cell=row.querySelector('.pm-project-detail-cell');
+            if(cell)cell.innerHTML=projectDetailedStatusHtml(projectIncompleteTaskDetails(p));
+        }
+        function updateProjectInlineTaskDetailRealtime(projectId,phaseIndex,taskIndex,value){
+            const p=projectsList.find(x=>String(x.id)===String(projectId));
+            if(!p)return;
+            const list=getProjectInlineTaskList(p,phaseIndex),t=list[taskIndex];
+            if(!t)return;
+            t.detail=String(value??'');
+            t.status=calculateProjectTaskStatus(t);
+            syncProjectOverallStatus(p);
+            refreshProjectDetailedStatusDisplay(projectId);
+            queueProjectInlineSave(projectId);
         }
         function syncProjectOverallStatus(project){
             if(!project) return 'Not Started';
@@ -6790,25 +6916,114 @@ function setupInlineRequiredValidation(){
             return status;
         }
         function projectOwnerText(item){return Array.isArray(item?.owners)?item.owners.join(', '):String(item?.owner||'').trim();}
-        function projectMoney(v){return v===''||v===null||v===undefined?'':Number(v||0).toLocaleString(undefined,{maximumFractionDigits:2});}
+        function projectNumber(v){
+            if(v===''||v===null||v===undefined||Number.isNaN(Number(v)))return '';
+            return Math.round(Number(v)||0).toLocaleString('en-US',{maximumFractionDigits:0});
+        }
+        function projectMoney(v){
+            if(v===''||v===null||v===undefined||Number.isNaN(Number(v)))return '';
+            const n=Math.round(Number(v)||0);
+            return '$'+n.toLocaleString('en-US',{maximumFractionDigits:0});
+        }
+        function projectParseMoney(v){
+            if(v===null||v===undefined)return '';
+            let raw=String(v).trim();
+            if(!raw)return '';
+            raw=raw.replace(/[$€£¥\s]/g,'');
+            if(raw.startsWith('(')&&raw.endsWith(')'))raw='-'+raw.slice(1,-1);
+            raw=raw.replace(/,/g,'');
+            const n=Number(raw);
+            return Number.isFinite(n)?n:'';
+        }
         function projectPhaseSummary(ph,project){
             const d=deriveProjectPhaseSchedule(ph,project); ph.startDate=d.startDate;ph.dueDate=d.dueDate;ph.actualDate=d.actualDate;
             const tasks=Array.isArray(ph.tasks)?ph.tasks:[];
             const owners=[...new Set(tasks.map(t=>String(t.owner||'').trim()).filter(Boolean))];
-            const gain=[...new Set(tasks.map(t=>String(t.gainDemand||'').trim()).filter(Boolean))].join(', ');
-            const est=tasks.reduce((a,t)=>a+(Number(t.estSaving)||0),0), act=tasks.reduce((a,t)=>a+(Number(t.actualSaving)||0),0);
+            const gain=tasks.reduce((a,t)=>a+(Number(t.gainDemand)||0),0);
+            const est=tasks.reduce((a,t)=>a+(Number(t.estSaving)||0),0);
+            const act=tasks.reduce((a,t)=>a+(Number(t.actualSaving)||0),0);
             const completed=tasks.filter(t=>calculateProjectTaskStatus(t)==='Completed').length;
             const status=tasks.length&&completed===tasks.length?'Completed':tasks.some(t=>calculateProjectTaskStatus(t)==='Overdue')?'Overdue':tasks.some(t=>calculateProjectTaskStatus(t)==='Working')?'Working':'Not Started';
-            const details=[...new Set(tasks.map(t=>String(t.detail||'').trim()).filter(Boolean))].join(' • ');
+            const details=[];
+            tasks.filter(t=>calculateProjectTaskStatus(t)!=='Completed').forEach(t=>{const detail=String(t?.detail||'').trim();if(detail)details.push({name:String(t?.name||'').trim(),detail});});
+            const detailText=details.length===1?details[0].detail:details.map((x,i)=>`${i+1}. ${x.name?x.name+': ':''}${x.detail}`).join('\n');
             const note=[...new Set(tasks.map(t=>String(t.note||'').trim()).filter(Boolean))].join(' • ');
-            return {startDate:d.startDate,dueDate:d.dueDate,actualDate:d.actualDate,owner:owners.join(', '),gainDemand:gain,saving:est,actualSaving:act,detail:details,status,note};
+            return {startDate:d.startDate,dueDate:d.dueDate,actualDate:d.actualDate,owner:owners.join(', '),gainDemand:gain,saving:est,actualSaving:act,detail:detailText,status,note};
         }
+        function projectAggregateSummary(project){
+            const phases=Array.isArray(project?.phases)?project.phases:[];
+            const sums=phases.map(ph=>projectPhaseSummary(ph,project));
+            const direct=Array.isArray(project?.tasks)?project.tasks:[];
+            const gain=sums.reduce((a,x)=>a+(Number(x.gainDemand)||0),0)+direct.reduce((a,t)=>a+(Number(t.gainDemand)||0),0);
+            const saving=sums.reduce((a,x)=>a+(Number(x.saving)||0),0)+direct.reduce((a,t)=>a+(Number(t.estSaving)||0),0);
+            const actualSaving=sums.reduce((a,x)=>a+(Number(x.actualSaving)||0),0)+direct.reduce((a,t)=>a+(Number(t.actualSaving)||0),0);
+            return {gainDemand:gain,saving,actualSaving};
+        }
+        function projectEffectiveSavingValue(task){
+            const actual=projectParseMoney(task?.actualSaving);
+            if(actual!=='' && Number.isFinite(Number(actual))) return Number(actual)||0;
+            const est=projectParseMoney(task?.estSaving);
+            return est!=='' && Number.isFinite(Number(est)) ? Number(est)||0 : 0;
+        }
+        function calcProjectEffectiveSaving(project){
+            const tasks=[...(Array.isArray(project?.phases)?project.phases:[]).flatMap(ph=>Array.isArray(ph?.tasks)?ph.tasks:[]),...(Array.isArray(project?.tasks)?project.tasks:[])];
+            return tasks.reduce((sum,t)=>sum+projectEffectiveSavingValue(t),0);
+        }
+
         let projectTableSearchText='';
         let projectExpandedInitialized=false;
+        const projectPeriodFilterState={Year:new Set(),Month:new Set(),Week:new Set()};
+        let projectPeriodDefaultsInitialized=false;
+        function projectPeriodValues(){
+            const years=new Set(),months=new Set(),weeks=new Set();
+            const addDate=v=>{const d=cleanDateStr(v);if(!d)return;const dt=new Date(d+'T00:00:00');years.add(String(dt.getFullYear()));months.add(String(dt.getMonth()+1));weeks.add(String(getIsoWeekNumber(d)));};
+            (projectsList||[]).forEach(p=>{[p.startDate,p.dueDate,p.actualDate].forEach(addDate);(p.phases||[]).forEach(ph=>{[ph.startDate,ph.dueDate,ph.actualDate].forEach(addDate);(ph.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(addDate));});(p.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(addDate));});
+            return {Year:[...years].sort((a,b)=>Number(a)-Number(b)),Month:[...months].sort((a,b)=>Number(a)-Number(b)),Week:[...weeks].sort((a,b)=>Number(a)-Number(b))};
+        }
+        function projectPeriodMatchesDate(v){
+            const d=cleanDateStr(v);if(!d)return false;const dt=new Date(d+'T00:00:00');
+            if(projectPeriodFilterState.Year.size&&!projectPeriodFilterState.Year.has(String(dt.getFullYear())))return false;
+            if(projectPeriodFilterState.Month.size&&!projectPeriodFilterState.Month.has(String(dt.getMonth()+1)))return false;
+            if(projectPeriodFilterState.Week.size&&!projectPeriodFilterState.Week.has(String(getIsoWeekNumber(d))))return false;
+            return true;
+        }
+        function projectPeriodMatches(project){
+            const active=Object.values(projectPeriodFilterState).some(s=>s.size);if(!active)return true;
+            const dates=[project?.startDate,project?.dueDate,project?.actualDate];
+            (project?.phases||[]).forEach(ph=>{dates.push(ph.startDate,ph.dueDate,ph.actualDate);(ph.tasks||[]).forEach(t=>dates.push(t.startDate,t.dueDate,t.actualDate));});
+            (project?.tasks||[]).forEach(t=>dates.push(t.startDate,t.dueDate,t.actualDate));
+            return dates.some(projectPeriodMatchesDate);
+        }
+        function initProjectPeriodDefaults(){
+            if(projectPeriodDefaultsInitialized || !(projectsList||[]).length)return;
+            const now=new Date(),vals=projectPeriodValues();
+            projectPeriodFilterState.Year.clear();projectPeriodFilterState.Month.clear();projectPeriodFilterState.Week.clear();
+            const y=String(now.getFullYear()); if(vals.Year.includes(y))projectPeriodFilterState.Year.add(y);
+            const m=String(now.getMonth()+1); if(vals.Month.includes(m))projectPeriodFilterState.Month.add(m);
+            const w=String(getIsoWeekNumber(formatDateLocal(now))); if(vals.Week.includes(w))projectPeriodFilterState.Week.add(w);
+            projectPeriodDefaultsInitialized=true;updateProjectPeriodFilterButtons();
+        }
+        function updateProjectPeriodFilterButtons(){
+            document.querySelectorAll('#tab-projects .pm-project-period-filters .bom-multi').forEach(bar=>{
+                const key=bar.dataset.projectPeriodKey,sel=projectPeriodFilterState[key]||new Set(),btn=bar.querySelector('.bom-multi-btn');
+                if(btn)btn.innerHTML=`<span class="truncate max-w-[90px]" title="${key}: ${[...sel].join(', ')}">${[...sel].length?[...sel].join(', '):key}</span><i class="fa-solid fa-chevron-down text-[9px] ml-auto shrink-0"></i>`;
+            });
+        }
+        function toggleProjectPeriodFilter(btn){
+            const bar=btn.parentElement,key=bar.dataset.projectPeriodKey,menu=bar.querySelector('.bom-multi-menu');
+            document.querySelectorAll('#tab-projects .pm-project-period-filters .bom-multi-menu').forEach(m=>{if(m!==menu)m.classList.add('hidden')});
+            menu.classList.toggle('hidden');if(menu.classList.contains('hidden'))return;
+            const vals=projectPeriodValues()[key]||[],sel=projectPeriodFilterState[key]||new Set();
+            menu.innerHTML=`<input type="search" placeholder="Search ${key}..." oninput="filterBomOptionSearch(this)">${vals.map(v=>`<label class="bom-multi-option" data-label="${String(v).toLowerCase()}"><input type="checkbox" value="${v}" ${sel.has(v)?'checked':''} onchange="changeProjectPeriodFilter('${key}',this)"><span>${v}</span></label>`).join('')}<div class="flex gap-1 pt-2 border-t mt-1"><button type="button" class="text-[10px] px-2 py-1 bg-slate-100 rounded" onclick="selectProjectPeriodFilter('${key}',true)">All</button><button type="button" class="text-[10px] px-2 py-1 bg-slate-100 rounded" onclick="selectProjectPeriodFilter('${key}',false)">Clear</button></div>`;
+            const rect=btn.getBoundingClientRect();let left=rect.left,top=rect.bottom+4;if(left+240>window.innerWidth-8)left=Math.max(8,window.innerWidth-248);if(top+menu.scrollHeight>window.innerHeight-8)top=Math.max(8,rect.top-Math.min(menu.scrollHeight,280)-4);menu.style.left=`${left}px`;menu.style.top=`${top}px`;menu.style.zIndex='2147483647';
+        }
+        function changeProjectPeriodFilter(key,cb){const s=projectPeriodFilterState[key];if(cb.checked)s.add(cb.value);else s.delete(cb.value);updateProjectPeriodFilterButtons();renderProjectsTable();renderGanttChart();}
+        function selectProjectPeriodFilter(key,all){const s=projectPeriodFilterState[key];s.clear();if(all)(projectPeriodValues()[key]||[]).forEach(v=>s.add(v));updateProjectPeriodFilterButtons();renderProjectsTable();renderGanttChart();}
 
         function setProjectTableSearch(value){
             projectTableSearchText=String(value||'').trim().toLowerCase();
             renderProjectsTable();
+            if(projectCurrentView==='gantt') renderGanttChart();
         }
 
         function projectMatchesSearch(project){
@@ -6877,7 +7092,10 @@ function setupInlineRequiredValidation(){
         }
 
         function projectRefMoneyInput(value, onChange){
-            return `<input type="number" step="0.01" class="pm-ref-input pm-ref-money" value="${value===''||value===undefined||value===null?'':Number(value)}" onchange="${onChange}">`;
+            const n=projectParseMoney(value);
+            const display=n===''?'':Math.round(Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:0});
+            const safeChange=String(onChange||'').replace(/"/g,'&quot;');
+            return `<input type="text" inputmode="decimal" autocomplete="off" class="pm-ref-input pm-ref-money" value="${escapeHtml(display)}" data-money-value="${n===""?"":Number(n)||0}" onfocus="this.value=this.value.replace(/,/g,'')" onchange="this.value=this.value.trim()?Number(String(this.value).replace(/,/g,'' )||0).toLocaleString('en-US',{maximumFractionDigits:0}):'';${safeChange}">`;
         }
 
         function projectInlineTaskRow(p,phaseIndex,task,taskIndex,phaseColor=0,phaseName=''){
@@ -6887,13 +7105,13 @@ function setupInlineRequiredValidation(){
             return `<tr class="pm-ref-task-row ${phaseTaskClass}" ondragover="projectTaskDragOver(event)" ondrop="projectTaskDrop(event,${phaseIndex},${taskIndex},'${pid}')">
                 <td class="pm-ref-no pm-row-action-cell"><button type="button" class="pm-row-delete-btn" onclick="deleteProjectInlineTask('${pid}',${phaseIndex},${taskIndex})" title="Delete task" aria-label="Delete task"><i class="fa-solid fa-trash"></i></button></td><td class="pm-ref-phase-empty"><span class="pm-ref-tree-line"></span></td>
                 <td class="pm-ref-task-cell">${projectRefTextInput(taskName,'pm-ref-task-input',`updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'name',this.value)`)}<span class="pm-ref-drag-handle" draggable="true" ondragstart="event.stopPropagation();projectTaskDragStart(event,${phaseIndex},${taskIndex},'${pid}')" ondragend="projectTaskDragEnd(event)" title="Drag to move"><i class="fa-solid fa-grip-vertical"></i></span></td>
-                <td>${projectTaskOwnerPicker(p,phaseIndex,taskIndex,task.owner)}</td>
+                <td class="pm-ref-owner-cell">${projectTaskOwnerPicker(p,phaseIndex,taskIndex,task.owner)}</td>
                 <td>${projectRefDateInput(task.startDate,`updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'startDate',this.value)`)}</td>
                 <td>${projectRefDateInput(task.dueDate,`updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'dueDate',this.value)`,projectNextDate(task.startDate))}</td>
                 <td>${projectRefDateInput(task.actualDate,`updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'actualDate',this.value)`)}</td>
-                <td>${projectRefTextInput(task.gainDemand||'', '', `updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'gainDemand',this.value)`,'-')}</td>
-                <td>${projectRefMoneyInput(task.estSaving,`updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'estSaving',this.value)`)}</td><td>${projectRefMoneyInput(task.actualSaving,`updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'actualSaving',this.value)`)}</td>
-                <td>${projectDetailedStatusBadge(task.detail,true,`updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'detail',this.value)`)}</td><td>${projectOverallBadge(status,false,'')}</td><td>${projectRefTextInput(task.note||'', '', `updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'note',this.value)`)}</td>
+                <td class="pm-ref-number">${projectRefTextInput(task.gainDemand||'', 'pm-ref-gain-input', `updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'gainDemand',this.value)`,'-')}</td>
+                <td class="pm-ref-money">${projectRefMoneyInput(task.estSaving,`updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'estSaving',this.value)`)}</td><td class="pm-ref-money">${projectRefMoneyInput(task.actualSaving,`updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'actualSaving',this.value)`)}</td>
+                <td>${projectDetailedStatusBadge(task.detail,true,`updateProjectInlineTaskDetailRealtime('${pid}',${phaseIndex},${taskIndex},this.value)`)}</td><td>${projectOverallBadge(status,false,'')}</td><td>${projectRefTextInput(task.note||'', '', `updateProjectInlineTask('${pid}',${phaseIndex},${taskIndex},'note',this.value)`)}</td>
             </tr>`;
         }
 
@@ -6948,14 +7166,14 @@ function setupInlineRequiredValidation(){
                         ${projectRefTextInput(ph.name||`Phase ${pi+1}`,'pm-ref-phase-input',`updateProjectInlinePhase('${pid}',${pi},'name',this.value)`)}
                     </td>
                     <td class="pm-ref-phase-task-summary"><span class="pm-ref-phase-branch"></span></td>
-                    <td>${escapeHtml(sum.owner||'-')}</td>
+                    <td class="pm-ref-owner-cell">${escapeHtml(sum.owner||'-')}</td>
                     <td>${projectRefDate(sum.startDate)}</td>
                     <td>${projectRefDate(sum.dueDate)}</td>
                     <td>${projectRefDate(sum.actualDate)}</td>
-                    <td>${escapeHtml(sum.gainDemand||'-')}</td>
+                    <td class="pm-ref-number">${projectNumber(sum.gainDemand)||'-'}</td>
                     <td class="pm-ref-money">${projectMoney(sum.saving)||'-'}</td>
                     <td class="pm-ref-money">${projectMoney(sum.actualSaving)||'-'}</td>
-                    <td>${projectDetailedStatusBadge(sum.detail,false,'')}</td>
+                    <td><span class="pm-ref-empty">-</span></td>
                     <td>${projectOverallBadge(sum.status,false,'')}</td>
                     <td>${escapeHtml(sum.note||'')}</td>
                 </tr>`;
@@ -6989,6 +7207,57 @@ function setupInlineRequiredValidation(){
         const projectHeaderKeys=['no','project','task','owner','startDate','dueDate','actualDate','gainDemand','estSaving','actualSaving','detail','status','note'];
         let projectHeaderFilters={};
         const collapsedProjectPhases=new Set();
+
+        // Expand/collapse control for the entire Project / Phase hierarchy.
+        // This function must exist before renderProjectsTable() can call it.
+        function updateProjectExpandCollapseButton(){
+            const btn=document.getElementById('projectExpandCollapseBtn');
+            if(!btn)return;
+            const projects=Array.isArray(projectsList)?projectsList.filter(p=>p&&String(p.name||'').trim()):[];
+            let allExpanded=false;
+            if(projectCurrentView==='gantt'){
+                allExpanded=projects.length>0 && projects.every(p=>!collapsedGanttProjects.has(String(p.id)) && (Array.isArray(p.phases)?p.phases:[]).every((ph,pi)=>!collapsedGanttPhases.has(ganttNodeKey(p.id,pi))));
+            }else{
+                allExpanded=projects.length>0 && projects.every(p=>expandedProjectRows.has(String(p.id)));
+            }
+            btn.title=allExpanded?'Collapse all':'Expand all';
+            btn.innerHTML=allExpanded
+                ? '<i class="fa-solid fa-down-left-and-up-right-to-center"></i><span>Collapse all</span>'
+                : '<i class="fa-solid fa-up-right-and-down-left-from-center"></i><span>Expand all</span>';
+            btn.dataset.expanded=allExpanded?'1':'0';
+            btn.disabled=!projects.length;
+            btn.classList.toggle('opacity-50',!projects.length);
+            btn.classList.toggle('cursor-not-allowed',!projects.length);
+        }
+
+        function toggleAllProjectRows(){
+            const projects=Array.isArray(projectsList)?projectsList.filter(p=>p&&String(p.name||'').trim()):[];
+            if(!projects.length)return;
+            if(projectCurrentView==='gantt'){
+                const allExpanded=projects.every(p=>!collapsedGanttProjects.has(String(p.id)) && (Array.isArray(p.phases)?p.phases:[]).every((ph,pi)=>!collapsedGanttPhases.has(ganttNodeKey(p.id,pi))));
+                if(allExpanded){
+                    projects.forEach(p=>{collapsedGanttProjects.add(String(p.id));(p.phases||[]).forEach((ph,pi)=>collapsedGanttPhases.add(ganttNodeKey(p.id,pi)));});
+                }else{
+                    collapsedGanttProjects.clear();collapsedGanttPhases.clear();
+                }
+                renderGanttChart();
+            }else{
+                const allExpanded=projects.every(p=>expandedProjectRows.has(String(p.id)));
+                if(allExpanded){
+                    expandedProjectRows.clear();
+                    collapsedProjectPhases.clear();
+                }else{
+                    projects.forEach(p=>{
+                        const pid=String(p.id);
+                        expandedProjectRows.add(pid);
+                        (Array.isArray(p.phases)?p.phases:[]).forEach((ph,pi)=>collapsedProjectPhases.delete(projectPhaseCollapseKey(pid,pi)));
+                    });
+                }
+                renderProjectsTable();
+            }
+            requestAnimationFrame(updateProjectExpandCollapseButton);
+        }
+
         function projectPhaseCollapseKey(projectId,phaseIndex){return `${String(projectId)}::${Number(phaseIndex)}`;}
         function toggleProjectPhase(projectId,phaseIndex){
             const key=projectPhaseCollapseKey(projectId,phaseIndex);
@@ -7006,18 +7275,25 @@ function setupInlineRequiredValidation(){
         function getProjectFilterValues(key){
             const values=[];
             const add=v=>{const x=String(v??'').trim();if(x&&!values.some(y=>y.toLowerCase()===x.toLowerCase()))values.push(x);};
+            const otherFilters=Object.fromEntries(Object.entries(projectHeaderFilters).filter(([k])=>k!==key));
+            const matchOther=item=>Object.entries(otherFilters).every(([k,val])=>{
+                if(!Array.isArray(val)||!val.length)return true;
+                const a=String(projectHeaderFilterValue(k,item)).trim().toLowerCase();
+                return val.some(v=>a===String(v).trim().toLowerCase());
+            });
             (projectsList||[]).forEach(p=>{
-                // Project filter contains project names only.
-                if(key==='project'){ add(p?.name); return; }
-                // Task filter contains task names only. Never add project or phase names.
-                if(key==='task'){
-                    (p.phases||[]).forEach(ph=>(ph.tasks||[]).forEach(t=>add(t?.name)));
-                    (p.tasks||[]).forEach(t=>add(t?.name));
-                    return;
+                const projectItem={projectName:p.name,phaseName:'',name:p.name,owner:projectOwnerText(p),startDate:p.startDate,dueDate:p.dueDate,actualDate:p.actualDate,gainDemand:projectAggregateSummary(p).gainDemand,estSaving:projectAggregateSummary(p).saving,actualSaving:projectAggregateSummary(p).actualSaving,detail:projectIncompleteTaskDetails(p),status:calculateProjectOverallStatus(p),note:p.note};
+                if(projectMatchesSearch(p) && matchOther(projectItem)){
+                    if(key==='project') add(p.name);
+                    else add(projectHeaderFilterValue(key,projectItem));
                 }
-                if(key!=='detail') add(projectHeaderFilterValue(key,{projectName:p.name,phaseName:'',name:p.name,owner:projectOwnerText(p),startDate:p.startDate,dueDate:p.dueDate,actualDate:p.actualDate,gainDemand:p.gainDemand,estSaving:p.saving,actualSaving:p.actualSaving,detail:'',status:p.status,note:p.note}));
-                (p.phases||[]).forEach(ph=>{const sum=projectPhaseSummary(ph,p);if(key!=='detail') add(projectHeaderFilterValue(key,{projectName:p.name,phaseName:ph.name,name:ph.name,owner:sum.owner,startDate:sum.startDate,dueDate:sum.dueDate,actualDate:sum.actualDate,gainDemand:sum.gainDemand,estSaving:sum.saving,actualSaving:sum.actualSaving,detail:'',status:sum.status,note:sum.note}));(ph.tasks||[]).forEach(t=>add(projectHeaderFilterValue(key,{...t,projectName:p.name,phaseName:ph.name})));});
-                (p.tasks||[]).forEach(t=>add(projectHeaderFilterValue(key,{...t,projectName:p.name,phaseName:''})));
+                (p.phases||[]).forEach((ph,pi)=>{
+                    const sum=projectPhaseSummary(ph,p);
+                    const phaseItem={projectName:p.name,phaseName:ph.name||`Phase ${pi+1}`,name:ph.name||`Phase ${pi+1}`,owner:sum.owner,startDate:sum.startDate,dueDate:sum.dueDate,actualDate:sum.actualDate,gainDemand:sum.gainDemand,estSaving:sum.saving,actualSaving:sum.actualSaving,detail:sum.detail,status:sum.status,note:sum.note};
+                    if(matchOther(phaseItem)) add(key==='project'?p.name:projectHeaderFilterValue(key,phaseItem));
+                    (ph.tasks||[]).forEach(t=>{const item={...t,projectName:p.name,phaseName:phaseItem.phaseName};if(matchOther(item)) add(key==='project'?p.name:projectHeaderFilterValue(key,item));});
+                });
+                (p.tasks||[]).forEach(t=>{const item={...t,projectName:p.name,phaseName:''};if(matchOther(item)) add(key==='project'?p.name:projectHeaderFilterValue(key,item));});
             });
             return values.sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'}));
         }
@@ -7143,63 +7419,161 @@ function setupInlineRequiredValidation(){
         window.addEventListener('resize',closeProjectRowMenus);
         window.addEventListener('scroll',closeProjectRowMenus,true);
 
-        function exportProjectManagementData(){
-            if(!window.XLSX){showAppNotification('Excel export library is not available.','Error');return;}
-            const exportDate=v=>cleanDateStr(v)||'';
-            const rows=[];
-            (projectsList||[]).forEach((p,pi)=>{
-                rows.push({
-                    No:pi+1,Project:p.name||'',Phase:'',Task:'',
-                    Owner:projectOwnerText(p),Start:exportDate(p.startDate),
-                    "Planned Completion":exportDate(p.dueDate),"Actual Completion":exportDate(p.actualDate),
-                    "Gain Demand/Week":p.gainDemand||'',"Est. Annual Saving/years":p.saving??'',
-                    "Achieved Annual Saving/years":p.actualSaving??'',"Detailed Status":p.detail||'',
-                    "Overall Status":p.status||'',Note:p.note||''
+        function getVisibleProjectExportRows(){
+            const rows=[]; let no=0;
+            (projectsList||[]).forEach(p=>{
+                if(!p||!String(p.name||'').trim()||!projectMatchesSearch(p))return;
+                const totals=projectAggregateSummary(p);
+                const projectItem={projectName:p.name,phaseName:'',name:p.name,owner:projectOwnerText(p),startDate:p.startDate,dueDate:p.dueDate,actualDate:p.actualDate,gainDemand:totals.gainDemand,estSaving:totals.saving,actualSaving:totals.actualSaving,detail:'',status:p.status,note:p.note};
+                const anyTask=(p.tasks||[]).some(t=>projectFilterMatch({...t,projectName:p.name,phaseName:''}));
+                const anyPhase=(p.phases||[]).some(ph=>{const sum=projectPhaseSummary(ph,p);return projectFilterMatch({projectName:p.name,phaseName:ph.name,name:ph.name,owner:sum.owner,startDate:sum.startDate,dueDate:sum.dueDate,actualDate:sum.actualDate,gainDemand:sum.gainDemand,estSaving:sum.saving,actualSaving:sum.actualSaving,detail:'',status:sum.status,note:sum.note});});
+                if(Object.keys(projectHeaderFilters).length && !projectFilterMatch(projectItem)&&!anyTask&&!anyPhase)return;
+                no++;
+                rows.push({No:no,Project:p.name||'',Phase:'',Task:'',Owner:projectOwnerText(p)||'',Start:cleanDateStr(p.startDate)||'',"Planned Completion":cleanDateStr(p.dueDate)||'',"Actual Completion":cleanDateStr(p.actualDate)||'',"Gain Demand/Week":totals.gainDemand||'',"Est. Annual Saving/years":totals.saving||'',"Achieved Annual Saving/years":totals.actualSaving||'',"Detailed Status":projectIncompleteTaskDetails(p)||'',"Overall Status":p.status||'',Note:p.note||''});
+                if(!expandedProjectRows.has(String(p.id)))return;
+                (p.phases||[]).forEach((ph,pi)=>{
+                    const sum=projectPhaseSummary(ph,p); const phaseItem={projectName:p.name,phaseName:ph.name,name:ph.name,owner:sum.owner,startDate:sum.startDate,dueDate:sum.dueDate,actualDate:sum.actualDate,gainDemand:sum.gainDemand,estSaving:sum.saving,actualSaving:sum.actualSaving,detail:'',status:sum.status,note:sum.note};
+                    const taskRows=(ph.tasks||[]).filter(t=>projectFilterMatch({...t,projectName:p.name,phaseName:ph.name}));
+                    if(Object.keys(projectHeaderFilters).length&&!projectFilterMatch(phaseItem)&&!taskRows.length)return;
+                    rows.push({No:'',Project:'',Phase:ph.name||`Phase ${pi+1}`,Task:'',Owner:sum.owner||'',Start:cleanDateStr(sum.startDate)||'',"Planned Completion":cleanDateStr(sum.dueDate)||'',"Actual Completion":cleanDateStr(sum.actualDate)||'',"Gain Demand/Week":sum.gainDemand||'',"Est. Annual Saving/years":sum.saving||'',"Achieved Annual Saving/years":sum.actualSaving||'',"Detailed Status":sum.detail||'',"Overall Status":sum.status||'',Note:sum.note||''});
+                    if(collapsedProjectPhases.has(projectPhaseCollapseKey(p.id,pi)))return;
+                    taskRows.forEach(t=>rows.push({No:'',Project:'',Phase:ph.name||`Phase ${pi+1}`,Task:t.name||'',Owner:t.owner||'',Start:cleanDateStr(t.startDate)||'',"Planned Completion":cleanDateStr(t.dueDate)||'',"Actual Completion":cleanDateStr(t.actualDate)||'',"Gain Demand/Week":t.gainDemand??'',"Est. Annual Saving/years":t.estSaving??'',"Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',"Overall Status":calculateProjectTaskStatus(t)||'',Note:t.note||''}));
                 });
-                (p.phases||[]).forEach((ph,phi)=>{
-                    const sum=projectPhaseSummary(ph,p);
-                    rows.push({
-                        No:'',Project:'',Phase:ph.name||`Phase ${phi+1}`,Task:'',
-                        Owner:sum.owner||'',Start:exportDate(sum.startDate),
-                        "Planned Completion":exportDate(sum.dueDate),"Actual Completion":exportDate(sum.actualDate),
-                        "Gain Demand/Week":sum.gainDemand||'',"Est. Annual Saving/years":sum.saving||'',
-                        "Achieved Annual Saving/years":sum.actualSaving||'',"Detailed Status":sum.detail||'',
-                        "Overall Status":sum.status||'',Note:sum.note||''
-                    });
-                    (ph.tasks||[]).forEach(t=>rows.push({
-                        No:'',Project:'',Phase:ph.name||`Phase ${phi+1}`,Task:t.name||'',
-                        Owner:t.owner||'',Start:exportDate(t.startDate),
-                        "Planned Completion":exportDate(t.dueDate),"Actual Completion":exportDate(t.actualDate),
-                        "Gain Demand/Week":t.gainDemand||'',"Est. Annual Saving/years":t.estSaving??'',
-                        "Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',
-                        "Overall Status":calculateProjectTaskStatus(t),Note:t.note||''
-                    }));
-                });
-                (p.tasks||[]).forEach(t=>rows.push({
-                    No:'',Project:p.name||'',Phase:'',Task:t.name||'',
-                    Owner:t.owner||'',Start:exportDate(t.startDate),
-                    "Planned Completion":exportDate(t.dueDate),"Actual Completion":exportDate(t.actualDate),
-                    "Gain Demand/Week":t.gainDemand||'',"Est. Annual Saving/years":t.estSaving??'',
-                    "Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',
-                    "Overall Status":calculateProjectTaskStatus(t),Note:t.note||''
-                }));
+                (p.tasks||[]).filter(t=>projectFilterMatch({...t,projectName:p.name,phaseName:''})).forEach(t=>rows.push({No:'',Project:p.name||'',Phase:'',Task:t.name||'',Owner:t.owner||'',Start:cleanDateStr(t.startDate)||'',"Planned Completion":cleanDateStr(t.dueDate)||'',"Actual Completion":cleanDateStr(t.actualDate)||'',"Gain Demand/Week":t.gainDemand??'',"Est. Annual Saving/years":t.estSaving??'',"Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',"Overall Status":calculateProjectTaskStatus(t)||'',Note:t.note||''}));
             });
-            if(!rows.length){showAppNotification('No project data available to export.');return;}
-            const ws=XLSX.utils.json_to_sheet(rows);
-            const wb=XLSX.utils.book_new();
-            ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.min(42,Math.max(12,k.length+4))}));
-            XLSX.utils.book_append_sheet(wb,ws,'Project Tasks');
-            XLSX.writeFile(wb,`Project_Task_Phase_${new Date().toISOString().slice(0,10)}.xlsx`);
-            showAppNotification(`Exported ${rows.length} project/phase/task rows.`);
+            return rows.filter(r=>Object.values(r).some(v=>String(v??'').trim()!==''));
         }
+        function openProjectExportOptions(){
+            document.getElementById('projectExportOptions')?.remove();
+            const m=document.createElement('div');m.id='projectExportOptions';m.className='pm-export-modal';
+            m.innerHTML='<div class="pm-export-box"><div class="pm-export-title">Export Project Management</div><div class="pm-export-subtitle">Export all project, phase and task data with the current table formatting.</div><div class="pm-export-actions"><button type="button" onclick="exportProjectExcel();closeProjectExportOptions()"><i class="fa-solid fa-file-excel"></i><span>Export Excel</span></button><button type="button" onclick="exportProjectPdf();closeProjectExportOptions()"><i class="fa-solid fa-file-pdf"></i><span>Export PDF</span></button></div><button type="button" class="pm-export-close" onclick="closeProjectExportOptions()">Cancel</button></div>';
+            document.body.appendChild(m);m.addEventListener('click',e=>{if(e.target===m)closeProjectExportOptions();});
+        }
+        function closeProjectExportOptions(){document.getElementById('projectExportOptions')?.remove();}
+        function getAllProjectExportRows(){
+            const rows=[]; let no=0;
+            (projectsList||[]).forEach(p=>{
+                if(!p||!String(p.name||'').trim())return;
+                no++;
+                const totals=projectAggregateSummary(p);
+                rows.push({No:no,Project:p.name||'',Phase:'',Task:'',Owner:projectOwnerText(p)||'',Start:cleanDateStr(p.startDate)||'',"Planned Completion":cleanDateStr(p.dueDate)||'',"Actual Completion":cleanDateStr(p.actualDate)||'',"Gain Demand/Week":totals.gainDemand||'',"Est. Annual Saving/years":totals.saving||'',"Achieved Annual Saving/years":totals.actualSaving||'',"Detailed Status":projectIncompleteTaskDetails(p)||'',"Overall Status":calculateProjectOverallStatus(p)||p.status||'',Note:p.note||'',__kind:'project'});
+                (p.phases||[]).forEach((ph,pi)=>{
+                    const sum=projectPhaseSummary(ph,p);
+                    rows.push({No:'',Project:'',Phase:ph.name||`Phase ${pi+1}`,Task:'',Owner:sum.owner||'',Start:cleanDateStr(sum.startDate)||'',"Planned Completion":cleanDateStr(sum.dueDate)||'',"Actual Completion":cleanDateStr(sum.actualDate)||'',"Gain Demand/Week":sum.gainDemand||'',"Est. Annual Saving/years":sum.saving||'',"Achieved Annual Saving/years":sum.actualSaving||'',"Detailed Status":sum.detail||'',"Overall Status":sum.status||'',Note:sum.note||'',__kind:'phase'});
+                    (ph.tasks||[]).forEach(t=>rows.push({No:'',Project:'',Phase:ph.name||`Phase ${pi+1}`,Task:t.name||'',Owner:t.owner||'',Start:cleanDateStr(t.startDate)||'',"Planned Completion":cleanDateStr(t.dueDate)||'',"Actual Completion":cleanDateStr(t.actualDate)||'',"Gain Demand/Week":t.gainDemand??'',"Est. Annual Saving/years":t.estSaving??'',"Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',"Overall Status":calculateProjectTaskStatus(t)||'',Note:t.note||'',__kind:'task'}));
+                });
+                (p.tasks||[]).forEach(t=>rows.push({No:'',Project:p.name||'',Phase:'',Task:t.name||'',Owner:t.owner||'',Start:cleanDateStr(t.startDate)||'',"Planned Completion":cleanDateStr(t.dueDate)||'',"Actual Completion":cleanDateStr(t.actualDate)||'',"Gain Demand/Week":t.gainDemand??'',"Est. Annual Saving/years":t.estSaving??'',"Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',"Overall Status":calculateProjectTaskStatus(t)||'',Note:t.note||'',__kind:'task'}));
+            });
+            return rows;
+        }
+        function exportProjectExcel(){
+            const rows=getAllProjectExportRows(); if(!rows.length){showAppNotification('No project data to export.','Export');return;}
+            const cols=['No','Project','Phase','Task','Owner','Start','Planned Completion','Actual Completion','Gain Demand/Week','Est. Annual Saving/years','Achieved Annual Saving/years','Detailed Status','Overall Status','Note'];
+            const aoa=[cols,...rows.map(r=>cols.map(c=>r[c]??''))];
+            const ws=XLSX.utils.aoa_to_sheet(aoa), wb=XLSX.utils.book_new();
+            ws['!freeze']={xSplit:0,ySplit:1};
+            ws['!autofilter']={ref:`A1:${XLSX.utils.encode_col(cols.length-1)}${aoa.length}`};
+            ws['!cols']=[8,24,22,28,18,13,17,17,17,22,24,34,17,28].map(w=>({wch:w}));
+            const fill={project:'DCEEFF',phase:'EEF1FB',task:'FFFFFF'};
+            const moneyCols=new Set([9,10]); const numberCols=new Set([8]); const dateCols=new Set([5,6,7]);
+            rows.forEach((r,ri)=>{
+                const excelRow=ri+2;
+                cols.forEach((c,ci)=>{
+                    const cell=ws[XLSX.utils.encode_cell({r:excelRow-1,c:ci})]; if(!cell)return;
+                    cell.s={font:{name:'Arial',sz:10,color:{rgb:'334E63'}},fill:{patternType:'solid',fgColor:{rgb:fill[r.__kind]||'FFFFFF'}},alignment:{vertical:'center',horizontal:(ci===0||numberCols.has(ci))?'right':moneyCols.has(ci)?'right':'left',wrapText:true},border:{bottom:{style:'thin',color:{rgb:'D7E1E8'}}}};
+                    if(moneyCols.has(ci)){cell.t='n';cell.v=Number(r[c]||0);cell.z='$#,##0';}
+                    else if(numberCols.has(ci)){cell.t='n';cell.v=Number(r[c]||0);cell.z='#,##0';}
+                    else if(dateCols.has(ci)&&r[c]){cell.t='d';cell.v=new Date(r[c]+'T00:00:00');cell.z='m/d/yyyy';}
+                });
+            });
+            const hdr=cols.map((_,ci)=>XLSX.utils.encode_cell({r:0,c:ci})); hdr.forEach(addr=>{ws[addr].s={font:{name:'Arial',sz:10,bold:true,color:{rgb:'FFFFFF'}},fill:{patternType:'solid',fgColor:{rgb:'315C7A'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:{bottom:{style:'thin',color:{rgb:'FFFFFF'}}}};});
+            XLSX.utils.book_append_sheet(wb,ws,'Project Management');
+            XLSX.writeFile(wb,`Project_Management_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+        function getProjectPdfRows(){
+            const out=[];
+            const add=(row,kind,color=0,level=0)=>out.push({...row,__kind:kind,__color:color,__level:level});
+            (projectsList||[]).forEach(p=>{
+                if(!projectMatchesSearch(p))return;
+                const totals=projectAggregateSummary(p);
+                const projectItem={projectName:p.name,phaseName:'',name:p.name,owner:projectOwnerText(p),startDate:p.startDate,dueDate:p.dueDate,actualDate:p.actualDate,gainDemand:totals.gainDemand,estSaving:totals.saving,actualSaving:totals.actualSaving,detail:projectIncompleteTaskDetails(p),status:p.status,note:p.note};
+                const anyTask=(p.tasks||[]).some(t=>projectFilterMatch({...t,projectName:p.name,phaseName:''}));
+                const anyPhase=(p.phases||[]).some(ph=>{const sum=projectPhaseSummary(ph,p);return projectFilterMatch({projectName:p.name,phaseName:ph.name,name:ph.name,owner:sum.owner,startDate:sum.startDate,dueDate:sum.dueDate,actualDate:sum.actualDate,gainDemand:sum.gainDemand,estSaving:sum.saving,actualSaving:sum.actualSaving,detail:sum.detail,status:sum.status,note:sum.note});});
+                if(Object.keys(projectHeaderFilters).length && !projectFilterMatch(projectItem) && !anyTask && !anyPhase)return;
+                const projectCompleted=String(calculateProjectOverallStatus(p)||p.status||'').toLowerCase()==='completed';
+                add({No:'',Project:p.name||'',Phase:'',Task:'',Owner:projectOwnerText(p)||'',Start:cleanDateStr(p.startDate)||'',"Planned Completion":cleanDateStr(p.dueDate)||'',"Actual Completion":cleanDateStr(p.actualDate)||'',"Gain Demand/Week":totals.gainDemand||'',"Est. Annual Saving/years":totals.saving||'',"Achieved Annual Saving/years":totals.actualSaving||'',"Detailed Status":projectCompleted?'Completed':projectIncompleteTaskDetails(p)||'',"Overall Status":p.status||'',Note:p.note||''},'project',0,0);
+                if(projectCompleted)return;
+                (p.phases||[]).forEach((ph,pi)=>{
+                    const sum=projectPhaseSummary(ph,p);
+                    const phaseItem={projectName:p.name,phaseName:ph.name,name:ph.name,owner:sum.owner,startDate:sum.startDate,dueDate:sum.dueDate,actualDate:sum.actualDate,gainDemand:sum.gainDemand,estSaving:sum.saving,actualSaving:sum.actualSaving,detail:sum.detail,status:sum.status,note:sum.note};
+                    const taskRows=(ph.tasks||[]).filter(t=>projectFilterMatch({...t,projectName:p.name,phaseName:ph.name}));
+                    const phaseCompleted=String(sum.status||'').toLowerCase()==='completed';
+                    if(phaseCompleted && !taskRows.length)return;
+                    if(Object.keys(projectHeaderFilters).length&&!projectFilterMatch(phaseItem)&&!taskRows.length)return;
+                    if(phaseCompleted)return;
+                    add({No:'',Project:'',Phase:ph.name||`Phase ${pi+1}`,Task:'',Owner:sum.owner||'',Start:cleanDateStr(sum.startDate)||'',"Planned Completion":cleanDateStr(sum.dueDate)||'',"Actual Completion":cleanDateStr(sum.actualDate)||'',"Gain Demand/Week":sum.gainDemand||'',"Est. Annual Saving/years":sum.saving||'',"Achieved Annual Saving/years":sum.actualSaving||'',"Detailed Status":sum.detail||'',"Overall Status":sum.status||'',Note:sum.note||''},'phase',pi%8,1);
+                    taskRows.forEach(t=>{
+                        if(String(calculateProjectTaskStatus(t)||'').toLowerCase()==='completed')return;
+                        add({No:'',Project:'',Phase:ph.name||`Phase ${pi+1}`,Task:t.name||'',Owner:t.owner||'',Start:cleanDateStr(t.startDate)||'',"Planned Completion":cleanDateStr(t.dueDate)||'',"Actual Completion":cleanDateStr(t.actualDate)||'',"Gain Demand/Week":t.gainDemand??'',"Est. Annual Saving/years":t.estSaving??'',"Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',"Overall Status":calculateProjectTaskStatus(t)||'',Note:t.note||''},'task',pi%8,2);
+                    });
+                });
+                (p.tasks||[]).filter(t=>projectFilterMatch({...t,projectName:p.name,phaseName:''})).forEach(t=>{
+                    if(String(calculateProjectTaskStatus(t)||'').toLowerCase()==='completed')return;
+                    add({No:'',Project:p.name||'',Phase:'',Task:t.name||'',Owner:t.owner||'',Start:cleanDateStr(t.startDate)||'',"Planned Completion":cleanDateStr(t.dueDate)||'',"Actual Completion":cleanDateStr(t.actualDate)||'',"Gain Demand/Week":t.gainDemand??'',"Est. Annual Saving/years":t.estSaving??'',"Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',"Overall Status":calculateProjectTaskStatus(t)||'',Note:t.note||''},'task',7,1);
+                });
+            });
+            return out.filter(r=>Object.keys(r).some(k=>!k.startsWith('__')&&String(r[k]??'').trim()!==''));
+        }
+        function exportProjectPdf(){
+            const rows=getProjectPdfRows(); if(!rows.length){showAppNotification('No project data to export.','Export');return;}
+            if(!window.jspdf?.jsPDF){showAppNotification('PDF export library is not available.','Export');return;}
+            const {jsPDF}=window.jspdf;
+            const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+            const cols=['No','Project','Phase','Task','Owner','Start','Planned Completion','Actual Completion','Gain Demand/Week','Est. Annual Saving/years','Achieved Annual Saving/years','Detailed Status','Overall Status','Note'];
+            const baseWidths=[18,70,55,72,48,44,48,48,58,62,62,82,50,89];
+            const margin=18,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+            const availableW=pageW-(margin*2),baseTotal=baseWidths.reduce((a,b)=>a+b,0);
+            const widths=baseWidths.map(w=>w*availableW/baseTotal);
+            const tableW=availableW;
+            const palette={header:'#315C7A',project:'#EEF7FC',phase:['#F2F8FC','#F4FAF5','#FFF9EE','#F9F3FC','#FFF4F7','#F2FAF9','#F5F6FC','#FAF8F0'],task:['#FBFDFF','#F9FCFA','#FFFDF9','#FDFBFF','#FFFAFC','#F9FEFD','#FAFBFF','#FFFEFA'],border:'#C7D8E4',text:'#284B63'};
+            const hex=h=>{const x=h.replace('#','');return [parseInt(x.slice(0,2),16),parseInt(x.slice(2,4),16),parseInt(x.slice(4,6),16)];};
+            const fill=h=>doc.setFillColor(...hex(h)), text=h=>doc.setTextColor(...hex(h));
+            let y=22;
+            const drawHeader=()=>{
+                const h=31; fill(palette.header);doc.rect(margin,y,tableW,h,'F');doc.setDrawColor(...hex(palette.border));doc.rect(margin,y,tableW,h,'S');
+                let x=margin;doc.setFont('helvetica','bold');doc.setFontSize(5.5);text('#FFFFFF');
+                cols.forEach((c,i)=>{doc.line(x,y,x,y+h);const lines=doc.splitTextToSize(c,widths[i]-6).slice(0,3);doc.text(lines,x+(widths[i]/2),y+8,{maxWidth:widths[i]-6,align:'center',baseline:'top'});x+=widths[i];});doc.line(margin+tableW,y,margin+tableW,y+h);y+=h;
+            };
+            const drawRow=r=>{
+                const h=27;if(y+h>pageH-18){doc.addPage();y=18;drawHeader();}
+                const bg=r.__kind==='project'?palette.project:r.__kind==='phase'?palette.phase[r.__color%8]:palette.task[r.__color%8];fill(bg);doc.rect(margin,y,tableW,h,'F');doc.setDrawColor(...hex('#D2E0E8'));doc.rect(margin,y,tableW,h,'S');
+                doc.setFont('helvetica',r.__kind==='project'?'bold':'normal');doc.setFontSize(r.__kind==='project'?5.7:5.2);text(palette.text);
+                let x=margin;
+                cols.forEach((c,i)=>{
+                    let v=r[c]??'';
+                    if(c==='Gain Demand/Week' && v!=='')v=projectNumber(v);
+                    if(c==='Est. Annual Saving/years' && v!=='')v=projectMoney(v);
+                    if(c==='Achieved Annual Saving/years' && v!=='')v=projectMoney(v);
+                    if(['Start','Planned Completion','Actual Completion'].includes(c)&&v)v=formatDateMMDDYYYY(v);
+                    if(r.__kind==='phase'&&c==='Phase')v=String(v).replace(/^Phase:\s*/i,'');
+                    if(r.__kind==='task'&&c==='Task')v=String(v).replace(/^Task:\s*/i,'');
+                    const align=c==='No'||c==='Gain Demand/Week'||c==='Est. Annual Saving/years'||c==='Achieved Annual Saving/years'?'right':c==='Owner'?'center':'left';
+                    const lines=doc.splitTextToSize(String(v),Math.max(10,widths[i]-6)).slice(0,2);doc.text(lines,x+(align==='right'?widths[i]-3:align==='center'?widths[i]/2:3),y+(lines.length>1?8:14),{maxWidth:widths[i]-6,align,baseline:'middle'});doc.line(x,y,x,y+h);x+=widths[i];
+                });
+                doc.line(margin+tableW,y,margin+tableW,y+h);y+=h;
+            };
+            doc.setFont('helvetica','bold');doc.setFontSize(13);text('#173E6B');doc.text('Project Management',margin,y);y+=18;drawHeader();rows.forEach(drawRow);doc.save(`Project_Management_${new Date().toISOString().slice(0,10)}.pdf`);
+        }
+        function exportProjectManagementData(){openProjectExportOptions();}
 
         function renderProjectsTable(){
             closeProjectRowMenus();
             updateProjectWorkspaceSummary();
+            updateProjectExpandCollapseButton();
             const host=document.getElementById('projectsTableBody');
             if(!host)return;
-            if(projectsList.length && !projectExpandedInitialized){
-                projectsList.forEach(p=>expandedProjectRows.add(String(p.id)));
+            if(!projectExpandedInitialized){
+                expandedProjectRows.clear();
                 projectExpandedInitialized=true;
             }
             if(!projectsList.length){
@@ -7214,7 +7588,8 @@ function setupInlineRequiredValidation(){
                 syncProjectOverallStatus(p);
                 if(!projectMatchesSearch(p))return;
 
-                const projectItem={projectName:p.name,phaseName:'',name:p.name,owner:projectOwnerText(p),startDate:p.startDate,dueDate:p.dueDate,actualDate:p.actualDate,gainDemand:p.gainDemand,estSaving:p.saving,actualSaving:p.actualSaving,detail:'',status:p.status,note:p.note};
+                const projectTotals=projectAggregateSummary(p);
+                const projectItem={projectName:p.name,phaseName:'',name:p.name,owner:projectOwnerText(p),startDate:p.startDate,dueDate:p.dueDate,actualDate:p.actualDate,gainDemand:projectTotals.gainDemand,estSaving:projectTotals.saving,actualSaving:projectTotals.actualSaving,detail:'',status:p.status,note:p.note};
                 const anyTask=(p.tasks||[]).some(t=>projectFilterMatch({...t,projectName:p.name,phaseName:''}));
                 const anyPhase=(p.phases||[]).some(ph=>{const sum=projectPhaseSummary(ph,p);return projectFilterMatch({projectName:p.name,phaseName:ph.name,name:ph.name,owner:sum.owner,startDate:sum.startDate,dueDate:sum.dueDate,actualDate:sum.actualDate,gainDemand:sum.gainDemand,estSaving:sum.saving,actualSaving:sum.actualSaving,detail:sum.detail,status:sum.status,note:sum.note});});
                 if(Object.keys(projectHeaderFilters).length && !projectFilterMatch(projectItem) && !anyTask && !anyPhase)return;
@@ -7227,13 +7602,13 @@ function setupInlineRequiredValidation(){
                 const owners=projectOwnerText(p);
 
                 const projectDetailList=projectIncompleteTaskDetails(p);
-                body+=`<tr class="pm-ref-project-row pm-ref-project-data-row ${expanded?'is-expanded':''}" data-project-id="${escapeHtml(String(p.id))}">
+                body+=`<tr class="pm-ref-project-row pm-ref-project-data-row ${expanded?'is-expanded':''} ${String(calculateProjectOverallStatus(p)||p.status||'').toLowerCase()==='completed'?'pm-project-completed':''}" data-project-id="${escapeHtml(String(p.id))}">
                     <td class="pm-ref-no pm-project-no-cell" onclick="toggleProjectRowExpand('${pid}')"><span class="pm-ref-project-index">${projectIndex+1}</span></td>
                     <td colspan="2" class="pm-project-name-cell"><div class="pm-project-name-actions-wrap"><div class="pm-project-name-stack"><button type="button" class="pm-project-name-button" onclick="toggleProjectRowExpand('${pid}')" title="Expand / collapse project">${escapeHtml(p.name||'Unnamed Project')}</button><div class="pm-project-inline-detail">${escapeHtml(p.detail||'')}</div></div><button type="button" class="pm-project-more-btn" onclick="toggleProjectRowMenu(event,'${pid}')" title="Project actions" aria-label="Project actions"><i class="fa-solid fa-ellipsis"></i></button><div class="pm-project-row-menu" data-project-menu="${escapeHtml(String(p.id))}"><button type="button" onclick="openAddProjectModal('${pid}');closeProjectRowMenus()"><i class="fa-solid fa-pen"></i><span>Edit</span></button><button type="button" class="danger" onclick="deleteProject('${pid}');closeProjectRowMenus()"><i class="fa-solid fa-trash"></i><span>Delete</span></button></div></div></td>
                     <td class="pm-project-owner-cell"><span>${escapeHtml(owners||'-')}</span></td>
                     <td>${projectRefDate(p.startDate)}</td><td>${projectRefDate(p.dueDate)}</td><td>${projectRefDate(p.actualDate)}</td>
-                    <td>${escapeHtml(p.gainDemand||'-')}</td><td class="pm-ref-money">${projectMoney(p.saving)||'-'}</td><td class="pm-ref-money">${projectMoney(p.actualSaving)||'-'}</td>
-                    <td class="pm-project-detail-cell"><span class="pm-project-detail-list">-</span></td>
+                    <td class="pm-ref-number">${projectNumber(projectTotals.gainDemand)||'-'}</td><td class="pm-ref-money">${projectMoney(projectTotals.saving)||'-'}</td><td class="pm-ref-money">${projectMoney(projectTotals.actualSaving)||'-'}</td>
+                    <td class="pm-project-detail-cell">${projectDetailedStatusHtml(projectDetailList)}</td>
                     <td>${projectOverallBadge(p.status,false,'')}</td>
                     <td><span>${escapeHtml(p.note||'')}</span></td>
                 </tr>`;
@@ -7260,9 +7635,23 @@ function setupInlineRequiredValidation(){
             </div>`;
         }
 
-        function handleProjectImport(event){
+
+        function showProjectImportProgress(current=0,total=1,text='Importing project data...'){
+            let overlay=document.getElementById('projectImportProgressOverlay');
+            if(!overlay){
+                overlay=document.createElement('div');overlay.id='projectImportProgressOverlay';overlay.className='pm-project-import-overlay';
+                overlay.innerHTML=`<div class="pm-project-import-box"><div aria-label="Loading..." class="wheel-and-hamster"><div class="wheel"><div class="spoke"></div></div><div class="hamster"><div class="hamster__body"><div class="hamster__head"><div class="hamster__ear"></div><div class="hamster__eye"></div><div class="hamster__nose"></div></div><div class="hamster__limb hamster__limb--fr"></div><div class="hamster__limb hamster__limb--fl"></div><div class="hamster__limb hamster__limb--br"></div><div class="hamster__limb hamster__limb--bl"></div><div class="hamster__tail"></div></div></div></div><div style="font-size:13px;font-weight:900;color:#214d70">Import Project</div><div id="projectImportProgressText" style="font-size:10px;color:#72869a;margin-top:4px"></div><div class="pm-import-progress"><span id="projectImportProgressBar"></span></div><div id="projectImportProgressLabel" class="pm-import-progress-label">0%</div></div>`;
+                document.body.appendChild(overlay);
+            }
+            const pct=Math.max(0,Math.min(100,Math.round(Number(current)/Math.max(1,Number(total))*100)));
+            const bar=overlay.querySelector('#projectImportProgressBar'),label=overlay.querySelector('#projectImportProgressLabel'),msg=overlay.querySelector('#projectImportProgressText');
+            if(bar)bar.style.width=pct+'%'; if(label)label.textContent=pct+'%'; if(msg)msg.textContent=text;
+        }
+        function hideProjectImportProgress(){document.getElementById('projectImportProgressOverlay')?.remove();}
+                function handleProjectImport(event){
             const file=event?.target?.files?.[0];
             if(!file)return;
+            showProjectImportProgress(0,1,'Reading Excel / CSV file...');
             const reader=new FileReader();
             reader.onload=async e=>{
                 try{
@@ -7294,12 +7683,14 @@ function setupInlineRequiredValidation(){
                         return hit===undefined?'':row[hit];
                     };
                     const text=(v)=>String(v??'').trim();
-                    const num=(v)=>text(v)===''?'':(Number(String(v).replace(/,/g,''))||0);
+                    const num=(v)=>projectParseMoney(v);
                     const imported=[];
                     const byProject=new Map();
                     let currentProject=null,currentPhase=null;
 
-                    rows.forEach((r,idx)=>{
+                    for(let idx=0;idx<rows.length;idx++){
+                        const r=rows[idx];
+                        if(idx===0 || idx%20===0 || idx===rows.length-1) { showProjectImportProgress(idx+1,rows.length,`Processing row ${idx+1} of ${rows.length}...`); await new Promise(resolve=>setTimeout(resolve,0)); }
                         const projectName=text(find(r,aliases.project));
                         const phaseName=text(find(r,aliases.phase));
                         const taskName=text(find(r,aliases.task));
@@ -7316,7 +7707,7 @@ function setupInlineRequiredValidation(){
                                     startDate:cleanDateStr(find(r,aliases.start)),
                                     dueDate:cleanDateStr(find(r,aliases.plan)),
                                     actualDate:cleanDateStr(find(r,aliases.actual)),
-                                    gainDemand:text(find(r,aliases.gain)),
+                                    gainDemand:projectParseMoney(find(r,aliases.gain)),
                                     saving:num(find(r,aliases.saving)),
                                     actualSaving:num(find(r,aliases.actualSaving)),
                                     detail:text(find(r,aliases.detail)),
@@ -7332,6 +7723,8 @@ function setupInlineRequiredValidation(){
                                 if(!currentProject.startDate)currentProject.startDate=cleanDateStr(find(r,aliases.start));
                                 if(!currentProject.dueDate)currentProject.dueDate=cleanDateStr(find(r,aliases.plan));
                                 if(!currentProject.actualDate)currentProject.actualDate=cleanDateStr(find(r,aliases.actual));
+                                if((currentProject.saving===''||currentProject.saving===0) && text(find(r,aliases.saving))!=='')currentProject.saving=num(find(r,aliases.saving));
+                                if((currentProject.actualSaving===''||currentProject.actualSaving===0) && text(find(r,aliases.actualSaving))!=='')currentProject.actualSaving=num(find(r,aliases.actualSaving));
                             }
                         }
                         if(!currentProject)return;
@@ -7360,7 +7753,7 @@ function setupInlineRequiredValidation(){
                                 startDate:cleanDateStr(find(r,aliases.start)),
                                 dueDate:cleanDateStr(find(r,aliases.plan)),
                                 actualDate:cleanDateStr(find(r,aliases.actual)),
-                                gainDemand:text(find(r,aliases.gain)),
+                                gainDemand:projectParseMoney(find(r,aliases.gain)),
                                 estSaving:num(find(r,aliases.saving)),
                                 actualSaving:num(find(r,aliases.actualSaving)),
                                 detail:text(find(r,aliases.detail)),
@@ -7370,9 +7763,9 @@ function setupInlineRequiredValidation(){
                             };
                             if(target)target.tasks.push(task); else currentProject.tasks.push(task);
                         }
-                    });
+                    }
 
-                    if(!imported.length){showAppNotification('No project rows found in the file.','Import');return;}
+                    if(!imported.length){hideProjectImportProgress();showAppNotification('No project rows found in the file.','Import');return;}
                     imported.forEach(p=>{
                         p.phases=normalizeProjectPhases(p.phases,p);
                         p.tasks=normalizeProjectTasks(p.tasks,p);
@@ -7396,15 +7789,20 @@ function setupInlineRequiredValidation(){
                         incoming.owners=Array.isArray(incoming.owners)?incoming.owners:String(incoming.owner||'').split(',').map(x=>x.trim()).filter(Boolean);
                         expandedProjectRows.add(String(incoming.id));
                     });
+                    showProjectImportProgress(98,100,'Saving imported projects...');
                     await saveSheetData('Projects',projectsList);
+                    showProjectImportProgress(100,100,'Import completed.');
                     renderProjectsTable();
                     renderGanttChart();
                     updateDashboardCharts();
                     showAppNotification(`Imported ${imported.length} project(s), ${imported.reduce((n,p)=>n+(p.phases||[]).reduce((m,ph)=>m+(ph.tasks||[]).length,0)+(p.tasks||[]).length,0)} task(s).`,'Import Complete');
+                    await new Promise(resolve=>setTimeout(resolve,350));
                 }catch(err){
+                    hideProjectImportProgress();
                     console.error('Project import error:',err);
                     showAppNotification(`Unable to import project file. ${err?.message||err}`,'Import Error');
                 }finally{
+                    hideProjectImportProgress();
                     if(event.target)event.target.value='';
                 }
             };
@@ -7630,7 +8028,7 @@ function setupInlineRequiredValidation(){
         let projectCurrentView='table';
         let projectGanttAnchor=new Date();
         let activeScheduleProjectId=null;
-        function setProjectView(view,skipRender=false){projectCurrentView=view==='gantt'?'gantt':'table';const table=document.getElementById('projectTableView'),gantt=document.getElementById('projectGanttView'),bt=document.getElementById('projectViewTableBtn'),bg=document.getElementById('projectViewGanttBtn');if(bt)bt.classList.toggle('active',projectCurrentView==='table');if(bg)bg.classList.toggle('active',projectCurrentView==='gantt');[table,gantt].forEach(x=>x?.classList.remove('pm-active','pm-leaving'));const target=projectCurrentView==='table'?table:gantt;const other=projectCurrentView==='table'?gantt:table;if(other){other.classList.add('pm-leaving');setTimeout(()=>other.classList.add('hidden'),170);}if(target){target.classList.remove('hidden');requestAnimationFrame(()=>target.classList.add('pm-active'));}if(!skipRender&&projectCurrentView==='gantt')setTimeout(renderGanttChart,80);}
+        function setProjectView(view,skipRender=false){projectCurrentView=view==='gantt'?'gantt':'table';updateProjectExpandCollapseButton();const table=document.getElementById('projectTableView'),gantt=document.getElementById('projectGanttView'),bt=document.getElementById('projectViewTableBtn'),bg=document.getElementById('projectViewGanttBtn');if(bt)bt.classList.toggle('active',projectCurrentView==='table');if(bg)bg.classList.toggle('active',projectCurrentView==='gantt');[table,gantt].forEach(x=>x?.classList.remove('pm-active','pm-leaving'));const target=projectCurrentView==='table'?table:gantt;const other=projectCurrentView==='table'?gantt:table;if(other){other.classList.add('pm-leaving');setTimeout(()=>other.classList.add('hidden'),170);}if(target){target.classList.remove('hidden');requestAnimationFrame(()=>target.classList.add('pm-active'));}if(!skipRender&&projectCurrentView==='gantt')setTimeout(renderGanttChart,80);}
         function getProjectGanttRange(){const dates=[];projectsList.forEach(p=>{if(p.startDate)dates.push(new Date(p.startDate+'T00:00:00'));if(p.dueDate)dates.push(new Date(p.dueDate+'T00:00:00'));(p.phases||[]).forEach(ph=>{if(ph.startDate)dates.push(new Date(ph.startDate+'T00:00:00'));if(ph.dueDate)dates.push(new Date(ph.dueDate+'T00:00:00'));(ph.tasks||[]).forEach(t=>{if(t.startDate)dates.push(new Date(t.startDate+'T00:00:00'));if(t.dueDate)dates.push(new Date(t.dueDate+'T00:00:00'));});});});const anchor=new Date(projectGanttAnchor);anchor.setHours(0,0,0,0);let start=weekStart(anchor),end=addDays(start,41);if(dates.length&&!projectGanttAnchor){start=weekStart(new Date(Math.min(...dates.map(d=>d.getTime()))));end=addDays(start,41);}return {start,end};}
         function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
         function weekStart(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
@@ -7649,105 +8047,195 @@ function setupInlineRequiredValidation(){
             if(collapsedGanttPhases.has(k))collapsedGanttPhases.delete(k);else collapsedGanttPhases.add(k);
             renderGanttChart();
         }
+        function ganttProjectMatchesFilters(p){
+            if(!p) return false;
+            if(projectTableSearchText && !projectMatchesSearch(p)) return false;
+            const active=Object.entries(ganttFilterState).filter(([,set])=>set instanceof Set && set.size);
+            if(!active.length) return true;
+            const phaseItems=Array.isArray(p?.phases)?p.phases:[];
+            const taskItems=[
+                ...(Array.isArray(p?.tasks)?p.tasks:[]),
+                ...phaseItems.flatMap(ph=>Array.isArray(ph?.tasks)?ph.tasks:[])
+            ];
+            return active.every(([key,selected])=>{
+                const projectVals=ganttFilterValues(key,p).map(String);
+                const childVals=[];
+                if(key==='Owner') taskItems.forEach(t=>childVals.push(String(t?.owner||'')));
+                if(key==='Status') taskItems.forEach(t=>childVals.push(String(calculateProjectTaskStatus(t)||t?.status||'')));
+                if(key==='Project') childVals.push(String(p?.name||''));
+                if(key==='Progress') childVals.push(`${getGanttCalculatedProgress(p)}%`);
+                const vals=[...projectVals,...childVals].map(v=>v.trim()).filter(Boolean);
+                return vals.some(v=>selected.has(v));
+            });
+        }
+        function ganttFilterHeader(label,key){
+            const selected=ganttFilterState[key] instanceof Set?ganttFilterState[key]:new Set();
+            const active=selected.size>0;
+            return `<div class="gantt-filter-head"><span>${escapeHtml(label)}</span><button type="button" class="gantt-filter-btn ${active?'active':''}" onclick="toggleGanttHeaderFilter(event,'${key}')" title="Filter ${escapeHtml(label)}"><i class="fa-solid fa-filter"></i></button></div>`;
+        }
+        function toggleGanttHeaderFilter(event,key){
+            event.stopPropagation();
+            closeGanttInlineFilter();
+            const btn=event.currentTarget;
+            const menu=document.createElement('div');
+            menu.className='gantt-inline-filter-menu';
+            menu.id='ganttInlineFilterMenu';
+            const values=getGanttFilterUniverse(key);
+            const selected=ganttFilterState[key] instanceof Set?ganttFilterState[key]:new Set();
+            ganttFilterDraftState[key]=new Set(selected);
+            menu.innerHTML=`<div class="gantt-inline-filter-title">Filter: ${escapeHtml(key)}</div><input type="search" placeholder="Search values..." oninput="filterGanttInlineOptions(this)"><div class="gantt-inline-filter-values">${values.map(v=>`<label class="gantt-inline-filter-option" data-label="${escapeHtml(String(v).toLowerCase())}"><input type="checkbox" value="${escapeHtml(String(v))}" ${selected.has(String(v))?'checked':''} onchange="changeGanttHeaderFilter('${key}',this)"><span>${escapeHtml(String(v))}</span></label>`).join('')}</div><div class="gantt-inline-filter-actions"><button type="button" onclick="clearGanttHeaderFilter('${key}')">Clear</button><button type="button" class="gantt-filter-apply" onclick="applyGanttHeaderFilter('${key}')">Apply</button></div>`;
+            document.body.appendChild(menu);
+            const r=btn.getBoundingClientRect();
+            menu.style.left=Math.max(8,Math.min(r.left,window.innerWidth-278))+'px';
+            menu.style.top=Math.min(window.innerHeight-menu.offsetHeight-8,r.bottom+4)+'px';
+            setTimeout(()=>menu.querySelector('input[type="search"]')?.focus(),0);
+        }
+        function filterGanttInlineOptions(input){
+            const q=String(input.value||'').toLowerCase();
+            input.closest('.gantt-inline-filter-menu')?.querySelectorAll('.gantt-inline-filter-option').forEach(el=>el.style.display=el.dataset.label.includes(q)?'flex':'none');
+        }
+        function changeGanttHeaderFilter(key,cb){
+            if(!(ganttFilterDraftState[key] instanceof Set)) ganttFilterDraftState[key]=new Set(ganttFilterState[key]||[]);
+            if(cb.checked) ganttFilterDraftState[key].add(cb.value); else ganttFilterDraftState[key].delete(cb.value);
+            // Do not close or apply while the user is still selecting values.
+        }
+        function applyGanttHeaderFilter(key){
+            if(!(ganttFilterState[key] instanceof Set)) ganttFilterState[key]=new Set();
+            ganttFilterState[key].clear();
+            (ganttFilterDraftState[key]||new Set()).forEach(v=>ganttFilterState[key].add(String(v)));
+            closeGanttInlineFilter();
+            renderGanttChart();
+        }
+        function clearGanttHeaderFilter(key){
+            ganttFilterState[key]=new Set();
+            ganttFilterDraftState[key]=new Set();
+            closeGanttInlineFilter();
+            renderGanttChart();
+        }
+        function closeGanttInlineFilter(){
+            document.getElementById('ganttInlineFilterMenu')?.remove();
+        }
+        document.addEventListener('click',e=>{
+            const menu=document.getElementById('ganttInlineFilterMenu');
+            if(menu && !e.target.closest('#ganttInlineFilterMenu') && !e.target.closest('.gantt-filter-btn')) closeGanttInlineFilter();
+        });
+        document.addEventListener('keydown',e=>{if(e.key==='Escape') closeGanttInlineFilter();});
+
+        function ganttBarStatus(type,item,status){
+            const s=String(status||'').trim().toLowerCase();
+            const today=formatDateLocal(new Date());
+            const due=cleanDateStr(item?.dueDate || item?.plan || item?.plannedCompletion);
+            if(s==='completed' || /complete|done/.test(s)) return 'completed';
+            if(due && due < today) return 'overdue';
+            if(due){
+                const diff=Math.round((new Date(due+'T00:00:00')-new Date(today+'T00:00:00'))/86400000);
+                if(diff>=0 && diff<=2) return 'near-deadline';
+            }
+            if(/working|in progress|progress|process/.test(s)) return 'working';
+            return type==='project' ? 'project-default' : 'default';
+        }
+
         function renderGanttChart(){
             const container=document.getElementById('ganttChartContainer');
             if(!container)return;
             container.innerHTML='';
             const items=(projectsList||[]).filter(p=>p&&String(p.name||'').trim());
             if(!items.length){container.innerHTML='<div class="empty-schedule">No projects recorded. Create a project first.</div>';return;}
-            const currentYear=new Date().getFullYear();
-            const taskDateSet=new Set();
-            const allTasks=[];
+
+            const observedSet=new Set();
+            const pushDate=v=>{const d=cleanDateStr(v);if(d)observedSet.add(d);};
             items.forEach(p=>{
                 normalizeProjectPhases(p.phases,p); normalizeProjectTasks(p.tasks,p);
-                (p.phases||[]).forEach((ph,pi)=>(ph.tasks||[]).forEach((t,ti)=>allTasks.push({t,p,pi,ti,phase:ph})));
-                (p.tasks||[]).forEach((t,ti)=>allTasks.push({t,p,pi:-1,ti,phase:null}));
+                [p.startDate,p.dueDate,p.actualDate].forEach(pushDate);
+                (p.phases||[]).forEach(ph=>{
+                    [ph.startDate,ph.dueDate,ph.actualDate].forEach(pushDate);
+                    (ph.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(pushDate));
+                });
+                (p.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(pushDate));
             });
-            allTasks.forEach(({t})=>{
-                const sd=cleanDateStr(t.startDate),pd=cleanDateStr(t.dueDate),ad=cleanDateStr(t.actualDate);
-                if(sd && Number(sd.slice(0,4))===currentYear) taskDateSet.add(sd);
-                if(pd && Number(pd.slice(0,4))===currentYear) taskDateSet.add(pd);
-                if(ad && Number(ad.slice(0,4))===currentYear) taskDateSet.add(ad);
-            });
-            // Timeline columns are every unique Task Start/Plan date in the current year, sorted chronologically.
-            let dates=[...taskDateSet].sort();
-            if(!dates.length){
-                const allAvailableDates=new Set();
-                allTasks.forEach(({t})=>[t.startDate,t.dueDate,t.actualDate].forEach(v=>{const d=cleanDateStr(v);if(d)allAvailableDates.add(d);}));
-                dates=[...allAvailableDates].sort();
-            }
-            if(!dates.length){dates=[`${currentYear}-01-01`,`${currentYear}-12-31`];}
-            if(dates.length===1){
-                const only=new Date(dates[0]+'T00:00:00'); only.setDate(only.getDate()+1); dates.push(formatDateLocal(only));
-            }
-            const axisStart=new Date(`${currentYear}-01-01T00:00:00`);
-            const axisEnd=new Date(`${currentYear}-12-31T00:00:00`);
-            const sortedAllDates=dates.slice().sort();
+
+            const observedDates=[...observedSet].sort();
+            if(!observedDates.length) observedDates.push(formatDateLocal(new Date()));
+
+            // Use a continuous day axis so bar endpoints always map to the real calendar day.
+            // Only dates that actually occur in the data receive a visible day number.
+            const minDate=new Date(observedDates[0]+'T00:00:00');
+            const maxDate=new Date(observedDates[observedDates.length-1]+'T00:00:00');
+            const allDates=[];
+            for(let d=new Date(minDate);d<=maxDate;d.setDate(d.getDate()+1)) allDates.push(formatDateLocal(d));
+            const observedLookup=new Set(observedDates);
+            const dayWidth=40;
+            const timelineWidth=allDates.length*dayWidth;
+            const offsets=new Map(allDates.map((d,i)=>[d,i*dayWidth]));
+            const xForDate=d=>{const v=cleanDateStr(d); if(!v)return null; const idx=offsets.get(v); return idx==null?null:idx;};
+            const endXForDate=d=>{const v=cleanDateStr(d); if(!v)return null; const idx=offsets.get(v); return idx==null?null:idx+dayWidth;};
             const rangeLabel=document.getElementById('projectGanttRangeLabel');
-            if(rangeLabel)rangeLabel.textContent=`${currentYear} • ${dates.length} task dates`;
-            const dateIndex=new Map(dates.map((d,i)=>[d,i]));
-            const columns=Math.max(1,dates.length);
-            const pctByDate=(date)=>{
-                const d=cleanDateStr(date); if(!d)return null;
+            if(rangeLabel)rangeLabel.textContent='';
+
+            const monthGroups=[];
+            allDates.forEach((d,i)=>{
                 const dt=new Date(d+'T00:00:00');
-                if(dt<=axisStart)return 0; if(dt>=axisEnd)return 100;
-                const y0=axisStart.getTime(), y1=axisEnd.getTime();
-                return ((dt.getTime()-y0)/(y1-y0))*100;
-            };
-            const datePct=(date)=>{
-                const d=cleanDateStr(date); if(!d)return null;
-                return pctByDate(d);
-            };
-            const widthPct=(s,e)=>{
-                if(!s||!e||e<s)return 0;
-                const left=pctByDate(s), right=pctByDate(e);
-                return Math.max(0.5,right-left);
-            };
-            const dateHeaders=dates.map(d=>`<th class="gantt-date-head">${formatDateMMDDYYYY(d)}<span>${new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short'})}</span></th>`).join('');
+                const key=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+                const last=monthGroups[monthGroups.length-1];
+                if(last&&last.key===key) last.count++;
+                else monthGroups.push({key,count:1,label:dt.toLocaleDateString('en-US',{month:'short'})});
+            });
+            const monthHeaders=monthGroups.map(m=>`<th class="gantt-month-head" colspan="${m.count}">${m.label}</th>`).join('');
+            const dateHeaders=allDates.map(d=>`<th class="gantt-date-head">${observedLookup.has(d)?new Date(d+'T00:00:00').getDate():''}</th>`).join('');
+
             const table=document.createElement('table');
             table.className='project-gantt pm-gantt-task-date-table';
-            table.style.setProperty('--gantt-columns',columns);
-            table.innerHTML=`<thead><tr><th class="label-head label-col">PROJECT / PHASE / TASK</th>${dateHeaders}</tr></thead><tbody></tbody>`;
+            table.innerHTML=`<colgroup><col class="gantt-project-col"><col class="gantt-owner-col"><col class="gantt-status-col">${allDates.map(()=>`<col class="gantt-day-col" style="width:${dayWidth}px;min-width:${dayWidth}px;max-width:${dayWidth}px">`).join('')}</colgroup><thead><tr><th class="label-head label-col" rowspan="2">${ganttFilterHeader('Project','Project')}</th><th class="label-head owner-head" rowspan="2">${ganttFilterHeader('Owner','Owner')}</th><th class="label-head status-head" rowspan="2">${ganttFilterHeader('Status','Status')}</th>${monthHeaders}</tr><tr>${dateHeaders}</tr></thead><tbody></tbody>`;
             const tbody=table.querySelector('tbody');
-            const addRow=(type,label,s,e,detail,meta,toggleHtml='',progress=0)=>{
+
+            const statusForBar=(type,status,dueDate)=>ganttBarStatus(type,{dueDate},status);
+            const addRow=(type,label,s,e,detail,owner,toggleHtml='',status='Not Started')=>{
                 const tr=document.createElement('tr'); tr.className=`${type}-row`;
-                tr.innerHTML=`<td class="label-cell label-col"><div class="gantt-name-wrap ${type}">${toggleHtml}<span class="gantt-row-title">${escapeHtml(label||'')}</span></div>${meta?`<div class="gantt-row-meta">${escapeHtml(meta)}</div>`:''}</td><td colspan="${columns}" class="timeline-span"><div class="gantt-row-track" style="--gantt-columns:${columns}"><div class="gantt-grid-bg"></div></div></td>`;
+                const statusText=String(status||'Not Started');
+                tr.innerHTML=`<td class="label-cell label-col ${type}-label-cell"><div class="gantt-name-wrap ${type}">${toggleHtml}<span class="gantt-row-title">${escapeHtml(label||'')}</span></div></td><td class="gantt-owner-cell">${escapeHtml(owner||'-')}</td><td class="gantt-status-cell">${escapeHtml(statusText)}</td><td colspan="${allDates.length}" class="timeline-span"><div class="gantt-row-track" style="width:${timelineWidth}px;min-width:${timelineWidth}px"></div></td>`;
                 const track=tr.querySelector('.gantt-row-track');
-                dates.forEach((d,i)=>{const cell=document.createElement('span');cell.className='gantt-date-cell';cell.style.left=`${columns===1?0:(i/(columns-1))*100}%`;track.appendChild(cell);});
                 const sd=cleanDateStr(s),pd=cleanDateStr(e);
                 if(sd&&pd&&sd<=pd){
-                    const left=datePct(sd), width=widthPct(sd,pd);
-                    const bar=document.createElement('div');
-                    bar.className=`gantt-bar ${type==='project'?'project-bar':type==='phase'?'phase-bar':'task-bar'}`;
-                    bar.style.left=`${left}%`;bar.style.width=`${width}%`;
-                    if(type==='task'){
+                    let left=xForDate(sd), right=endXForDate(pd);
+                    if(left==null){left=sd<allDates[0]?0:null;}
+                    if(right==null){right=pd>allDates[allDates.length-1]?timelineWidth:null;}
+                    if(left!=null&&right!=null&&right>left){
+                        const bar=document.createElement('div');
+                        const statusClass=statusForBar(type,status,pd);
+                        bar.className=`gantt-bar ${type==='project'?'project-bar':type==='task'?'task-bar':'phase-bar'} gantt-status-${statusClass}`;
+                        bar.style.left=`${Math.max(0,left)}px`;
+                        bar.style.width=`${Math.max(8,Math.min(timelineWidth-left,right-left))}px`;
                         const detailText=String(detail||'').trim();
-                        bar.innerHTML=`<span class="bar-progress" style="width:${Math.min(100,Number(progress)||0)}%"></span><span class="gantt-task-bar-text"><b>${formatDateMMDDYYYY(sd)} → ${formatDateMMDDYYYY(pd)}</b>${detailText?`<span>${escapeHtml(detailText)}</span>`:''}</span>`;
-                    } else {bar.innerHTML=`<span class="bar-progress" style="width:${Math.min(100,Number(progress)||0)}%"></span>`;}
-                    bar.title=`${label}\nStart: ${formatDateMMDDYYYY(sd)}\nPlan: ${formatDateMMDDYYYY(pd)}${detail?'\nDetailed Status: '+detail:''}`;
-                    track.appendChild(bar);
+                        bar.innerHTML=`<span class="gantt-task-bar-text">${escapeHtml(detailText)}</span>`;
+                        bar.title=`${label}\nStart: ${formatDateMMDDYYYY(sd)}\nPlan: ${formatDateMMDDYYYY(pd)}${detailText?'\nDetailed Status: '+detailText:''}`;
+                        track.appendChild(bar);
+                    }
                 }
                 tbody.appendChild(tr);
             };
+
             items.forEach(p=>{
+                if(!ganttProjectMatchesFilters(p)) return;
                 const pid=String(p.id).replace(/'/g,"\\'");
                 const pCollapsed=collapsedGanttProjects.has(String(p.id));
-                const pp=getGanttCalculatedProgress(p);
-                addRow('project',p.name,p.startDate,p.dueDate,'',projectOwnerText(p),`<button type="button" class="pm-gantt-toggle" onclick="toggleGanttProject('${pid}')" title="${pCollapsed?'Expand':'Collapse'} project"><i class="fa-solid ${pCollapsed?'fa-chevron-right':'fa-chevron-down'}"></i></button>`,pp);
+                const pStatus=calculateProjectOverallStatus(p);
+                addRow('project',p.name,p.startDate,p.dueDate,projectIncompleteTaskDetails(p),projectOwnerText(p),`<button type="button" class="pm-gantt-toggle" onclick="toggleGanttProject('${pid}')" title="${pCollapsed?'Expand':'Collapse'} project"><i class="fa-solid ${pCollapsed?'fa-chevron-right':'fa-chevron-down'}"></i></button>`,pStatus);
                 if(pCollapsed)return;
                 (p.phases||[]).forEach((ph,pi)=>{
                     const key=ganttNodeKey(p.id,pi),phCollapsed=collapsedGanttPhases.has(key),tasks=ph.tasks||[],sum=projectPhaseSummary(ph,p);
-                    const prog=tasks.length?Math.round(tasks.reduce((a,t)=>a+(calculateProjectTaskStatus(t)==='Completed'?100:Number(t.progress)||0),0)/tasks.length):0;
-                    addRow('phase',ph.name,sum.startDate,sum.dueDate,'',sum.owner||'-',`<button type="button" class="pm-gantt-toggle" onclick="toggleGanttPhase('${pid}',${pi})" title="${phCollapsed?'Expand':'Collapse'} phase"><i class="fa-solid ${phCollapsed?'fa-chevron-right':'fa-chevron-down'}"></i></button>`,prog);
+                    addRow('phase',ph.name||`Phase ${pi+1}`,sum.startDate,sum.dueDate,sum.detail||'',sum.owner||'-',`<button type="button" class="pm-gantt-toggle" onclick="toggleGanttPhase('${pid}',${pi})" title="${phCollapsed?'Expand':'Collapse'} phase"><i class="fa-solid ${phCollapsed?'fa-chevron-right':'fa-chevron-down'}"></i></button>`,sum.status||'Not Started');
                     if(phCollapsed)return;
-                    tasks.forEach(t=>addRow('task',t.name,t.startDate,t.dueDate,t.detail,`${t.owner||'-'} • ${calculateProjectTaskStatus(t)}`,'',Number(t.progress)||0));
+                    tasks.forEach(t=>addRow('task',t.name,t.startDate,t.dueDate,t.detail,t.owner||'-','',calculateProjectTaskStatus(t)));
                 });
-                (p.tasks||[]).forEach(t=>addRow('task',t.name,t.startDate,t.dueDate,t.detail,`${t.owner||'-'} • ${calculateProjectTaskStatus(t)}`,'',Number(t.progress)||0));
+                (p.tasks||[]).forEach(t=>addRow('task',t.name,t.startDate,t.dueDate,t.detail,t.owner||'-','',calculateProjectTaskStatus(t)));
             });
-            const wrap=document.createElement('div');wrap.className='project-gantt-wrap';wrap.appendChild(table);container.appendChild(wrap);
+            const wrap=document.createElement('div');
+            wrap.className='project-gantt-wrap';
+            wrap.style.width=`${260+130+130+timelineWidth}px`;
+            wrap.appendChild(table);
+            container.appendChild(wrap);
         }
         function resetProjectGanttToToday(){projectGanttAnchor=new Date();renderGanttChart();}
-{projectGanttAnchor=new Date();renderGanttChart();}
         function changeProjectGanttPeriod(dir){renderGanttChart();}
 
         function openAddProjectModal(existingProjectId = null) {
@@ -9371,7 +9859,7 @@ fetchAllDataFromSheet=async function({background=false}={}){
   dailyTasks.forEach(x=>{x.start=cleanDateStr(x.start);x.plan=cleanDateStr(x.plan);x.actual=cleanDateStr(x.actual);if(!x.pics)x.pics=[];});ensureTaskIds(dailyTasks);dailyTasks=dedupeTasks(dailyTasks);
   timeoffOtList.forEach(x=>{x.startDate=cleanDateStr(x.startDate);x.endDate=cleanDateStr(x.endDate);});
   const state={Users:users,Capacity:capacityData,Tasks:dailyTasks,TimeOff_OT:timeoffOtList,Projects:projectsList};Object.keys(state).forEach(k=>sheetSyncSnapshots[k]=JSON.parse(JSON.stringify(state[k])));
-  populateFilterOptions();updateDashboardFinancialKpis();updateBomFilterButtons();window.bomFilteredTasks=dailyTasks.filter(taskPassesBomTopFilters);renderCapacityTable();renderDailyTrackingTable();renderMyTasksTable();renderTimeoffOtTable();renderGanttChart();renderProjectsTable();renderWeeklyCalendar();renderUserManagementTable();renderSaturdayMatrixTable();initDashboardCharts();onTimeoffTypeChange();restoreAdvancedTableFilters();
+  populateFilterOptions();if(!window._bomDefaultsInitialized){setBomCurrentPeriodDefaults();window._bomDefaultsInitialized=true;}updateDashboardFinancialKpis();updateBomFilterButtons();window.bomFilteredTasks=dailyTasks.filter(taskPassesBomTopFilters);renderCapacityTable();renderDailyTrackingTable();renderMyTasksTable();renderTimeoffOtTable();renderGanttChart();renderProjectsTable();renderWeeklyCalendar();renderUserManagementTable();renderSaturdayMatrixTable();initDashboardCharts();onTimeoffTypeChange();restoreAdvancedTableFilters();
   return true;
  }catch(e){console.error('Relational load error:',e);if(!background)showAppNotification(`Unable to load project data. ${e.message||e}`,'Database Error');return false;}
  finally{if(!background&&overlay)overlay.classList.add('opacity-0','pointer-events-none');}
@@ -9390,8 +9878,9 @@ buildProjectStorageHours=function(project){
 };
 getProjectMetaFromStorage=function(){return {gainDemand:'',phases:[],tasks:[]};};
 
+window._originalRunSheetSave = window._originalRunSheetSave || runSheetSave;
 runSheetSave=async function(sheetName){
- if(sheetName!=='Projects')return originalRunSheetSave(sheetName);
+ if(sheetName!=='Projects')return window._originalRunSheetSave(sheetName);
  const local=sheetLatestLocal[sheetName];if(!local)return true;sheetLatestLocal[sheetName]=null;sheetSyncInFlight[sheetName]=true;lastLocalSaveAt[sheetName]=Date.now();
  try{
   const snap=sheetSyncSnapshots.Projects||[];const snapIds=new Map(snap.filter(x=>dbId(x?.id)).map(x=>[String(x.id),x]));const saved=[];
@@ -9452,6 +9941,413 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
 #tab-projects .pm-ref-project-table .pm-ref-no{vertical-align:middle!important;text-align:center!important}
 #tab-projects .pm-ref-project-table .pm-ref-task-row .pm-ref-drag-handle{flex:0 0 24px!important;width:24px!important;min-width:24px!important}
 #tab-projects .pm-ref-project-table .pm-ref-phase-cell input.pm-phase-entry-input{background:inherit!important}
+
+<style id="projectManagementV15Fixes">
+#tab-projects .pm-reference-title{display:none!important}
+#tab-projects .pm-reference-toolbar{justify-content:flex-start!important}
+#tab-projects .pm-reference-actions{width:100%!important;justify-content:flex-start!important}
+#tab-projects .pm-ref-view-switch{display:flex!important;order:0!important;margin-right:2px!important}
+#tab-projects .pm-ref-project-table-wrap{overflow-x:auto!important;overflow-y:visible!important;max-height:none!important}
+#tab-projects .pm-project-stack{overflow:auto!important}
+#tab-projects .pm-ref-project-table thead th{position:sticky!important;top:0!important;z-index:40!important;text-align:center!important;vertical-align:middle!important}
+#tab-projects .pm-ref-project-table thead th:nth-child(2),#tab-projects .pm-ref-project-table thead th:nth-child(3){text-align:center!important}
+#tab-projects .pm-project-detail-cell{vertical-align:top!important}
+#tab-projects .pm-project-detail-list{white-space:pre-line!important;text-align:left!important;line-height:1.3!important;max-height:60px!important;overflow:auto!important}
+</style>
+
+<style>
+#tab-projects .pm-ref-gain-input{text-align:center!important;font-variant-numeric:tabular-nums!important}
+@media(max-width:1250px){
+  #tab-projects .pm-reference-actions{gap:5px!important}
+  #tab-projects .pm-ref-search{width:240px!important;min-width:180px!important}
+  #tab-projects .pm-ref-new-project{min-width:102px!important}
+  #tab-projects .pm-ref-import{min-width:108px!important}
+  #tab-projects .pm-ref-export-data{min-width:92px!important}
+}
+</style>
+
+<style id="projectManagementV19Fixes">
+/* V19 project management fixes */
+#tab-projects .pm-ref-number,
+#tab-projects .pm-ref-money,
+#tab-projects .pm-ref-project-table td[data-number],
+#tab-projects .pm-ref-project-table td[data-money]{
+  text-align:right!important;
+  font-variant-numeric:tabular-nums!important;
+}
+#tab-projects .pm-ref-project-table input[type=number]{text-align:right!important;font-variant-numeric:tabular-nums!important;}
+#tab-projects .pm-filter-popup{box-sizing:border-box!important;max-height:min(390px,calc(100vh - 24px))!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;}
+#tab-projects .pm-filter-values{display:block!important;flex:1 1 auto!important;min-height:80px!important;height:auto!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;}
+#tab-projects .pm-filter-value{display:flex!important;flex:0 0 auto!important;}
+#tab-projects .pm-ref-view-switch{margin-right:0!important;}
+#tab-projects .pm-ref-expand-btn{margin-left:2px!important;margin-right:auto!important;}
+#tab-projects .pm-reference-actions{display:flex!important;align-items:center!important;gap:7px!important;min-width:0!important;}
+#tab-projects .pm-ref-search{width:min(260px,24vw)!important;min-width:150px!important;flex:0 1 260px!important;}
+#tab-projects .pm-ref-search input{min-width:0!important;width:100%!important;}
+#tab-projects .pm-ref-new-project{min-width:106px!important;width:auto!important;}
+#tab-projects .pm-ref-import{min-width:118px!important;width:auto!important;}
+#tab-projects .pm-ref-export-data{min-width:100px!important;width:auto!important;}
+#tab-projects .pm-shared-table-wrap{overflow-x:auto!important;}
+#tab-projects .pm-horizontal-scrollbar{display:none!important;}
+#tab-projects .pm-project-import-overlay{position:fixed;inset:0;background:rgba(15,23,42,.38);backdrop-filter:blur(2px);z-index:2147483647;display:flex;align-items:center;justify-content:center;}
+#tab-projects .pm-project-import-box{width:310px;max-width:calc(100vw - 30px);background:#fff;border:1px solid #d8e3ec;border-radius:14px;padding:18px 20px;box-shadow:0 20px 55px rgba(15,23,42,.25);text-align:center;}
+#tab-projects .pm-project-import-box .wheel-and-hamster{font-size:7px;margin:0 auto 5px;transform:scale(.62);transform-origin:center;}
+#tab-projects .pm-import-progress{height:8px;background:#e8eef4;border-radius:999px;overflow:hidden;margin-top:10px;}
+#tab-projects .pm-import-progress>span{display:block;height:100%;width:0;background:#1976d2;border-radius:999px;transition:width .12s ease;}
+#tab-projects .pm-import-progress-label{font-size:11px;font-weight:800;color:#365b77;margin-top:7px;}
+/* Timeline: one scroll container, month/day header, white hierarchy labels and status/detail bars. */
+#tab-projects #ganttChartContainer{overflow:auto!important;width:100%!important;min-width:0!important;}
+#tab-projects #ganttChartContainer .project-gantt-wrap{width:max-content!important;min-width:100%!important;}
+#tab-projects .pm-gantt-task-date-table{min-width:max-content!important;width:max-content!important;}
+#tab-projects .pm-gantt-task-date-table .label-head{background:#315c7a!important;color:#fff!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-month-head{background:#315c7a!important;color:#fff!important;font-size:10px!important;text-align:center!important;height:24px!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-date-head{background:#647b8b!important;color:#fff!important;height:27px!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-row-title{color:#fff!important;}
+#tab-projects .pm-gantt-task-date-table .label-cell{background:#315c7a!important;color:#fff!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-row-meta{color:#e6f0f7!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-bar{color:#fff!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-bar.project-bar.status-completed,
+#tab-projects .pm-gantt-task-date-table .gantt-bar.phase-bar.status-completed,
+#tab-projects .pm-gantt-task-date-table .gantt-bar.task-bar.status-completed{background:#16a34a!important;border-color:#15803d!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-bar.status-working{background:#2563eb!important;border-color:#1d4ed8!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-bar.status-overdue{background:#dc2626!important;border-color:#b91c1c!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-bar.status-stuck{background:#d97706!important;border-color:#b45309!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-bar.status-not-started{background:#64748b!important;border-color:#475569!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-bar .gantt-task-bar-text{color:#fff!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-bar .gantt-task-bar-text b{display:none!important;}
+#tab-projects .pm-gantt-task-date-table .gantt-bar .gantt-task-bar-text span{font-size:8px!important;color:#fff!important;}
+</style>
+
+
+<style id="projectManagementV19TableNumbers">
+#tab-projects .pm-ref-project-table th:nth-child(8),#tab-projects .pm-ref-project-table td:nth-child(8),
+#tab-projects .pm-ref-project-table th:nth-child(9),#tab-projects .pm-ref-project-table td:nth-child(9),
+#tab-projects .pm-ref-project-table th:nth-child(10),#tab-projects .pm-ref-project-table td:nth-child(10){font-variant-numeric:tabular-nums!important;}
+#tab-projects .pm-ref-project-table td:nth-child(8),#tab-projects .pm-ref-project-table td:nth-child(9),#tab-projects .pm-ref-project-table td:nth-child(10){text-align:right!important;}
+#tab-projects .pm-ref-project-table th:nth-child(8) .pm-filter-head{justify-content:center!important;text-align:center!important;}
+</style>
+
+<style id="projectManagementV19FilterAndPdfFix">
+#projectHeaderFilterPopup.pm-filter-popup{max-height:min(390px,calc(100vh - 24px))!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;}
+#projectHeaderFilterPopup .pm-filter-values{display:block!important;flex:1 1 auto!important;min-height:70px!important;max-height:250px!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;border:1px solid #d9e3eb!important;border-radius:5px!important;}
+#projectHeaderFilterPopup .pm-filter-value{display:flex!important;align-items:center!important;min-height:22px!important;height:22px!important;box-sizing:border-box!important;}
+</style>
+
+<style id="projectManagementV20Fixes">
+/* V20: table hierarchy, numeric alignment, no number spinners */
+#tab-projects .pm-ref-project-head{background:#fff!important;color:#173e6b!important;border-bottom:1px solid #d7e3ec!important;}
+#tab-projects .pm-shared-project-table .pm-ref-project-data-row td{background:#fff!important;border-top:1px solid #d7e3ec!important;border-bottom:1px solid #d7e3ec!important;}
+#tab-projects .pm-shared-project-table .pm-ref-project-data-row:hover td{background:#f8fbfd!important;}
+#tab-projects .pm-shared-project-table .pm-ref-task-row.phase-task-color-0 td{background:#f8fbfd!important}
+#tab-projects .pm-shared-project-table .pm-ref-task-row.phase-task-color-1 td{background:#f7fbf8!important}
+#tab-projects .pm-shared-project-table .pm-ref-task-row.phase-task-color-2 td{background:#fffaf3!important}
+#tab-projects .pm-shared-project-table .pm-ref-task-row.phase-task-color-3 td{background:#fbf8fd!important}
+#tab-projects .pm-shared-project-table .pm-ref-task-row.phase-task-color-4 td{background:#fff8fa!important}
+#tab-projects .pm-shared-project-table .pm-ref-task-row.phase-task-color-5 td{background:#f7fcfb!important}
+#tab-projects .pm-shared-project-table .pm-ref-task-row.phase-task-color-6 td{background:#f9faff!important}
+#tab-projects .pm-shared-project-table .pm-ref-task-row.phase-task-color-7 td{background:#fffdf7!important}
+#tab-projects .pm-ref-gain-input,.pm-ref-project-table .pm-ref-gain-input{text-align:center!important;font-variant-numeric:tabular-nums!important}
+#tab-projects .pm-ref-project-table td:nth-child(8){text-align:center!important;font-variant-numeric:tabular-nums!important}
+#tab-projects .pm-ref-project-table td:nth-child(9),#tab-projects .pm-ref-project-table td:nth-child(10){text-align:right!important;font-variant-numeric:tabular-nums!important}
+#tab-projects .pm-ref-project-table td:nth-child(4){text-align:center!important}
+#tab-projects .pm-ref-project-table td:nth-child(11){text-align:center!important}
+#tab-projects .pm-ref-detail-badge.on-track{display:inline-flex!important;justify-content:center!important;align-items:center!important}
+#tab-projects input[type=number]::-webkit-outer-spin-button,#tab-projects input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none!important;margin:0!important}
+#tab-projects input[type=number]{-moz-appearance:textfield!important;appearance:textfield!important}
+#tab-projects .pm-ref-money{font-variant-numeric:tabular-nums!important;text-align:right!important}
+/* Project period filter bar */
+#tab-projects .pm-project-period-filters{display:flex!important;align-items:center!important;gap:5px!important;flex:0 0 auto!important}
+#tab-projects .pm-project-period-filters .bom-multi{position:relative!important;flex:0 0 auto!important}
+#tab-projects .pm-project-period-filters .bom-multi-btn{height:32px!important;min-width:68px!important;max-width:100px!important;padding:0 8px!important;border:1px solid #d7e3ec!important;border-radius:7px!important;background:#fff!important;color:#52718a!important;font-size:10px!important;font-weight:700!important;display:flex!important;align-items:center!important;gap:4px!important}
+#tab-projects .pm-project-period-filters .bom-multi-menu{position:fixed!important;width:220px!important;max-height:280px!important;overflow-y:auto!important;overflow-x:hidden!important;background:#fff!important;border:1px solid #d7e3ec!important;border-radius:8px!important;box-shadow:0 10px 25px rgba(15,23,42,.16)!important;padding:7px!important}
+#tab-projects .pm-project-period-filters .bom-multi-option{display:flex!important;align-items:center!important;gap:7px!important;padding:4px!important;font-size:10px!important}
+/* Timeline */
+#tab-projects #ganttChartContainer{overflow:auto!important;width:100%!important;min-width:0!important;max-height:calc(100vh - 180px)!important}
+#tab-projects #ganttChartContainer .project-gantt-wrap{width:max-content!important;min-width:100%!important}
+#tab-projects .pm-gantt-task-date-table{table-layout:fixed!important;border-collapse:collapse!important;width:max-content!important;min-width:max-content!important}
+#tab-projects .pm-gantt-task-date-table .gantt-project-col{width:280px!important;min-width:280px!important}
+#tab-projects .pm-gantt-task-date-table .gantt-owner-col{width:95px!important;min-width:95px!important}
+#tab-projects .pm-gantt-task-date-table .gantt-status-col{width:95px!important;min-width:95px!important}
+#tab-projects .pm-gantt-task-date-table .gantt-day-col{width:32px!important;min-width:32px!important}
+#tab-projects .pm-gantt-task-date-table .label-head,#tab-projects .pm-gantt-task-date-table .owner-head,#tab-projects .pm-gantt-task-date-table .status-head{background:#315c7a!important;color:#fff!important;text-align:center!important;vertical-align:middle!important}
+#tab-projects .pm-gantt-task-date-table .gantt-month-head{background:#315c7a!important;color:#fff!important;font-size:10px!important;text-align:center!important;height:24px!important;border:1px solid rgba(255,255,255,.16)!important}
+#tab-projects .pm-gantt-task-date-table .gantt-date-head{background:#647b8b!important;color:#fff!important;font-size:9px!important;text-align:center!important;height:27px!important;border:1px solid rgba(255,255,255,.16)!important}
+#tab-projects .pm-gantt-task-date-table tbody td{height:42px!important;border:1px solid #dce5ec!important;box-sizing:border-box!important}
+#tab-projects .pm-gantt-task-date-table .label-cell{background:#fff!important;color:#173e6b!important;text-align:left!important}
+#tab-projects .pm-gantt-task-date-table .project-row .label-cell{background:#315c7a!important;color:#fff!important}
+#tab-projects .pm-gantt-task-date-table .gantt-owner-cell,#tab-projects .pm-gantt-task-date-table .gantt-status-cell{background:#fff!important;color:#334e63!important;font-size:9px!important;text-align:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+#tab-projects .pm-gantt-task-date-table .project-row .gantt-owner-cell,#tab-projects .pm-gantt-task-date-table .project-row .gantt-status-cell{background:#315c7a!important;color:#fff!important;font-weight:700!important}
+#tab-projects .pm-gantt-task-date-table .gantt-row-title{color:inherit!important;font-weight:800!important}
+#tab-projects .pm-gantt-task-date-table .gantt-row-meta{display:none!important}
+#tab-projects .pm-gantt-task-date-table .timeline-span{padding:0!important;background:#fff!important;position:relative!important}
+#tab-projects .pm-gantt-task-date-table .gantt-row-track{position:relative!important;height:41px!important;width:100%!important;overflow:hidden!important;background:#fff!important}
+#tab-projects .pm-gantt-task-date-table .gantt-grid-bg{position:absolute!important;inset:0!important;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(100% / var(--gantt-columns) - 1px),#dce5ec calc(100% / var(--gantt-columns) - 1px),#dce5ec calc(100% / var(--gantt-columns)))!important}
+#tab-projects .pm-gantt-task-date-table .gantt-bar{top:11px!important;height:19px!important;border-radius:5px!important;color:#fff!important;overflow:hidden!important;box-shadow:0 1px 2px rgba(15,23,42,.12)!important}
+#tab-projects .pm-gantt-task-date-table .project-bar{background:#4caf76!important;border:1px solid #2f9b60!important}
+#tab-projects .pm-gantt-task-date-table .phase-bar,#tab-projects .pm-gantt-task-date-table .task-bar{background:transparent!important;border:0!important;box-shadow:none!important}
+#tab-projects .pm-gantt-task-date-table .phase-bar.status-completed,#tab-projects .pm-gantt-task-date-table .task-bar.status-completed{background:#4caf76!important;border:1px solid #2f9b60!important}
+#tab-projects .pm-gantt-task-date-table .phase-bar.status-working,#tab-projects .pm-gantt-task-date-table .task-bar.status-working{background:#2563eb!important}
+#tab-projects .pm-gantt-task-date-table .phase-bar.status-overdue,#tab-projects .pm-gantt-task-date-table .task-bar.status-overdue{background:#dc2626!important}
+#tab-projects .pm-gantt-task-date-table .phase-bar.status-not-started,#tab-projects .pm-gantt-task-date-table .task-bar.status-not-started{background:#64748b!important}
+#tab-projects .pm-gantt-task-date-table .gantt-task-bar-text{color:#fff!important;font-size:8px!important;font-weight:700!important;white-space:nowrap!important;padding:0 6px!important;line-height:19px!important}
+#tab-projects .pm-gantt-task-date-table .pm-gantt-toggle{color:inherit!important}
+</style>
+
+<style id="projectManagementV23TimelineFixes">
+/* Remove Project period filters; other pages keep their own Year/Month/Week bars. */
+#tab-projects .pm-project-period-filters{display:none!important}
+
+/* Timeline is its own scroll container; headers stay together and never leave a blank split. */
+#tab-projects #ganttChartContainer{position:relative!important;overflow:auto!important;max-height:calc(100vh - 150px)!important;background:#fff!important;scroll-padding-top:54px!important}
+#tab-projects #ganttChartContainer .project-gantt-wrap{padding-top:0!important;margin:0!important;min-width:max-content!important}
+#tab-projects #ganttChartContainer .project-gantt{min-width:max-content!important;width:max-content!important;table-layout:fixed!important;border-collapse:separate!important;border-spacing:0!important}
+#tab-projects #ganttChartContainer .project-gantt thead th{position:sticky!important;z-index:40!important}
+#tab-projects #ganttChartContainer .project-gantt thead tr:first-child th{top:0!important;height:28px!important}
+#tab-projects #ganttChartContainer .project-gantt thead tr:nth-child(2) th{top:28px!important;height:26px!important}
+#tab-projects #ganttChartContainer .project-gantt .label-head{z-index:55!important;top:0!important;background:#315f7f!important;color:#fff!important}
+#tab-projects #ganttChartContainer .project-gantt .label-cell{z-index:20!important;background:#fff!important}
+#tab-projects #ganttChartContainer .project-gantt .label-col{left:0!important}
+#tab-projects #ganttChartContainer .project-gantt .gantt-project-col{width:245px!important;min-width:245px!important}
+#tab-projects #ganttChartContainer .project-gantt .gantt-owner-col{width:100px!important;min-width:100px!important}
+#tab-projects #ganttChartContainer .project-gantt .gantt-status-col{width:105px!important;min-width:105px!important}
+#tab-projects #ganttChartContainer .project-gantt .gantt-day-col{width:42px!important;min-width:42px!important}
+#tab-projects #ganttChartContainer .gantt-row-title{font-size:11px!important}
+#tab-projects #ganttChartContainer .task-label .gantt-row-title{font-size:10px!important}
+#tab-projects #ganttChartContainer .gantt-filter-head{width:100%!important;justify-content:space-between!important;gap:4px!important}
+#tab-projects #ganttChartContainer .gantt-filter-head .gantt-filter-btn{margin-left:auto!important;flex:0 0 auto!important}
+#tab-projects #ganttChartContainer .gantt-inline-filter-menu{width:250px!important;max-height:360px!important;border:1px solid #cbd9e5!important;border-radius:6px!important;box-shadow:0 10px 25px rgba(24,55,82,.18)!important;padding:9px!important}
+#tab-projects #ganttChartContainer .gantt-inline-filter-values{max-height:250px!important;overflow-y:auto!important;overflow-x:hidden!important;border:1px solid #d9e3eb!important;border-radius:5px!important;padding:4px!important}
+
+/* Status colors: completed green, overdue red/pink, working blue, due within 2 days yellow. */
+#tab-projects #ganttChartContainer .gantt-bar.gantt-status-completed{background:#22b968!important;color:#fff!important}
+#tab-projects #ganttChartContainer .gantt-bar.gantt-status-overdue{background:#ef6b7b!important;color:#fff!important}
+#tab-projects #ganttChartContainer .gantt-bar.gantt-status-working{background:#2f80ed!important;color:#fff!important}
+#tab-projects #ganttChartContainer .gantt-bar.gantt-status-near-deadline{background:#f2c94c!important;color:#263238!important}
+#tab-projects #ganttChartContainer .gantt-bar.gantt-status-project-default{background:#64748b!important;color:#fff!important}
+#tab-projects #ganttChartContainer .gantt-bar.gantt-status-default{background:#94a3b8!important;color:#fff!important}
+#tab-projects #ganttChartContainer .phase-row .gantt-bar{background:#94a3b8!important;color:#fff!important}
+#tab-projects #ganttChartContainer .gantt-task-bar-text{color:inherit!important}
+
+/* Project/phase financial values in the table align with their numeric cells. */
+#tab-projects .pm-shared-project-table .pm-ref-project-data-row .pm-ref-number,
+#tab-projects .pm-shared-project-table .pm-ref-project-data-row .pm-ref-money,
+#tab-projects .pm-shared-project-table .pm-ref-task-row .pm-ref-number,
+#tab-projects .pm-shared-project-table .pm-ref-task-row .pm-ref-money{text-align:right!important;font-variant-numeric:tabular-nums!important}
+#tab-projects .pm-shared-project-table .pm-ref-project-data-row .pm-ref-number .pm-ref-gain-input,
+#tab-projects .pm-shared-project-table .pm-ref-project-data-row .pm-ref-money input,
+#tab-projects .pm-shared-project-table .pm-ref-task-row .pm-ref-number input,
+#tab-projects .pm-shared-project-table .pm-ref-task-row .pm-ref-money input{text-align:right!important}
+</style>
+
+<style>
+#tab-projects #ganttChartContainer .gantt-bar.gantt-status-completed{background:#22b968!important;border-color:#169b55!important;color:#fff!important}
+#tab-projects #ganttChartContainer .gantt-bar.gantt-status-overdue{background:#ef6b7b!important;border-color:#d95768!important;color:#fff!important}
+#tab-projects #ganttChartContainer .gantt-bar.gantt-status-working{background:#2f80ed!important;border-color:#1f68c8!important;color:#fff!important}
+#tab-projects #ganttChartContainer .gantt-bar.gantt-status-near-deadline{background:#f2c94c!important;border-color:#d7a900!important;color:#263238!important}
+#tab-projects #ganttChartContainer{position:relative!important;overflow:auto!important;padding:0!important}
+#tab-projects #ganttChartContainer .project-gantt-wrap{margin:0!important;padding:0!important;position:relative!important}
+#tab-projects #ganttChartContainer .project-gantt{border-collapse:separate!important;border-spacing:0!important}
+#tab-projects #ganttChartContainer .project-gantt thead th{position:sticky!important;z-index:120!important}
+#tab-projects #ganttChartContainer .project-gantt thead tr:first-child th{top:0!important}
+#tab-projects #ganttChartContainer .project-gantt thead tr:nth-child(2) th{top:24px!important}
+#tab-projects #ganttChartContainer .gantt-inline-filter-menu{width:240px!important;max-height:360px!important;overflow:hidden!important;border:1px solid #d7e3ec!important;border-radius:8px!important;background:#fff!important;box-shadow:0 12px 28px rgba(15,23,42,.18)!important;padding:8px!important}
+#tab-projects #ganttChartContainer .gantt-inline-filter-menu .gantt-inline-filter-values{max-height:245px!important;overflow-y:auto!important;overflow-x:hidden!important;border:1px solid #e1e8ef!important;border-radius:6px!important;margin-top:6px!important;padding:4px!important}
+#tab-projects .gantt-inline-filter-menu{position:fixed!important}
+#tab-projects .gantt-inline-filter-actions{display:flex!important;justify-content:flex-end!important;gap:6px!important;padding-top:7px!important;background:#fff!important}
+#tab-projects .gantt-inline-filter-actions button{border:1px solid #d7e3ec!important;border-radius:6px!important;padding:5px 10px!important;background:#fff!important;font-size:10px!important}
+#tab-projects .gantt-inline-filter-actions .gantt-filter-apply{background:#1976d2!important;color:#fff!important;border-color:#1976d2!important}
+#tab-projects .gantt-row-title{font-size:12px!important}
 </style>
 </body>
 </html>
+<style id="projectManagementV25Fixes">
+/* Project Management has no Year / Month / Week filters. */
+#tab-projects .pm-project-period-filters{display:none!important}
+/* Consistent numeric alignment across Project / Phase / Task rows. */
+#tab-projects .pm-shared-project-table td:nth-child(4){text-align:center!important}
+#tab-projects .pm-shared-project-table td:nth-child(8){text-align:center!important}
+#tab-projects .pm-shared-project-table td:nth-child(9),
+#tab-projects .pm-shared-project-table td:nth-child(10){text-align:right!important;font-variant-numeric:tabular-nums!important}
+#tab-projects .pm-shared-project-table td:nth-child(4) input,
+#tab-projects .pm-shared-project-table td:nth-child(8) input{text-align:center!important}
+#tab-projects .pm-shared-project-table td:nth-child(9) input,
+#tab-projects .pm-shared-project-table td:nth-child(10) input{text-align:right!important}
+/* Timeline: fixed header without a split/blank gap. */
+#tab-projects #ganttChartContainer{overflow:auto!important;padding:0!important;position:relative!important}
+#tab-projects #ganttChartContainer .project-gantt{margin:0!important;border-collapse:separate!important;border-spacing:0!important}
+#tab-projects #ganttChartContainer .project-gantt thead tr:first-child th{top:0!important;height:28px!important}
+#tab-projects #ganttChartContainer .project-gantt thead tr:nth-child(2) th{top:28px!important;height:26px!important}
+#tab-projects #ganttChartContainer .project-gantt .label-head{top:0!important}
+#tab-projects #ganttChartContainer .project-gantt .gantt-day-col{width:44px;min-width:44px}
+#tab-projects #ganttChartContainer .gantt-row-track{position:relative!important;height:41px!important;overflow:hidden!important;background:#fff!important}
+#tab-projects #ganttChartContainer .gantt-date-cell{display:block!important;background:#fff!important}
+#tab-projects #ganttChartContainer .project-row .label-cell{background:#315c7a!important;color:#fff!important}
+#tab-projects #ganttChartContainer .project-row .gantt-owner-cell,
+#tab-projects #ganttChartContainer .project-row .gantt-status-cell{background:#315c7a!important;color:#fff!important}
+#tab-projects #ganttChartContainer .phase-row .label-cell,
+#tab-projects #ganttChartContainer .task-row .label-cell{background:#fff!important;color:#173e6b!important}
+#tab-projects #ganttChartContainer .phase-row .gantt-owner-cell,
+#tab-projects #ganttChartContainer .phase-row .gantt-status-cell,
+#tab-projects #ganttChartContainer .task-row .gantt-owner-cell,
+#tab-projects #ganttChartContainer .task-row .gantt-status-cell{background:#fff!important;color:#334e63!important}
+#tab-projects #ganttChartContainer .gantt-row-title{font-size:10px!important}
+#tab-projects #ganttChartContainer .project-row .gantt-row-title{font-size:12px!important}
+#tab-projects #ganttChartContainer .gantt-inline-filter-menu{position:fixed!important;width:250px!important;max-height:360px!important;overflow:hidden!important;padding:9px!important;background:#fff!important;border:1px solid #cbd9e5!important;border-radius:6px!important;box-shadow:0 10px 25px rgba(24,55,82,.18)!important;z-index:2147483647!important}
+#tab-projects #ganttChartContainer .gantt-inline-filter-values{max-height:250px!important;overflow-y:auto!important;overflow-x:hidden!important;border:1px solid #d9e3eb!important;border-radius:5px!important;padding:4px!important}
+#tab-projects #ganttChartContainer .gantt-inline-filter-option{display:flex!important;align-items:center!important;gap:7px!important;min-height:24px!important;padding:4px 5px!important;font-size:11px!important}
+#tab-projects #ganttChartContainer .gantt-inline-filter-actions{display:flex!important;justify-content:flex-end!important;gap:7px!important;padding-top:8px!important}
+#tab-projects #ganttChartContainer .gantt-inline-filter-actions button{padding:6px 11px!important;border:1px solid #cbd9e5!important;border-radius:5px!important;background:#fff!important;color:#42617a!important;font-size:11px!important}
+#tab-projects #ganttChartContainer .gantt-inline-filter-actions .gantt-filter-apply{border-color:#1678d2!important;background:#1678d2!important;color:#fff!important}
+</style>
+
+
+<style id="projectManagementFinalV15Fixes">
+#tab-projects .pm-reference-actions{width:100%!important;justify-content:flex-start!important}
+#tab-projects .pm-ref-view-switch{display:inline-flex!important;margin-right:auto!important}
+#tab-projects .pm-ref-import,#tab-projects .pm-ref-icon-btn,#tab-projects .pm-ref-search,#tab-projects .pm-ref-new-project{flex:0 0 auto}
+#tab-projects .pm-ref-icon-btn span{margin-left:5px;font-size:9px;font-weight:800}
+#tab-projects .pm-shared-table-wrap{overflow:auto!important;max-height:calc(100vh - 180px)!important}
+#tab-projects .pm-shared-project-table thead th{position:sticky!important;top:0!important;z-index:80!important;text-align:center!important;background:#f2f7fb!important}
+#tab-projects .pm-horizontal-scrollbar{position:sticky;bottom:0;z-index:90;width:100%;height:16px;overflow-x:auto;overflow-y:hidden;background:#eef3f7;border-top:1px solid #d7e1e8}
+#tab-projects .pm-horizontal-scrollbar>div{height:1px}
+#tab-projects .pm-filter-popup{width:250px!important;max-height:360px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+#tab-projects .pm-filter-popup-search{position:sticky!important;top:0!important;z-index:5!important;flex:0 0 auto!important;background:#fff!important}
+#tab-projects .pm-filter-values{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;padding-right:3px!important}
+#tab-projects .pm-filter-popup-actions{flex:0 0 auto!important;background:#fff!important;position:sticky!important;bottom:0!important;padding-top:7px!important}
+#projectExportOptions{position:fixed;inset:0;background:rgba(15,23,42,.28);z-index:2147483646;display:flex;align-items:center;justify-content:center}
+#projectExportOptions .pm-export-box{width:360px;max-width:calc(100vw - 30px);background:#fff;border:1px solid #d8e3ec;border-radius:14px;padding:20px;box-shadow:0 20px 50px rgba(15,23,42,.22)}
+#projectExportOptions .pm-export-title{font-size:15px;font-weight:900;color:#173e6b;text-align:center}
+#projectExportOptions .pm-export-subtitle{font-size:10px;color:#71869a;text-align:center;margin:6px 0 16px}
+#projectExportOptions .pm-export-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#projectExportOptions .pm-export-actions button{height:70px;border:1px solid #d8e3ec;border-radius:10px;background:#f8fbfe;color:#245b82;font-weight:800;font-size:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+#projectExportOptions .pm-export-actions button:hover{background:#eef6fc;border-color:#9fc4df}
+#projectExportOptions .pm-export-actions i{font-size:20px}
+#projectExportOptions .pm-export-close{display:block;margin:14px auto 0;border:0;background:transparent;color:#738394;font-size:10px;font-weight:700;cursor:pointer}
+
+/* v22 refinements */
+#tab-projects .pm-shared-project-table .pm-ref-project-row.pm-project-completed td{
+  background:#dff3e5!important;
+  border-bottom-color:#b9dfc6!important;
+}
+#tab-projects .pm-shared-project-table .pm-ref-phase-row td{
+  background:#f5f8fb!important;
+}
+#tab-projects .pm-shared-project-table .pm-ref-phase-row.phase-color-0 td,
+#tab-projects .pm-shared-project-table .pm-ref-phase-row.phase-color-1 td,
+#tab-projects .pm-shared-project-table .pm-ref-phase-row.phase-color-2 td,
+#tab-projects .pm-shared-project-table .pm-ref-phase-row.phase-color-3 td,
+#tab-projects .pm-shared-project-table .pm-ref-phase-row.phase-color-4 td,
+#tab-projects .pm-shared-project-table .pm-ref-phase-row.phase-color-5 td,
+#tab-projects .pm-shared-project-table .pm-ref-phase-row.phase-color-6 td,
+#tab-projects .pm-shared-project-table .pm-ref-phase-row.phase-color-7 td{background:#f5f8fb!important}
+#tab-projects .pm-shared-project-table .pm-ref-task-row td{background:#f8fbfd!important}
+#tab-projects .pm-shared-project-table .pm-ref-task-row:hover td{background:#f1f7fb!important}
+#tab-projects .pm-shared-project-table .pm-project-owner-cell,
+#tab-projects .pm-shared-project-table .pm-ref-owner-cell,
+#tab-projects .pm-shared-project-table td.pm-owner-value{ text-align:center!important; }
+#tab-projects .pm-shared-project-table .pm-ref-number,
+#tab-projects .pm-shared-project-table .pm-ref-money,
+#tab-projects .pm-shared-project-table .pm-ref-gain-input,
+#tab-projects .pm-shared-project-table .pm-ref-money-input{ text-align:right!important; }
+#tab-projects .pm-shared-project-table .pm-ref-gain-input input,
+#tab-projects .pm-shared-project-table .pm-ref-money input,
+#tab-projects .pm-shared-project-table .pm-ref-money-input input{ text-align:right!important; }
+#tab-projects .pm-shared-project-table .pm-project-owner-cell span{display:block;text-align:center!important}
+#tab-projects .pm-shared-table-wrap{max-height:calc(100vh - 190px)!important;min-height:460px!important;overflow:auto!important}
+#tab-projects .pm-shared-project-table thead th{position:sticky!important;top:0!important;z-index:120!important}
+#tab-projects .pm-shared-project-table .pm-ref-project-row td,
+#tab-projects .pm-shared-project-table .pm-ref-phase-row td,
+#tab-projects .pm-shared-project-table .pm-ref-task-row td{vertical-align:middle!important}
+#tab-projects .pm-shared-project-table .pm-ref-gain-input,
+#tab-projects .pm-shared-project-table .pm-ref-money{ text-align:right!important; }
+
+#tab-projects #projectGanttView{min-height:0!important;overflow:hidden!important}
+#tab-projects #ganttChartContainer{height:calc(100vh - 175px)!important;min-height:480px!important;overflow:auto!important;position:relative!important}
+#tab-projects #ganttChartContainer .project-gantt-wrap{min-width:max-content!important}
+#tab-projects #ganttChartContainer .project-gantt{border-collapse:collapse!important;border-spacing:0!important}
+#tab-projects #ganttChartContainer .project-gantt thead th{
+  position:sticky!important;z-index:150!important;background:#315c7a!important;color:#fff!important;
+  border:1px solid #d8e3eb!important;
+}
+#tab-projects #ganttChartContainer .project-gantt thead tr:first-child th{top:0!important}
+#tab-projects #ganttChartContainer .project-gantt thead tr:nth-child(2) th{top:31px!important}
+#tab-projects #ganttChartContainer .project-gantt .label-col{position:sticky!important;left:0!important;z-index:170!important}
+#tab-projects #ganttChartContainer .project-gantt .owner-head{position:sticky!important;left:260px!important;z-index:170!important}
+#tab-projects #ganttChartContainer .project-gantt .status-head{position:sticky!important;left:390px!important;z-index:170!important}
+#tab-projects #ganttChartContainer .gantt-project-col{width:260px!important;min-width:260px!important}
+#tab-projects #ganttChartContainer .gantt-owner-col{width:130px!important;min-width:130px!important}
+#tab-projects #ganttChartContainer .gantt-status-col{width:130px!important;min-width:130px!important}
+#tab-projects #ganttChartContainer .gantt-day-col{width:40px!important;min-width:40px!important}
+#tab-projects #ganttChartContainer .gantt-date-cell{display:block!important;height:100%!important;border-left:1px solid #dbe5ec!important;box-sizing:border-box!important}
+#tab-projects #ganttChartContainer .gantt-grid-bg{display:none!important}
+#tab-projects #ganttChartContainer .subordinate-bar{background:#91a4b5!important;border-color:#7f93a5!important;color:#fff!important}
+#tab-projects #ganttChartContainer .project-bar{color:#fff!important}
+#tab-projects #ganttChartContainer .gantt-row-track{position:relative!important;display:grid!important;grid-template-columns:repeat(var(--gantt-columns),40px)!important;min-height:34px!important}
+#tab-projects #ganttChartContainer .gantt-owner-cell,
+#tab-projects #ganttChartContainer .gantt-status-cell{text-align:center!important}
+#tab-projects #ganttChartContainer .gantt-filter-head{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0}
+#tab-projects #ganttChartContainer .gantt-filter-btn{width:20px;height:20px;border:1px solid rgba(255,255,255,.45);border-radius:4px;background:rgba(255,255,255,.12);color:#fff;cursor:pointer}
+#tab-projects #ganttChartContainer .gantt-filter-btn.active{background:#fff;color:#315c7a}
+.gantt-inline-filter-menu{position:fixed;z-index:2147483647;width:270px;max-height:360px;overflow:hidden;background:#fff;border:1px solid #cbd9e5;border-radius:8px;box-shadow:0 12px 32px rgba(24,55,82,.22);padding:10px;font:12px Arial,sans-serif;color:#294b67}
+.gantt-inline-filter-menu input[type=search]{width:100%;height:32px;box-sizing:border-box;border:1px solid #cbd9e5;border-radius:5px;padding:5px 8px;margin:5px 0 7px}
+.gantt-inline-filter-values{max-height:250px;overflow-y:auto;border:1px solid #e0e7ee;border-radius:5px;padding:4px}
+.gantt-inline-filter-option{display:flex;gap:7px;align-items:center;padding:4px 3px}
+.gantt-inline-filter-actions{display:flex;justify-content:flex-end;gap:6px;padding-top:7px}
+.gantt-inline-filter-actions button{padding:5px 9px;border:1px solid #cbd9e5;border-radius:5px;background:#fff}
+.gantt-inline-filter-title{font-weight:700}
+</style>
+
+<style id="projectManagementV26Fixes">
+/* Project table owns its vertical scroll so the header stays fixed. */
+#tab-projects #projectTableView{height:calc(100vh - 155px)!important;min-height:420px!important;overflow:hidden!important;}
+#tab-projects #projectTableView .pm-shared-table-wrap{height:100%!important;max-height:none!important;min-height:0!important;overflow:auto!important;position:relative!important;}
+#tab-projects #projectTableView .pm-shared-project-table thead th{position:sticky!important;top:0!important;z-index:300!important;background:#f2f7fb!important;}
+#tab-projects #projectTableView .pm-shared-project-table .pm-ref-owner-cell,
+#tab-projects #projectTableView .pm-shared-project-table .pm-project-owner-cell,
+#tab-projects #projectTableView .pm-shared-project-table td.pm-owner-value{ text-align:center!important;}
+#tab-projects #projectTableView .pm-shared-project-table .pm-ref-owner-cell input,
+#tab-projects #projectTableView .pm-shared-project-table .pm-ref-owner-cell select{ text-align:center!important; margin-left:auto!important; margin-right:auto!important;}
+/* Do not draw a day-by-day grid inside the timeline bar track. */
+#tab-projects #ganttChartContainer .timeline-span{border-left:0!important;border-right:0!important;}
+#tab-projects #ganttChartContainer .gantt-row-track{background:transparent!important;border:0!important;}
+#tab-projects #ganttChartContainer .gantt-date-cell{display:none!important;}
+/* Keep Timeline header compact and remove the old year/day summary. */
+#tab-projects #projectGanttRangeLabel{display:none!important;}
+</style>
+
+<style id="projectManagementV27TimelineFixes">
+/* Timeline uses one exact column system for sticky labels and the date axis. */
+#tab-projects{gap:0!important;}
+#tab-projects .pm-reference-toolbar{margin-bottom:0!important;}
+#tab-projects #projectGanttView,#tab-projects #projectTableView{margin-top:0!important;padding-top:0!important;}
+#tab-projects #projectGanttView .pm-gantt-toolbar{display:none!important;height:0!important;min-height:0!important;padding:0!important;margin:0!important;}
+#tab-projects #ganttChartContainer{height:calc(100vh - 118px)!important;min-height:480px!important;margin-top:0!important;padding-top:0!important;overflow:auto!important;scroll-padding-top:0!important;}
+#tab-projects #ganttChartContainer .project-gantt-wrap{margin-top:0!important;padding-top:0!important;}
+#tab-projects #ganttChartContainer .project-gantt{table-layout:fixed!important;width:max-content!important;border-collapse:separate!important;border-spacing:0!important;}
+#tab-projects #ganttChartContainer .project-gantt .gantt-project-col{width:260px!important;min-width:260px!important;max-width:260px!important;}
+#tab-projects #ganttChartContainer .project-gantt .gantt-owner-col{width:130px!important;min-width:130px!important;max-width:130px!important;}
+#tab-projects #ganttChartContainer .project-gantt .gantt-status-col{width:130px!important;min-width:130px!important;max-width:130px!important;}
+#tab-projects #ganttChartContainer .project-gantt .gantt-day-col{width:40px!important;min-width:40px!important;max-width:40px!important;}
+/* Header and first three columns are independently sticky in both axes. */
+#tab-projects #ganttChartContainer .project-gantt thead th{top:0!important;height:28px!important;box-sizing:border-box!important;}
+#tab-projects #ganttChartContainer .project-gantt thead tr:nth-child(2) th{top:28px!important;height:27px!important;}
+#tab-projects #ganttChartContainer .project-gantt thead .label-col{position:sticky!important;left:0!important;top:0!important;z-index:500!important;background:#315c7a!important;}
+#tab-projects #ganttChartContainer .project-gantt thead .owner-head{position:sticky!important;left:260px!important;top:0!important;z-index:500!important;background:#315c7a!important;}
+#tab-projects #ganttChartContainer .project-gantt thead .status-head{position:sticky!important;left:390px!important;top:0!important;z-index:500!important;background:#315c7a!important;}
+#tab-projects #ganttChartContainer .project-gantt tbody .label-col{position:sticky!important;left:0!important;z-index:250!important;background:#fff!important;}
+#tab-projects #ganttChartContainer .project-gantt tbody .gantt-owner-cell{position:sticky!important;left:260px!important;z-index:250!important;background:#fff!important;}
+#tab-projects #ganttChartContainer .project-gantt tbody .gantt-status-cell{position:sticky!important;left:390px!important;z-index:250!important;background:#fff!important;}
+/* No vertical grid is drawn through the bar area. */
+#tab-projects #ganttChartContainer .timeline-span{border:0!important;background:#fff!important;padding:0!important;}
+#tab-projects #ganttChartContainer .gantt-row-track{background:transparent!important;border:0!important;display:block!important;position:relative!important;min-height:34px!important;}
+#tab-projects #ganttChartContainer .gantt-day-col{border-left:1px solid #dbe5ec!important;}
+#tab-projects #ganttChartContainer .gantt-date-head{border-left:1px solid rgba(255,255,255,.45)!important;}
+#tab-projects #ganttChartContainer .gantt-month-head{border-left:1px solid rgba(255,255,255,.45)!important;}
+#tab-projects #ganttChartContainer .project-row .label-col,
+#tab-projects #ganttChartContainer .project-row .gantt-owner-cell,
+#tab-projects #ganttChartContainer .project-row .gantt-status-cell{background:#315c7a!important;color:#fff!important;font-weight:700!important;}
+#tab-projects #ganttChartContainer .phase-row .label-col,
+#tab-projects #ganttChartContainer .task-row .label-col{background:#fff!important;}
+#tab-projects #ganttChartContainer .gantt-filter-head{width:100%!important;justify-content:space-between!important;gap:4px!important;}
+#tab-projects #ganttChartContainer .gantt-filter-btn{margin-left:auto!important;flex:0 0 auto!important;}
+</style>
