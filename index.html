@@ -8045,15 +8045,20 @@ function setupInlineRequiredValidation(){
             const wrap=view?.querySelector('.pm-shared-table-wrap');
             const bar=document.getElementById('projectTableBottomScroll');
             const inner=bar?.firstElementChild;
+            const table=view?.querySelector('.pm-shared-project-table');
             if(!view||!wrap||!bar||!inner)return;
-            inner.style.width=Math.max(wrap.scrollWidth,wrap.clientWidth)+'px';
-            bar.scrollLeft=wrap.scrollLeft;
+            const width=Math.max(table?.scrollWidth||0,wrap.scrollWidth,wrap.clientWidth);
+            inner.style.width=width+'px';
             if(!bar._bound){
                 bar._bound=true;
                 bar.addEventListener('scroll',()=>{wrap.scrollLeft=bar.scrollLeft;});
                 wrap.addEventListener('scroll',()=>{if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1)bar.scrollLeft=wrap.scrollLeft;});
                 window.addEventListener('resize',syncProjectBottomScroll);
             }
+            requestAnimationFrame(()=>{
+                inner.style.width=Math.max(table?.scrollWidth||0,wrap.scrollWidth,wrap.clientWidth)+'px';
+                bar.scrollLeft=wrap.scrollLeft;
+            });
         }
         function getProjectGanttRange(){const dates=[];projectsList.forEach(p=>{if(p.startDate)dates.push(new Date(p.startDate+'T00:00:00'));if(p.dueDate)dates.push(new Date(p.dueDate+'T00:00:00'));(p.phases||[]).forEach(ph=>{if(ph.startDate)dates.push(new Date(ph.startDate+'T00:00:00'));if(ph.dueDate)dates.push(new Date(ph.dueDate+'T00:00:00'));(ph.tasks||[]).forEach(t=>{if(t.startDate)dates.push(new Date(t.startDate+'T00:00:00'));if(t.dueDate)dates.push(new Date(t.dueDate+'T00:00:00'));});});});const anchor=new Date(projectGanttAnchor);anchor.setHours(0,0,0,0);let start=weekStart(anchor),end=addDays(start,41);if(dates.length&&!projectGanttAnchor){start=weekStart(new Date(Math.min(...dates.map(d=>d.getTime()))));end=addDays(start,41);}return {start,end};}
         function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
@@ -8076,23 +8081,19 @@ function setupInlineRequiredValidation(){
         function ganttProjectMatchesFilters(p){
             if(!p) return false;
             if(projectTableSearchText && !projectMatchesSearch(p)) return false;
-            const active=Object.entries(ganttFilterState).filter(([,set])=>set instanceof Set && set.size);
-            if(!active.length) return true;
-            const phaseItems=Array.isArray(p?.phases)?p.phases:[];
-            const taskItems=[
-                ...(Array.isArray(p?.tasks)?p.tasks:[]),
-                ...phaseItems.flatMap(ph=>Array.isArray(ph?.tasks)?ph.tasks:[])
-            ];
-            return active.every(([key,selected])=>{
-                const projectVals=ganttFilterValues(key,p).map(String);
-                const childVals=[];
-                if(key==='Owner') taskItems.forEach(t=>childVals.push(String(t?.owner||'')));
-                if(key==='Status') taskItems.forEach(t=>childVals.push(String(calculateProjectTaskStatus(t)||t?.status||'')));
-                if(key==='Project') childVals.push(String(p?.name||''));
-                if(key==='Progress') childVals.push(`${getGanttCalculatedProgress(p)}%`);
-                const vals=[...projectVals,...childVals].map(v=>v.trim()).filter(Boolean);
-                return vals.some(v=>selected.has(v));
-            });
+            const selectedProject=ganttFilterState.Project instanceof Set?ganttFilterState.Project:new Set();
+            if(selectedProject.size && !selectedProject.has(String(p.name||''))) return false;
+            return true;
+        }
+        function ganttRowMatchesFilters(type,obj,p){
+            if(!ganttProjectMatchesFilters(p)) return false;
+            const ownerSet=ganttFilterState.Owner instanceof Set?ganttFilterState.Owner:new Set();
+            const statusSet=ganttFilterState.Status instanceof Set?ganttFilterState.Status:new Set();
+            const owner=String(obj?.owner||'').trim();
+            const status=String(type==='project'?calculateProjectOverallStatus(p):type==='phase'?projectPhaseSummary(obj,p).status:calculateProjectTaskStatus(obj)||obj?.status||'Not Started').trim();
+            if(ownerSet.size && !ownerSet.has(owner)) return false;
+            if(statusSet.size && !statusSet.has(status)) return false;
+            return true;
         }
         function ganttFilterHeader(label,key){
             const selected=ganttFilterState[key] instanceof Set?ganttFilterState[key]:new Set();
@@ -8179,21 +8180,27 @@ function setupInlineRequiredValidation(){
                 });
                 (p.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(pushDate));
             });
+            const allDates=[...observedSet].sort();
+            if(!allDates.length) allDates.push(formatDateLocal(new Date()));
 
-            const observedDates=[...observedSet].sort();
-            if(!observedDates.length) observedDates.push(formatDateLocal(new Date()));
-
-            // Timeline columns are only the dates that actually exist in Project / Phase / Task data.
-            // This avoids rendering every calendar day across empty months while keeping exact start/end columns.
-            const allDates=[...observedDates];
-            const observedLookup=new Set(allDates);
             const dayWidth=40;
-            const timelineWidth=allDates.length*dayWidth;
-            const offsets=new Map(allDates.map((d,i)=>[d,i]));
-            const xForDate=d=>{const v=cleanDateStr(d); if(!v)return null; const idx=offsets.get(v); return idx==null?null:idx*dayWidth;};
-            const endXForDate=d=>{const v=cleanDateStr(d); if(!v)return null; const idx=offsets.get(v); return idx==null?null:(idx+1)*dayWidth;};
-            const rangeLabel=document.getElementById('projectGanttRangeLabel');
-            if(rangeLabel)rangeLabel.textContent='';
+            const dayMs=86400000;
+            const base=new Date(allDates[0]+'T00:00:00');
+            const dateMs=d=>new Date(d+'T00:00:00').getTime();
+            const pos=d=>{
+                const v=cleanDateStr(d); if(!v)return null;
+                return Math.max(0,(dateMs(v)-base.getTime())/dayMs)*dayWidth;
+            };
+            const cellWidths=allDates.map((d,i)=>{
+                if(i<allDates.length-1) return Math.max(dayWidth,(dateMs(allDates[i+1])-dateMs(d))/dayMs*dayWidth);
+                return dayWidth;
+            });
+            const starts=[]; let acc=0;
+            cellWidths.forEach(w=>{starts.push(acc);acc+=w;});
+            const timelineWidth=Math.max(dayWidth,acc);
+            const widthForSpan=(sd,pd)=>Math.max(8,(dateMs(pd)-dateMs(sd))/dayMs*dayWidth+dayWidth);
+            const xForDate=d=>pos(d);
+            const rangeLabel=document.getElementById('projectGanttRangeLabel'); if(rangeLabel)rangeLabel.textContent='';
 
             const monthGroups=[];
             allDates.forEach((d,i)=>{
@@ -8204,59 +8211,68 @@ function setupInlineRequiredValidation(){
                 else monthGroups.push({key,count:1,label:dt.toLocaleDateString('en-US',{month:'short'})});
             });
             const monthHeaders=monthGroups.map(m=>`<th class="gantt-month-head" colspan="${m.count}">${m.label}</th>`).join('');
-            const dateHeaders=allDates.map(d=>`<th class="gantt-date-head">${observedLookup.has(d)?new Date(d+'T00:00:00').getDate():''}</th>`).join('');
+            const dateHeaders=allDates.map(d=>`<th class="gantt-date-head">${new Date(d+'T00:00:00').getDate()}</th>`).join('');
+            const today=formatDateLocal(new Date());
+            const todayPos=pos(today);
 
             const table=document.createElement('table');
             table.className='project-gantt pm-gantt-task-date-table';
-            table.innerHTML=`<colgroup><col class="gantt-project-col"><col class="gantt-owner-col"><col class="gantt-status-col">${allDates.map(()=>`<col class="gantt-day-col" style="width:${dayWidth}px;min-width:${dayWidth}px;max-width:${dayWidth}px">`).join('')}</colgroup><thead><tr><th class="label-head label-col" rowspan="2">${ganttFilterHeader('Project','Project')}</th><th class="label-head owner-head" rowspan="2">${ganttFilterHeader('Owner','Owner')}</th><th class="label-head status-head" rowspan="2">${ganttFilterHeader('Status','Status')}</th>${monthHeaders}</tr><tr>${dateHeaders}</tr></thead><tbody></tbody>`;
+            table.innerHTML=`<colgroup><col class="gantt-project-col"><col class="gantt-owner-col"><col class="gantt-status-col">${cellWidths.map(w=>`<col class="gantt-day-col" style="width:${w}px;min-width:${w}px;max-width:${w}px">`).join('')}</colgroup><thead><tr><th class="label-head label-col" rowspan="2">${ganttFilterHeader('Project','Project')}</th><th class="label-head owner-head" rowspan="2">${ganttFilterHeader('Owner','Owner')}</th><th class="label-head status-head" rowspan="2">${ganttFilterHeader('Status','Status')}</th>${monthHeaders}</tr><tr>${dateHeaders}</tr></thead><tbody></tbody>`;
             const tbody=table.querySelector('tbody');
 
-            const statusForBar=(type,status,dueDate)=>ganttBarStatus(type,{dueDate},status);
-            const addRow=(type,label,s,e,detail,owner,toggleHtml='',status='Not Started')=>{
+            const addTodayLine=()=>{
+                if(todayPos==null||todayPos<0||todayPos>timelineWidth)return;
+                const line=document.createElement('div'); line.className='project-gantt-today-line'; line.style.left=`${260+130+130+todayPos}px`; line.title='Today';
+                table.style.position='relative'; table.appendChild(line);
+            };
+            const addRow=(type,label,s,e,detail,owner,toggleHtml='',status='Not Started',obj=null,p=null)=>{
+                if(!ganttRowMatchesFilters(type,obj||{},p||{}))return;
                 const tr=document.createElement('tr'); tr.className=`${type}-row`;
                 const statusText=String(status||'Not Started');
                 tr.innerHTML=`<td class="label-cell label-col ${type}-label-cell"><div class="gantt-name-wrap ${type}">${toggleHtml}<span class="gantt-row-title">${escapeHtml(label||'')}</span></div></td><td class="gantt-owner-cell">${escapeHtml(owner||'-')}</td><td class="gantt-status-cell">${escapeHtml(statusText)}</td><td colspan="${allDates.length}" class="timeline-span"><div class="gantt-row-track" style="width:${timelineWidth}px;min-width:${timelineWidth}px"></div></td>`;
                 const track=tr.querySelector('.gantt-row-track');
-                const sd=cleanDateStr(s),pd=cleanDateStr(e);
+                const sd=cleanDateStr(s),pd=cleanDateStr(e),ad=cleanDateStr(obj?.actualDate);
                 if(sd&&pd&&sd<=pd){
-                    let left=xForDate(sd), right=endXForDate(pd);
-                    if(left==null){left=sd<allDates[0]?0:null;}
-                    if(right==null){right=pd>allDates[allDates.length-1]?timelineWidth:null;}
+                    const left=xForDate(sd), right=xForDate(pd)+dayWidth;
                     if(left!=null&&right!=null&&right>left){
-                        const bar=document.createElement('div');
-                        const statusClass=statusForBar(type,status,pd);
-                        bar.className=`gantt-bar ${type==='project'?'project-bar':type==='task'?'task-bar':'phase-bar'} gantt-status-${statusClass}`;
-                        bar.style.left=`${Math.max(0,left)}px`;
-                        bar.style.width=`${Math.max(8,Math.min(timelineWidth-left,right-left))}px`;
-                        const detailText=String(detail||'').trim();
-                        bar.innerHTML=`<span class="gantt-task-bar-text">${escapeHtml(detailText)}</span>`;
-                        bar.title=`${label}\nStart: ${formatDateMMDDYYYY(sd)}\nPlan: ${formatDateMMDDYYYY(pd)}${detailText?'\nDetailed Status: '+detailText:''}`;
-                        track.appendChild(bar);
+                        const light=document.createElement('div');
+                        light.className=`gantt-bar gantt-bar-light ${type==='project'?'project-bar':type==='task'?'task-bar':'phase-bar'}`;
+                        light.style.left=`${left}px`; light.style.width=`${Math.max(8,right-left)}px`;
+                        const actualEnd=ad||today;
+                        let darkRight=xForDate(actualEnd);
+                        if(darkRight!=null){ darkRight=Math.min(right,darkRight+dayWidth); if(darkRight>left){
+                            const dark=document.createElement('div');
+                            const statusClass=ganttBarStatus(type,status,pd);
+                            dark.className=`gantt-bar gantt-bar-dark gantt-status-${statusClass}`;
+                            dark.style.left=`${left}px`; dark.style.width=`${Math.max(8,darkRight-left)}px`;
+                            const detailText=String(detail||'').trim();
+                            dark.innerHTML=`<span class="gantt-task-bar-text">${escapeHtml(detailText)}</span>`;
+                            dark.title=`${label}\nStart: ${formatDateMMDDYYYY(sd)}\nPlan: ${formatDateMMDDYYYY(pd)}\nActual: ${ad?formatDateMMDDYYYY(ad):'Today'}${detailText?'\nDetailed Status: '+detailText:''}`;
+                            track.appendChild(light); track.appendChild(dark);
+                        } else track.appendChild(light);
+                        } else track.appendChild(light);
                     }
                 }
                 tbody.appendChild(tr);
             };
 
             items.forEach(p=>{
-                if(!ganttProjectMatchesFilters(p)) return;
+                if(!ganttProjectMatchesFilters(p))return;
                 const pid=String(p.id).replace(/'/g,"\\'");
                 const pCollapsed=collapsedGanttProjects.has(String(p.id));
                 const pStatus=calculateProjectOverallStatus(p);
-                addRow('project',p.name,p.startDate,p.dueDate,projectIncompleteTaskDetails(p),projectOwnerText(p),`<button type="button" class="pm-gantt-toggle" onclick="toggleGanttProject('${pid}')" title="${pCollapsed?'Expand':'Collapse'} project"><i class="fa-solid ${pCollapsed?'fa-chevron-right':'fa-chevron-down'}"></i></button>`,pStatus);
+                addRow('project',p.name,p.startDate,p.dueDate,projectIncompleteTaskDetails(p),projectOwnerText(p),`<button type="button" class="pm-gantt-toggle" onclick="toggleGanttProject('${pid}')" title="${pCollapsed?'Expand':'Collapse'} project"><i class="fa-solid ${pCollapsed?'fa-chevron-right':'fa-chevron-down'}"></i></button>`,pStatus,p,p);
                 if(pCollapsed)return;
                 (p.phases||[]).forEach((ph,pi)=>{
                     const key=ganttNodeKey(p.id,pi),phCollapsed=collapsedGanttPhases.has(key),tasks=ph.tasks||[],sum=projectPhaseSummary(ph,p);
-                    addRow('phase',ph.name||`Phase ${pi+1}`,sum.startDate,sum.dueDate,sum.detail||'',sum.owner||'-',`<button type="button" class="pm-gantt-toggle" onclick="toggleGanttPhase('${pid}',${pi})" title="${phCollapsed?'Expand':'Collapse'} phase"><i class="fa-solid ${phCollapsed?'fa-chevron-right':'fa-chevron-down'}"></i></button>`,sum.status||'Not Started');
+                    addRow('phase',ph.name||`Phase ${pi+1}`,sum.startDate,sum.dueDate,sum.detail||'',sum.owner||'-',`<button type="button" class="pm-gantt-toggle" onclick="toggleGanttPhase('${pid}',${pi})" title="${phCollapsed?'Expand':'Collapse'} phase"><i class="fa-solid ${phCollapsed?'fa-chevron-right':'fa-chevron-down'}"></i></button>`,sum.status||'Not Started',ph,p);
                     if(phCollapsed)return;
-                    tasks.forEach(t=>addRow('task',t.name,t.startDate,t.dueDate,t.detail,t.owner||'-','',calculateProjectTaskStatus(t)));
+                    tasks.forEach(t=>addRow('task',t.name,t.startDate,t.dueDate,t.detail,t.owner||'-','',calculateProjectTaskStatus(t),t,p));
                 });
-                (p.tasks||[]).forEach(t=>addRow('task',t.name,t.startDate,t.dueDate,t.detail,t.owner||'-','',calculateProjectTaskStatus(t)));
+                (p.tasks||[]).forEach(t=>addRow('task',t.name,t.startDate,t.dueDate,t.detail,t.owner||'-','',calculateProjectTaskStatus(t),t,p));
             });
-            const wrap=document.createElement('div');
-            wrap.className='project-gantt-wrap';
-            wrap.style.width=`${260+130+130+timelineWidth}px`;
-            wrap.appendChild(table);
-            container.appendChild(wrap);
+            addTodayLine();
+            const wrap=document.createElement('div'); wrap.className='project-gantt-wrap'; wrap.style.width=`${260+130+130+timelineWidth}px`; wrap.appendChild(table); container.appendChild(wrap);
         }
         function resetProjectGanttToToday(){projectGanttAnchor=new Date();renderGanttChart();}
         function changeProjectGanttPeriod(dir){renderGanttChart();}
@@ -10190,6 +10206,334 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
   window.addEventListener('resize',sync);
 })();
 </script>
+
+<style id="projectManagementV31TimelineFixes">
+/* V31: authoritative Timeline geometry + Table bottom scrollbar */
+#tab-projects #projectTableView .pm-shared-table-wrap{
+  overflow-x:auto!important;overflow-y:auto!important;scrollbar-width:none!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar{height:0!important;}
+#tab-projects #projectTableBottomScroll{
+  display:block!important;height:15px!important;min-height:15px!important;
+  overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:auto!important;
+}
+#tab-projects #projectTableBottomScroll>div{height:1px!important;}
+
+#tab-projects #ganttChartContainer{position:relative!important;overflow:auto!important;}
+#tab-projects #ganttChartContainer .project-gantt-wrap{padding:0!important;margin:0!important;position:relative!important;min-width:max-content!important;width:max-content!important;}
+#tab-projects #ganttChartContainer .project-gantt{width:max-content!important;min-width:max-content!important;table-layout:fixed!important;border-collapse:separate!important;border-spacing:0!important;}
+#tab-projects #ganttChartContainer .project-gantt .gantt-day-col{width:40px!important;min-width:40px!important;max-width:40px!important;}
+#tab-projects #ganttChartContainer .project-gantt thead tr:first-child{height:28px!important;}
+#tab-projects #ganttChartContainer .project-gantt thead tr:nth-child(2){height:27px!important;}
+#tab-projects #ganttChartContainer .project-gantt thead th{padding:0!important;line-height:1!important;}
+#tab-projects #ganttChartContainer .project-gantt thead tr:first-child th{top:0!important;height:28px!important;}
+#tab-projects #ganttChartContainer .project-gantt thead tr:nth-child(2) th{top:28px!important;height:27px!important;}
+#tab-projects #ganttChartContainer .project-gantt .label-head,
+#tab-projects #ganttChartContainer .project-gantt .owner-head,
+#tab-projects #ganttChartContainer .project-gantt .status-head{
+  position:sticky!important;top:0!important;z-index:700!important;background:#315c7a!important;color:#fff!important;
+}
+#tab-projects #ganttChartContainer .project-gantt .label-head{left:0!important;width:260px!important;min-width:260px!important;}
+#tab-projects #ganttChartContainer .project-gantt .owner-head{left:260px!important;width:130px!important;min-width:130px!important;}
+#tab-projects #ganttChartContainer .project-gantt .status-head{left:390px!important;width:130px!important;min-width:130px!important;}
+#tab-projects #ganttChartContainer .project-gantt tbody .label-col{position:sticky!important;left:0!important;z-index:500!important;width:260px!important;min-width:260px!important;}
+#tab-projects #ganttChartContainer .project-gantt tbody .gantt-owner-cell{position:sticky!important;left:260px!important;z-index:500!important;width:130px!important;min-width:130px!important;}
+#tab-projects #ganttChartContainer .project-gantt tbody .gantt-status-cell{position:sticky!important;left:390px!important;z-index:500!important;width:130px!important;min-width:130px!important;}
+#tab-projects #ganttChartContainer .project-gantt tbody .timeline-span{padding:0!important;border:0!important;background:#fff!important;}
+#tab-projects #ganttChartContainer .project-gantt tbody td{border-bottom:1px solid #d7e2ea!important;border-right:1px solid #d7e2ea!important;}
+#tab-projects #ganttChartContainer .project-gantt .gantt-row-track{position:relative!important;height:100%!important;min-height:34px!important;background:transparent!important;}
+#tab-projects #ganttChartContainer .project-row .label-col,
+#tab-projects #ganttChartContainer .project-row .gantt-owner-cell,
+#tab-projects #ganttChartContainer .project-row .gantt-status-cell{background:#315c7a!important;color:#fff!important;font-weight:800!important;}
+#tab-projects #ganttChartContainer .project-row .gantt-row-title{color:#fff!important;font-weight:800!important;}
+#tab-projects #ganttChartContainer .phase-row .label-col,
+#tab-projects #ganttChartContainer .phase-row .gantt-owner-cell,
+#tab-projects #ganttChartContainer .phase-row .gantt-status-cell{background:#eaf4fb!important;color:#315c7a!important;}
+#tab-projects #ganttChartContainer .task-row .label-col,
+#tab-projects #ganttChartContainer .task-row .gantt-owner-cell,
+#tab-projects #ganttChartContainer .task-row .gantt-status-cell{background:#f7fbfe!important;color:#234c6f!important;}
+#tab-projects #ganttChartContainer .gantt-owner-cell,#tab-projects #ganttChartContainer .gantt-status-cell{text-align:center!important;}
+#tab-projects #ganttChartContainer .gantt-day-col{border-left:1px solid #d7e2ea!important;background:#fff!important;}
+#tab-projects #ganttChartContainer .gantt-date-head{border-left:1px solid rgba(255,255,255,.4)!important;}
+#tab-projects #ganttChartContainer .gantt-month-head{border-left:1px solid rgba(255,255,255,.4)!important;}
+#tab-projects #ganttChartContainer .gantt-bar-light{position:absolute!important;top:50%!important;transform:translateY(-50%)!important;height:24px!important;border-radius:5px!important;background:#bfdbfe!important;z-index:1!important;opacity:1!important;}
+#tab-projects #ganttChartContainer .gantt-bar-dark{position:absolute!important;top:50%!important;transform:translateY(-50%)!important;height:24px!important;border-radius:5px!important;z-index:2!important;overflow:hidden!important;}
+#tab-projects #ganttChartContainer .gantt-status-completed{background:#22b968!important;}
+#tab-projects #ganttChartContainer .gantt-status-working{background:#2f80ed!important;}
+#tab-projects #ganttChartContainer .gantt-status-overdue{background:#ef6675!important;}
+#tab-projects #ganttChartContainer .gantt-status-near-deadline{background:#f4c542!important;color:#5f4700!important;}
+#tab-projects #ganttChartContainer .gantt-status-project-default,#tab-projects #ganttChartContainer .gantt-status-default{background:#94a3b8!important;}
+#tab-projects #ganttChartContainer .gantt-task-bar-text{display:block!important;padding:0 7px!important;line-height:24px!important;font-size:8px!important;font-weight:700!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;color:#fff!important;}
+#tab-projects #ganttChartContainer .project-gantt-today-line{position:absolute!important;top:0!important;bottom:0!important;width:2px!important;background:#ef4444!important;z-index:800!important;pointer-events:none!important;}
+</style>
+
+<script id="projectManagementV31Runtime">
+(function(){
+  function syncBottom(){
+    const view=document.getElementById('projectTableView');
+    const wrap=view?.querySelector('.pm-shared-table-wrap');
+    const bar=document.getElementById('projectTableBottomScroll');
+    const inner=bar?.firstElementChild;
+    const table=view?.querySelector('.pm-shared-project-table');
+    if(!wrap||!bar||!inner)return;
+    const contentWidth=Math.max(table?.scrollWidth||0,wrap.scrollWidth,wrap.clientWidth);
+    inner.style.width=contentWidth+'px';
+    if(!bar.dataset.v31){
+      bar.dataset.v31='1';
+      bar.addEventListener('scroll',()=>{wrap.scrollLeft=bar.scrollLeft;},{passive:true});
+      wrap.addEventListener('scroll',()=>{if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1)bar.scrollLeft=wrap.scrollLeft;},{passive:true});
+    }
+    requestAnimationFrame(()=>{inner.style.width=Math.max(table?.scrollWidth||0,wrap.scrollWidth,wrap.clientWidth)+'px';bar.scrollLeft=wrap.scrollLeft;});
+  }
+  window.syncProjectBottomScroll=syncBottom;
+  const oldRender=window.renderProjectsTable;
+  if(typeof oldRender==='function'){
+    window.renderProjectsTable=function(){const r=oldRender.apply(this,arguments);requestAnimationFrame(syncBottom);return r;};
+  }
+  document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(syncBottom));
+  window.addEventListener('resize',syncBottom);
+
+  function replaceGanttRenderer(){
+    if(typeof window.renderGanttChart!=='function')return;
+    const render=function(){
+      const container=document.getElementById('ganttChartContainer'); if(!container)return;
+      container.innerHTML='';
+      const items=(typeof projectsList!=='undefined'&&Array.isArray(projectsList)?projectsList:[]).filter(p=>p&&String(p.name||'').trim());
+      if(!items.length){container.innerHTML='<div class="empty-schedule">No projects recorded. Create a project first.</div>';return;}
+      const datesSet=new Set();
+      const push=v=>{const d=typeof cleanDateStr==='function'?cleanDateStr(v):String(v||'').slice(0,10);if(d)datesSet.add(d);};
+      items.forEach(p=>{
+        [p.startDate,p.dueDate,p.actualDate].forEach(push);
+        (p.phases||[]).forEach(ph=>{[ph.startDate,ph.dueDate,ph.actualDate].forEach(push);(ph.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(push));});
+        (p.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(push));
+      });
+      let allDates=[...datesSet].sort();
+      if(!allDates.length)allDates=[formatDateLocal(new Date())];
+      const dayMs=86400000,dayW=40;
+      const index=new Map(allDates.map((d,i)=>[d,i]));
+      const x=d=>{const v=typeof cleanDateStr==='function'?cleanDateStr(d):String(d||'').slice(0,10); if(!v)return null; if(index.has(v))return index.get(v)*dayW; const ms=new Date(v+'T00:00:00').getTime(); let lo=0;while(lo<allDates.length&&new Date(allDates[lo]+'T00:00:00').getTime()<ms)lo++; if(lo<=0)return 0;if(lo>=allDates.length)return (allDates.length)*dayW;const a=new Date(allDates[lo-1]+'T00:00:00').getTime(),b=new Date(allDates[lo]+'T00:00:00').getTime();return ((lo-1)+(ms-a)/(b-a))*dayW;};
+      const timelineW=allDates.length*dayW;
+      const today=formatDateLocal(new Date()),todayX=x(today);
+      const months=[];allDates.forEach(d=>{const dt=new Date(d+'T00:00:00'),key=`${dt.getFullYear()}-${dt.getMonth()+1}`;const last=months[months.length-1];if(last&&last.key===key)last.count++;else months.push({key,count:1,label:dt.toLocaleDateString('en-US',{month:'short'})});});
+      const table=document.createElement('table');table.className='project-gantt pm-gantt-task-date-table';
+      table.innerHTML=`<colgroup><col class="gantt-project-col"><col class="gantt-owner-col"><col class="gantt-status-col">${allDates.map(()=>'<col class="gantt-day-col">').join('')}</colgroup><thead><tr><th class="label-head label-col" rowspan="2">${ganttFilterHeader('Project','Project')}</th><th class="label-head owner-head" rowspan="2">${ganttFilterHeader('Owner','Owner')}</th><th class="label-head status-head" rowspan="2">${ganttFilterHeader('Status','Status')}</th>${months.map(m=>`<th class="gantt-month-head" colspan="${m.count}">${m.label}</th>`).join('')}</tr><tr>${allDates.map(d=>`<th class="gantt-date-head">${new Date(d+'T00:00:00').getDate()}</th>`).join('')}</tr></thead><tbody></tbody>`;
+      const tbody=table.querySelector('tbody');
+      const addRow=(type,label,start,plan,detail,owner,toggleHtml,status,obj,p)=>{
+        if(typeof ganttRowMatchesFilters==='function'&&!ganttRowMatchesFilters(type,obj||{},p||{}))return;
+        const tr=document.createElement('tr');tr.className=`${type}-row`;
+        tr.innerHTML=`<td class="label-cell label-col"><div class="gantt-name-wrap ${type}">${toggleHtml}<span class="gantt-row-title">${escapeHtml(label||'')}</span></div></td><td class="gantt-owner-cell">${escapeHtml(owner||'-')}</td><td class="gantt-status-cell">${escapeHtml(status||'Not Started')}</td><td colspan="${allDates.length}" class="timeline-span"><div class="gantt-row-track" style="width:${timelineW}px;min-width:${timelineW}px"></div></td>`;
+        const track=tr.querySelector('.gantt-row-track'),sd=cleanDateStr(start),pd=cleanDateStr(plan),ad=cleanDateStr(obj?.actualDate);if(sd&&pd&&sd<=pd){
+          const left=x(sd),planRight=x(pd)+dayW; if(left!=null&&planRight>left){
+            const light=document.createElement('div');light.className='gantt-bar gantt-bar-light';light.style.left=left+'px';light.style.width=Math.max(dayW,planRight-left)+'px';track.appendChild(light);
+            const darkEnd=ad||today;const dx=x(darkEnd);if(dx!=null&&dx>left){const dark=document.createElement('div');const cls=ganttBarStatus(type,obj,status);dark.className=`gantt-bar gantt-bar-dark gantt-status-${cls}`;dark.style.left=left+'px';dark.style.width=Math.max(8,dx-left+dayW)+'px';const txt=String(detail||'').trim();dark.innerHTML=`<span class="gantt-task-bar-text">${escapeHtml(txt)}</span>`;track.appendChild(dark);}
+          }
+        }
+        tbody.appendChild(tr);
+      };
+      items.forEach(p=>{
+        if(typeof ganttProjectMatchesFilters==='function'&&!ganttProjectMatchesFilters(p))return;
+        const pid=String(p.id).replace(/'/g,"\\'");const pc=collapsedGanttProjects.has(String(p.id));const ps=calculateProjectOverallStatus(p);
+        addRow('project',p.name,p.startDate,p.dueDate,projectIncompleteTaskDetails(p),projectOwnerText(p),`<button type="button" class="pm-gantt-toggle" onclick="toggleGanttProject('${pid}')"><i class="fa-solid ${pc?'fa-chevron-right':'fa-chevron-down'}"></i></button>`,ps,p,p);if(pc)return;
+        (p.phases||[]).forEach((ph,pi)=>{const key=ganttNodeKey(p.id,pi),pc2=collapsedGanttPhases.has(key),sum=projectPhaseSummary(ph,p);addRow('phase',ph.name||`Phase ${pi+1}`,sum.startDate,sum.dueDate,sum.detail||'',sum.owner||'-',`<button type="button" class="pm-gantt-toggle" onclick="toggleGanttPhase('${pid}',${pi})"><i class="fa-solid ${pc2?'fa-chevron-right':'fa-chevron-down'}"></i></button>`,sum.status||'Not Started',ph,p);if(pc2)return;(ph.tasks||[]).forEach(t=>addRow('task',t.name,t.startDate,t.dueDate,t.detail,t.owner||'-','',calculateProjectTaskStatus(t),t,p));});
+        (p.tasks||[]).forEach(t=>addRow('task',t.name,t.startDate,t.dueDate,t.detail,t.owner||'-','',calculateProjectTaskStatus(t),t,p));
+      });
+      const wrap=document.createElement('div');wrap.className='project-gantt-wrap';wrap.style.width=(520+timelineW)+'px';wrap.appendChild(table);container.appendChild(wrap);
+      if(todayX!=null){const line=document.createElement('div');line.className='project-gantt-today-line';line.style.left=(520+todayX)+'px';container.appendChild(line);}
+    };
+    window.renderGanttChart=render;
+  }
+  replaceGanttRenderer();
+})();
+</script>
+
+<style id="projectManagementV33Fixes">
+/* Table: one real horizontal scroller that moves the actual table. */
+#tab-projects #projectTableView{
+  display:flex!important;
+  flex-direction:column!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+#tab-projects #projectsTableBody{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+  scrollbar-width:none!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar{height:0!important;}
+#tab-projects #projectTableView .pm-shared-project-table{
+  width:max-content!important;
+  min-width:100%!important;
+  table-layout:fixed!important;
+}
+#tab-projects #projectTableBottomScroll{
+  flex:0 0 16px!important;
+  width:100%!important;
+  height:16px!important;
+  min-height:16px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  display:block!important;
+  background:#eef3f7!important;
+  border-top:1px solid #d5e0e8!important;
+  position:relative!important;
+  z-index:100!important;
+}
+#tab-projects #projectTableBottomScroll>div{
+  height:1px!important;
+  min-height:1px!important;
+}
+
+/* Timeline: Project name is blue and bold, readable on the row. */
+#tab-projects #ganttChartContainer .project-gantt tbody tr.project-row .gantt-row-title{
+  color:#1976d2!important;
+  font-weight:900!important;
+  font-size:12px!important;
+}
+#tab-projects #ganttChartContainer .project-gantt tbody tr.project-row .label-cell{
+  color:#1976d2!important;
+}
+</style>
+<script id="projectManagementV33Runtime">
+(function(){
+  function bindTableScroll(){
+    const view=document.getElementById('projectTableView');
+    const wrap=view?.querySelector('.pm-shared-table-wrap');
+    const bar=document.getElementById('projectTableBottomScroll');
+    const inner=bar?.firstElementChild;
+    const table=view?.querySelector('.pm-shared-project-table');
+    if(!wrap||!bar||!inner||!table)return;
+
+    const syncSize=()=>{
+      const width=Math.max(table.scrollWidth, wrap.clientWidth);
+      inner.style.width=width+'px';
+      if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1) bar.scrollLeft=wrap.scrollLeft;
+    };
+
+    if(bar.dataset.v33Bound!=='1'){
+      bar.dataset.v33Bound='1';
+      bar.addEventListener('scroll',()=>{ wrap.scrollLeft=bar.scrollLeft; },{passive:true});
+      wrap.addEventListener('scroll',()=>{ if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1) bar.scrollLeft=wrap.scrollLeft; },{passive:true});
+    }
+    syncSize();
+    requestAnimationFrame(syncSize);
+    setTimeout(syncSize,100);
+  }
+
+  window.syncProjectBottomScroll=bindTableScroll;
+
+  const host=document.getElementById('projectsTableBody');
+  if(host){
+    new MutationObserver(()=>requestAnimationFrame(bindTableScroll)).observe(host,{childList:true,subtree:true});
+  }
+  document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(bindTableScroll));
+  window.addEventListener('resize',bindTableScroll);
+})();
+</script>
+
+
+<style id="projectManagementV35TableScrollFix">
+/* TABLE V35: the horizontal scrollbar belongs to the actual table wrapper.
+   The old detached #projectTableBottomScroll is disabled so it cannot drift out of sync. */
+#tab-projects #projectTableView{
+  display:flex!important;
+  flex-direction:column!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#tab-projects #projectTableView #projectsTableBody{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  min-width:0!important;
+  overflow-x:auto!important;
+  overflow-y:auto!important;
+  scrollbar-width:auto!important;
+  scrollbar-color:#94a3b8 #eef3f7!important;
+  position:relative!important;
+  overscroll-behavior:contain!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar{
+  width:10px!important;
+  height:12px!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar-track{
+  background:#eef3f7!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar-thumb{
+  background:#94a3b8!important;
+  border-radius:6px!important;
+  border:2px solid #eef3f7!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar-thumb:hover{
+  background:#64748b!important;
+}
+#tab-projects #projectTableView .pm-shared-project-table{
+  width:max-content!important;
+  min-width:1500px!important;
+  table-layout:fixed!important;
+  transform:none!important;
+}
+/* This is intentionally NOT a second scrollbar. */
+#tab-projects #projectTableBottomScroll{display:none!important;}
+</style>
+<script id="projectManagementV35TableScrollRuntime">
+(function(){
+  function fixRealTableScroll(){
+    const view=document.getElementById('projectTableView');
+    const host=document.getElementById('projectsTableBody');
+    const wrap=view?.querySelector('.pm-shared-table-wrap');
+    const table=view?.querySelector('.pm-shared-project-table');
+    if(!view||!host||!wrap||!table)return;
+
+    /* The table itself must create the horizontal overflow. */
+    table.style.transform='none';
+    table.style.width='max-content';
+    table.style.minWidth='1500px';
+    wrap.style.overflowX='auto';
+    wrap.style.overflowY='auto';
+
+    /* Force a real scroll range if the browser otherwise shrinks the table. */
+    const required=Math.max(1500, table.scrollWidth, table.offsetWidth);
+    if(table.offsetWidth < required) table.style.width=required+'px';
+
+    /* Keep the viewport positioned after every render without using a detached scrollbar. */
+    if(wrap.dataset.v35Bound!=='1'){
+      wrap.dataset.v35Bound='1';
+      wrap.addEventListener('wheel',function(e){
+        if(Math.abs(e.deltaX)>0 && wrap.scrollWidth>wrap.clientWidth){
+          wrap.scrollLeft += e.deltaX;
+          e.preventDefault();
+        }
+      },{passive:false});
+    }
+  }
+  window.syncProjectBottomScroll=fixRealTableScroll;
+  window.syncProjectTableScroll=fixRealTableScroll;
+  const host=document.getElementById('projectsTableBody');
+  if(host)new MutationObserver(()=>requestAnimationFrame(fixRealTableScroll)).observe(host,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(fixRealTableScroll));
+  window.addEventListener('resize',fixRealTableScroll);
+})();
+</script>
 </body>
 </html>
 <style id="projectManagementV25Fixes">
@@ -10449,5 +10793,947 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
     if(v==='gantt' && typeof window.renderGanttChart==='function') window.renderGanttChart();
     if(v==='table' && typeof window.syncProjectBottomScroll==='function') window.syncProjectBottomScroll();
   };
+})();
+</script>
+
+<style id="projectManagementV30Fixes">
+/* Table bottom scrollbar must actually move the table horizontally. */
+#tab-projects #projectTableView .pm-shared-table-wrap{overflow-x:auto!important;overflow-y:auto!important;scrollbar-width:none!important;}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar{height:0!important;}
+#tab-projects #projectTableBottomScroll{display:block!important;overflow-x:auto!important;overflow-y:hidden!important;}
+#tab-projects #projectTableBottomScroll>div{height:1px!important;}
+/* Timeline project identity column: blue background + bold white text. */
+#tab-projects #ganttChartContainer .project-row .label-col,
+#tab-projects #ganttChartContainer .project-row .gantt-owner-cell,
+#tab-projects #ganttChartContainer .project-row .gantt-status-cell{background:#315c7a!important;color:#fff!important;font-weight:700!important;}
+#tab-projects #ganttChartContainer .project-row .gantt-row-title{color:#fff!important;font-weight:800!important;}
+/* Two-level bars: light Start->Plan, dark Start->Actual/Today. */
+#tab-projects #ganttChartContainer .gantt-bar-light{position:absolute;top:50%;transform:translateY(-50%);height:24px;border-radius:5px;background:#bfdbfe!important;opacity:1!important;z-index:1;}
+#tab-projects #ganttChartContainer .gantt-bar-dark{position:absolute;top:50%;transform:translateY(-50%);height:24px;border-radius:5px;z-index:2;color:#fff;}
+#tab-projects #ganttChartContainer .gantt-status-completed{background:#22b968!important;}
+#tab-projects #ganttChartContainer .gantt-status-working{background:#2f80ed!important;}
+#tab-projects #ganttChartContainer .gantt-status-overdue{background:#ef6675!important;}
+#tab-projects #ganttChartContainer .gantt-status-near-deadline{background:#f4c542!important;color:#5f4700!important;}
+#tab-projects #ganttChartContainer .gantt-status-project-default,
+#tab-projects #ganttChartContainer .gantt-status-default{background:#94a3b8!important;}
+#tab-projects #ganttChartContainer .gantt-task-bar-text{position:relative;z-index:3;display:block;padding:0 7px;line-height:24px;font-size:8px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#tab-projects #ganttChartContainer .project-gantt-today-line{position:absolute;top:0;bottom:0;width:2px;background:#ef4444;z-index:20;pointer-events:none;box-shadow:0 0 0 1px rgba(239,68,68,.12);}
+</style>
+<script>
+(function(){
+  const oldSync=window.syncProjectBottomScroll;
+  window.syncProjectBottomScroll=function(){
+    if(typeof oldSync==='function') oldSync();
+    const view=document.getElementById('projectTableView'),wrap=view?.querySelector('.pm-shared-table-wrap'),bar=document.getElementById('projectTableBottomScroll'),inner=bar?.firstElementChild,table=view?.querySelector('.pm-shared-project-table');
+    if(!wrap||!bar||!inner)return;
+    const width=Math.max(table?.scrollWidth||0,wrap.scrollWidth,wrap.clientWidth);
+    inner.style.width=width+'px';
+    if(!bar.dataset.v30bound){
+      bar.dataset.v30bound='1';
+      bar.addEventListener('scroll',()=>{wrap.scrollLeft=bar.scrollLeft;},{passive:true});
+      wrap.addEventListener('scroll',()=>{if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1)bar.scrollLeft=wrap.scrollLeft;},{passive:true});
+    }
+  };
+})();
+</script>
+
+<style id="projectManagementV34Fixes">
+/* TABLE: bottom scrollbar controls the actual table, even when the inner wrapper cannot expose its native scrollbar. */
+#tab-projects #projectTableView .pm-shared-table-wrap{
+  width:100%!important;max-width:none!important;min-width:0!important;
+  overflow-x:auto!important;overflow-y:visible!important;
+  scrollbar-width:none!important;position:relative!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar{display:none!important;width:0!important;height:0!important;}
+#tab-projects #projectViewTableBtn{position:relative;z-index:20;}
+#tab-projects #projectTableView .pm-shared-project-table{
+  width:max-content!important;min-width:1500px!important;table-layout:fixed!important;
+}
+#tab-projects #projectTableBottomScroll{
+  display:block!important;flex:0 0 16px!important;width:100%!important;height:16px!important;
+  min-height:16px!important;overflow-x:auto!important;overflow-y:hidden!important;
+  scrollbar-width:auto!important;position:relative!important;z-index:900!important;
+}
+#tab-projects #projectTableBottomScroll>div{height:1px!important;min-height:1px!important;}
+
+/* TIMELINE: faint dotted calendar grid across every task/phase/project track. */
+#tab-projects #ganttChartContainer .gantt-row-track{
+  position:relative!important;overflow:hidden!important;
+  background-color:#fff!important;
+}
+#tab-projects #ganttChartContainer .gantt-row-track::before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    repeating-linear-gradient(to right,transparent 0,transparent 39px,rgba(148,163,184,.22) 39px,rgba(148,163,184,.22) 40px),
+    repeating-linear-gradient(to bottom,transparent 0,transparent 16px,rgba(148,163,184,.16) 16px,rgba(148,163,184,.16) 17px);
+}
+#tab-projects #ganttChartContainer .gantt-bar-light,
+#tab-projects #ganttChartContainer .gantt-bar-dark{z-index:3!important;}
+#tab-projects #ganttChartContainer .gantt-task-bar-text{position:relative!important;z-index:4!important;}
+
+/* Project identity remains blue/bold. */
+#tab-projects #ganttChartContainer .project-row .gantt-row-title{
+  color:#1976d2!important;font-weight:900!important;font-size:12px!important;
+}
+
+/* Today marker: red, thin, and exactly as tall as the rendered Timeline table. */
+#tab-projects #ganttChartContainer .project-gantt-today-line{
+  position:absolute!important;top:0!important;bottom:auto!important;width:2px!important;
+  background:#ef4444!important;z-index:1000!important;pointer-events:none!important;
+}
+</style>
+
+<script id="projectManagementV34Runtime">
+(function(){
+  function syncTableScrollV34(){
+    const view=document.getElementById('projectTableView');
+    const wrap=view?.querySelector('.pm-shared-table-wrap');
+    const bar=document.getElementById('projectTableBottomScroll');
+    const inner=bar?.firstElementChild;
+    const table=view?.querySelector('.pm-shared-project-table');
+    if(!view||!wrap||!bar||!inner||!table)return;
+    const contentWidth=Math.max(table.scrollWidth, table.offsetWidth, 1500, wrap.clientWidth);
+    inner.style.width=contentWidth+'px';
+    const setPosition=(left)=>{
+      const x=Math.max(0,Number(left)||0);
+      wrap.scrollLeft=x;
+      /* Fallback for browsers/layouts where the wrapper reports no horizontal scroll range. */
+      if(Math.abs(wrap.scrollLeft-x)>1) table.style.transform='translateX('+(-x)+'px)';
+      else if(table.style.transform) table.style.transform='';
+    };
+    if(bar.dataset.v34Bound!=='1'){
+      bar.dataset.v34Bound='1';
+      bar.addEventListener('scroll',()=>setPosition(bar.scrollLeft),{passive:true});
+      wrap.addEventListener('scroll',()=>{
+        if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1)bar.scrollLeft=wrap.scrollLeft;
+        if(table.style.transform) table.style.transform='';
+      },{passive:true});
+    }
+    if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1)bar.scrollLeft=wrap.scrollLeft;
+    requestAnimationFrame(()=>{
+      inner.style.width=Math.max(table.scrollWidth,table.offsetWidth,1500,wrap.clientWidth)+'px';
+      if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1)setPosition(bar.scrollLeft);
+    });
+  }
+  window.syncProjectBottomScroll=syncTableScrollV34;
+  const host=document.getElementById('projectsTableBody');
+  if(host)new MutationObserver(()=>requestAnimationFrame(syncTableScrollV34)).observe(host,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(syncTableScrollV34));
+  window.addEventListener('resize',syncTableScrollV34);
+
+  /* Make the global expand/collapse control unambiguous in Timeline mode. */
+  const originalToggleAll=window.toggleAllProjectRows;
+  window.toggleAllProjectRows=function(){
+    const projects=Array.isArray(window.projectsList)?window.projectsList.filter(p=>p&&String(p.name||'').trim()):[];
+    const mode=typeof window.projectCurrentView==='string'?window.projectCurrentView:'table';
+    if(!projects.length){return;}
+    if(mode==='gantt'){
+      const projectSet=window.collapsedGanttProjects||null;
+      const phaseSet=window.collapsedGanttPhases||null;
+      /* The Sets are lexical in the original script, so invoke the original handler;
+         it has direct access to those Sets and the current projectCurrentView. */
+      if(typeof originalToggleAll==='function')originalToggleAll();
+      else if(typeof window.renderGanttChart==='function')window.renderGanttChart();
+      requestAnimationFrame(()=>{
+        if(typeof window.updateProjectExpandCollapseButton==='function')window.updateProjectExpandCollapseButton();
+      });
+      return;
+    }
+    if(typeof originalToggleAll==='function')originalToggleAll();
+  };
+
+  /* Patch Timeline rendering after the existing renderer has produced the table. */
+  function patchTimelineAfterRender(){
+    const container=document.getElementById('ganttChartContainer');
+    const table=container?.querySelector('.project-gantt');
+    if(!container||!table)return;
+    const wrap=container.querySelector('.project-gantt-wrap');
+    const track=table.querySelector('.gantt-row-track');
+    const firstTrack=track;
+    const timelineWidth=firstTrack?.getBoundingClientRect().width||0;
+    const todayLine=container.querySelector('.project-gantt-today-line');
+    if(todayLine){
+      const tableRect=table.getBoundingClientRect();
+      const containerRect=container.getBoundingClientRect();
+      todayLine.style.top='0px';
+      todayLine.style.height=table.offsetHeight+'px';
+      todayLine.style.left=todayLine.style.left;
+      /* Keep the marker attached to the timeline content while horizontal scrolling. */
+      todayLine.style.position='absolute';
+    }
+    table.querySelectorAll('.gantt-row-track').forEach(t=>{
+      t.style.setProperty('--timeline-width',(t.scrollWidth||timelineWidth)+'px');
+    });
+  }
+  const originalRender=window.renderGanttChart;
+  if(typeof originalRender==='function'){
+    window.renderGanttChart=function(){
+      const result=originalRender.apply(this,arguments);
+      requestAnimationFrame(()=>{patchTimelineAfterRender();setTimeout(patchTimelineAfterRender,50);});
+      return result;
+    };
+  }
+  document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(patchTimelineAfterRender));
+  window.addEventListener('resize',patchTimelineAfterRender);
+})();
+</script>
+
+<style id="projectManagementV36Fixes">
+/* === V36: Project Management table horizontal scrolling === */
+#tab-projects #projectTableView{
+  display:flex!important;
+  flex-direction:column!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#tab-projects #projectTableView #projectsTableBody{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow-x:auto!important;
+  overflow-y:auto!important;
+  scrollbar-width:none!important;
+  position:relative!important;
+  overscroll-behavior:contain!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar{
+  width:0!important;height:0!important;
+}
+#tab-projects #projectTableView .pm-shared-project-table{
+  width:max-content!important;
+  min-width:1500px!important;
+  max-width:none!important;
+  table-layout:fixed!important;
+  transform:none!important;
+}
+#tab-projects #projectTableBottomScroll{
+  display:block!important;
+  flex:0 0 14px!important;
+  width:100%!important;
+  height:14px!important;
+  min-height:14px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  scrollbar-width:auto!important;
+  position:relative!important;
+  z-index:900!important;
+  background:#eef3f7!important;
+  border-top:1px solid #d5e0e8!important;
+}
+#tab-projects #projectTableBottomScroll>div{
+  height:1px!important;
+  min-height:1px!important;
+}
+
+/* === V36: Timeline day grid === */
+#tab-projects #ganttChartContainer .project-gantt{
+  --pm-day-width:40px;
+}
+#tab-projects #ganttChartContainer .gantt-row-track{
+  position:relative!important;
+  overflow:hidden!important;
+  background:#fff!important;
+}
+#tab-projects #ganttChartContainer .gantt-row-track::before{
+  content:"";
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  pointer-events:none!important;
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc(var(--pm-day-width) - 1px),
+      rgba(148,163,184,.24) calc(var(--pm-day-width) - 1px),
+      rgba(148,163,184,.24) var(--pm-day-width)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 16px,
+      rgba(148,163,184,.16) 16px,
+      rgba(148,163,184,.16) 17px
+    );
+}
+#tab-projects #ganttChartContainer .gantt-bar-light,
+#tab-projects #ganttChartContainer .gantt-bar-dark{
+  z-index:3!important;
+}
+
+/* === V36: Timeline today marker follows the exact date coordinate === */
+#tab-projects #ganttChartContainer .project-gantt-today-line{
+  position:absolute!important;
+  top:0!important;
+  bottom:auto!important;
+  width:2px!important;
+  background:#ef4444!important;
+  z-index:1000!important;
+  pointer-events:none!important;
+}
+</style>
+
+<script id="projectManagementV36Runtime">
+(function(){
+  function syncProjectTableHorizontalScroll(){
+    const view=document.getElementById('projectTableView');
+    const host=document.getElementById('projectsTableBody');
+    const wrap=view?.querySelector('.pm-shared-table-wrap');
+    const table=view?.querySelector('.pm-shared-project-table');
+    const bar=document.getElementById('projectTableBottomScroll');
+    const inner=bar?.firstElementChild;
+    if(!view||!host||!wrap||!table||!bar||!inner)return;
+
+    const width=Math.max(1500,table.scrollWidth,table.offsetWidth,wrap.clientWidth);
+    table.style.width=width+'px';
+    table.style.minWidth=width+'px';
+    inner.style.width=width+'px';
+
+    const move=(left)=>{
+      const x=Math.max(0,Math.min(Number(left)||0,Math.max(0,wrap.scrollWidth-wrap.clientWidth)));
+      wrap.scrollLeft=x;
+      /* If a browser/layout still exposes no native horizontal range, visually move the table. */
+      if(Math.abs(wrap.scrollLeft-x)>1){
+        table.style.transform='translateX('+(-x)+'px)';
+      }else{
+        table.style.transform='none';
+      }
+    };
+
+    if(bar.dataset.v36Bound!=='1'){
+      bar.dataset.v36Bound='1';
+      bar.addEventListener('scroll',()=>move(bar.scrollLeft),{passive:true});
+      wrap.addEventListener('scroll',()=>{
+        if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1)bar.scrollLeft=wrap.scrollLeft;
+      },{passive:true});
+    }
+
+    requestAnimationFrame(()=>{
+      const w=Math.max(1500,table.scrollWidth,table.offsetWidth,wrap.clientWidth);
+      table.style.width=w+'px';
+      table.style.minWidth=w+'px';
+      inner.style.width=w+'px';
+      if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1)bar.scrollLeft=wrap.scrollLeft;
+    });
+  }
+
+  window.syncProjectBottomScroll=syncProjectTableHorizontalScroll;
+  window.syncProjectTableScroll=syncProjectTableHorizontalScroll;
+
+  function syncTimelineGeometry(){
+    const container=document.getElementById('ganttChartContainer');
+    const table=container?.querySelector('.pm-gantt-task-date-table');
+    if(!container||!table)return;
+
+    const firstDayCol=table.querySelector('col.gantt-day-col');
+    const dayWidth=firstDayCol
+      ? parseFloat(getComputedStyle(firstDayCol).width)||40
+      : 40;
+    table.style.setProperty('--pm-day-width',dayWidth+'px');
+
+    const tracks=table.querySelectorAll('.gantt-row-track');
+    tracks.forEach(track=>{
+      track.style.setProperty('--pm-day-width',dayWidth+'px');
+    });
+
+    /* Re-anchor Today to the exact date column instead of a fixed 520px assumption. */
+    const headers=[...table.querySelectorAll('thead .gantt-date-head')];
+    const todayStr=typeof formatDateLocal==='function'
+      ? formatDateLocal(new Date())
+      : new Date().toISOString().slice(0,10);
+
+    let todayIndex=-1;
+    if(headers.length){
+      const dates=[];
+      try{
+        const rangeStart=typeof window.cleanDateStr==='function' ? null : null;
+        /* Header order is the same order used by the renderer's allDates array. */
+        const thDates=headers.map((th,i)=>({i,text:String(th.textContent||'').trim()}));
+        const now=new Date();
+        const day=now.getDate();
+        const month=now.getMonth();
+        const year=now.getFullYear();
+
+        /* Find today's column from the rendered table by reading the column's data-date
+           when available; otherwise derive from the renderer's date range using header sequence. */
+        const cols=[...table.querySelectorAll('col.gantt-day-col')];
+        const rendererTable=table;
+        const dateKeys=rendererTable.dataset.pmDateKeys
+          ? rendererTable.dataset.pmDateKeys.split(',')
+          : [];
+        if(dateKeys.length===headers.length){
+          todayIndex=dateKeys.indexOf(todayStr);
+        }else{
+          /* The renderer patch below writes data-pm-date on each header, so this branch
+             is only a defensive fallback for an already-rendered legacy table. */
+          const tagged=headers.findIndex(h=>h.dataset.date===todayStr);
+          todayIndex=tagged;
+          if(todayIndex<0 && headers.length){
+            const d=day;
+            const candidate=headers.findIndex(h=>Number(h.textContent)===d);
+            if(candidate>=0)todayIndex=candidate;
+          }
+        }
+      }catch(_){}
+    }
+
+    const line=container.querySelector('.project-gantt-today-line');
+    if(line){
+      const x=todayIndex>=0
+        ? 520 + todayIndex*dayWidth
+        : null;
+      if(x!=null){
+        line.style.left=x+'px';
+        line.style.height=table.offsetHeight+'px';
+      }else{
+        line.style.display='none';
+      }
+    }
+
+    table.querySelectorAll('.gantt-row-track').forEach(track=>{
+      track.style.setProperty('--timeline-width',(track.scrollWidth||0)+'px');
+    });
+  }
+
+  function patchTimelineRenderer(){
+    const render=window.renderGanttChart;
+    if(typeof render!=='function'||render.__v36Wrapped)return;
+
+    function wrapped(){
+      const result=render.apply(this,arguments);
+      requestAnimationFrame(()=>{
+        syncTimelineGeometry();
+        setTimeout(syncTimelineGeometry,50);
+      });
+      return result;
+    }
+    wrapped.__v36Wrapped=true;
+    window.renderGanttChart=wrapped;
+  }
+
+  /* Patch the current renderer so every date header carries its real date key. */
+  function tagTimelineDates(){
+    const table=document.querySelector('#ganttChartContainer .pm-gantt-task-date-table');
+    if(!table)return;
+    const headers=[...table.querySelectorAll('thead .gantt-date-head')];
+    if(!headers.length)return;
+
+    /* Reconstruct the renderer's sorted date list from project data. */
+    const set=new Set();
+    const add=v=>{
+      const d=typeof cleanDateStr==='function'?cleanDateStr(v):String(v||'').slice(0,10);
+      if(d)set.add(d);
+    };
+    (Array.isArray(window.projectsList)?window.projectsList:[]).forEach(p=>{
+      [p.startDate,p.dueDate,p.actualDate].forEach(add);
+      (p.phases||[]).forEach(ph=>{
+        [ph.startDate,ph.dueDate,ph.actualDate].forEach(add);
+        (ph.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(add));
+      });
+      (p.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(add));
+    });
+    let dates=[...set].sort();
+    if(!dates.length)dates=[typeof formatDateLocal==='function'?formatDateLocal(new Date()):new Date().toISOString().slice(0,10)];
+
+    headers.forEach((h,i)=>{h.dataset.date=dates[i]||'';});
+    table.dataset.pmDateKeys=dates.join(',');
+    syncTimelineGeometry();
+  }
+
+  function refreshAll(){
+    syncProjectTableHorizontalScroll();
+    tagTimelineDates();
+    syncTimelineGeometry();
+  }
+
+  const obsHost=document.getElementById('projectsTableBody');
+  if(obsHost)new MutationObserver(()=>requestAnimationFrame(refreshAll)).observe(obsHost,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',()=>{
+    patchTimelineRenderer();
+    requestAnimationFrame(refreshAll);
+  });
+  window.addEventListener('resize',refreshAll);
+
+  /* Renderer can be replaced after DOMContentLoaded by older compatibility scripts. */
+  const patchTimer=setInterval(()=>{
+    patchTimelineRenderer();
+    const table=document.querySelector('#ganttChartContainer .pm-gantt-task-date-table');
+    if(table){
+      tagTimelineDates();
+      clearInterval(patchTimer);
+    }
+  },100);
+  setTimeout(()=>clearInterval(patchTimer),5000);
+})();
+</script>
+
+<style id="projectManagementV37Fixes">
+/* V37: use the real date-column boundaries as the single source of truth. */
+#tab-projects #ganttChartContainer .gantt-row-track{
+  --pm-grid-day-width:40px!important;
+  background-image:
+    repeating-linear-gradient(to right,
+      transparent 0,
+      transparent calc(var(--pm-grid-day-width) - 1px),
+      rgba(100,116,139,.18) calc(var(--pm-grid-day-width) - 1px),
+      rgba(100,116,139,.18) var(--pm-grid-day-width)
+    ),
+    repeating-linear-gradient(to bottom,
+      transparent 0,
+      transparent 33px,
+      rgba(100,116,139,.13) 33px,
+      rgba(100,116,139,.13) 34px
+    )!important;
+}
+#tab-projects #ganttChartContainer .gantt-row-track::before{display:none!important;}
+#tab-projects #ganttChartContainer .gantt-row-track::after{display:none!important;}
+#tab-projects #ganttChartContainer .gantt-bar-light,
+#tab-projects #ganttChartContainer .gantt-bar-dark{
+  box-sizing:border-box!important;
+}
+#tab-projects #ganttChartContainer .project-gantt-today-line{
+  width:2px!important;
+  background:#ef4444!important;
+  box-shadow:0 0 0 1px rgba(239,68,68,.10)!important;
+  z-index:1200!important;
+}
+/* Keep the bottom scrollbar visually independent while it controls the table wrapper. */
+#tab-projects #projectTableView .pm-shared-table-wrap{scrollbar-width:none!important;}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar{width:0!important;height:0!important;}
+</style>
+
+<script id="projectManagementV37Runtime">
+(function(){
+  'use strict';
+
+  function tableScrollFix(){
+    const view=document.getElementById('projectTableView');
+    const wrap=view?.querySelector('.pm-shared-table-wrap');
+    const table=view?.querySelector('.pm-shared-project-table');
+    const bar=document.getElementById('projectTableBottomScroll');
+    const inner=bar?.firstElementChild;
+    if(!view||!wrap||!table||!bar||!inner)return;
+
+    const contentWidth=Math.max(1500, table.scrollWidth, table.offsetWidth);
+    inner.style.width=contentWidth+'px';
+
+    const maxWrap=Math.max(0,wrap.scrollWidth-wrap.clientWidth);
+    const maxBar=Math.max(0,bar.scrollWidth-bar.clientWidth);
+    const syncFromBar=()=>{
+      const ratio=maxBar>0 ? bar.scrollLeft/maxBar : 0;
+      wrap.scrollLeft=ratio*maxWrap;
+    };
+    const syncFromWrap=()=>{
+      const ratio=maxWrap>0 ? wrap.scrollLeft/maxWrap : 0;
+      const target=ratio*maxBar;
+      if(Math.abs(bar.scrollLeft-target)>1)bar.scrollLeft=target;
+    };
+
+    if(bar.dataset.v37Bound!=='1'){
+      bar.dataset.v37Bound='1';
+      bar.addEventListener('scroll',syncFromBar,{passive:true});
+      wrap.addEventListener('scroll',syncFromWrap,{passive:true});
+    }
+    syncFromWrap();
+  }
+  window.syncProjectBottomScroll=tableScrollFix;
+  window.syncProjectTableScroll=tableScrollFix;
+
+  function dateKey(v){
+    try{
+      return typeof window.cleanDateStr==='function'
+        ? window.cleanDateStr(v)
+        : String(v||'').slice(0,10);
+    }catch(_){ return String(v||'').slice(0,10); }
+  }
+
+  function tagDateHeaders(table){
+    const headers=[...table.querySelectorAll('thead .gantt-date-head')];
+    if(!headers.length)return [];
+    let keys=[];
+    try{
+      const projects=Array.isArray(window.projectsList)?window.projectsList:[];
+      const set=new Set();
+      const push=v=>{const d=dateKey(v);if(d)set.add(d);};
+      projects.forEach(p=>{
+        [p.startDate,p.dueDate,p.actualDate].forEach(push);
+        (p.phases||[]).forEach(ph=>{
+          [ph.startDate,ph.dueDate,ph.actualDate].forEach(push);
+          (ph.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(push));
+        });
+        (p.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(push));
+      });
+      keys=[...set].sort();
+    }catch(_){keys=[];}
+    headers.forEach((h,i)=>{ if(keys[i])h.dataset.pmDate=keys[i]; });
+    table.dataset.pmDateKeys=keys.join(',');
+    return headers;
+  }
+
+  function headerGeometry(table){
+    const headers=tagDateHeaders(table);
+    const tableRect=table.getBoundingClientRect();
+    const map=new Map();
+    headers.forEach(h=>{
+      const key=h.dataset.pmDate;
+      if(!key)return;
+      const r=h.getBoundingClientRect();
+      map.set(key,{left:r.left-tableRect.left,right:r.right-tableRect.left,width:r.width});
+    });
+    return {map,headers,tableRect};
+  }
+
+  function alignBarsToDateHeaders(table){
+    const {map}=headerGeometry(table);
+    if(!map.size)return;
+    const tracks=[...table.querySelectorAll('.gantt-row-track')];
+    tracks.forEach(track=>{
+      const trackRect=track.getBoundingClientRect();
+      const bars=[...track.querySelectorAll('.gantt-bar-light,.gantt-bar-dark')];
+      bars.forEach(bar=>{
+        /* The original renderer stores left/width in 40px date units. Recover the
+           start/end date indices from those values, then replace them with the
+           actual header-cell geometry. */
+        const oldLeft=parseFloat(bar.style.left)||0;
+        const oldWidth=parseFloat(bar.style.width)||0;
+        const startIndex=Math.round(oldLeft/40);
+        const spanDays=Math.max(0,Math.round(oldWidth/40));
+        const keys=table.dataset.pmDateKeys ? table.dataset.pmDateKeys.split(',') : [];
+        const startKey=keys[startIndex];
+        if(!startKey) return;
+        const startCell=map.get(startKey);
+        if(!startCell)return;
+
+        let endX=startCell.left;
+        if(bar.classList.contains('gantt-bar-light')){
+          /* Start -> Plan: the right edge lands exactly on the Plan date line. */
+          const endIndex=Math.max(startIndex,startIndex+spanDays-1);
+          const endKey=keys[endIndex];
+          const endCell=endKey?map.get(endKey):null;
+          endX=endCell?endCell.left:startCell.right;
+        }else{
+          /* Dark bar keeps the inclusive actual/today fill, ending at the far edge
+             of the last covered date. */
+          const endIndex=Math.max(startIndex,startIndex+spanDays-1);
+          const endKey=keys[endIndex];
+          const endCell=endKey?map.get(endKey):null;
+          endX=endCell?endCell.right:startCell.right;
+        }
+        const left=startCell.left-(trackRect.left-table.getBoundingClientRect().left);
+        const right=endX-(trackRect.left-table.getBoundingClientRect().left);
+        bar.style.left=Math.max(0,left)+'px';
+        bar.style.width=Math.max(bar.classList.contains('gantt-bar-light')?0:2,right-left)+'px';
+      });
+    });
+  }
+
+  function alignTodayToEndOfDateCell(table){
+    const container=document.getElementById('ganttChartContainer');
+    const line=container?.querySelector('.project-gantt-today-line');
+    if(!container||!line)return;
+    const {map}=headerGeometry(table);
+    const today=dateKey(new Date());
+    const cell=map.get(today);
+    if(!cell){line.style.display='none';return;}
+    line.style.display='block';
+    /* Header geometry is relative to the table; the line is a child of the outer container,
+       so include the table's actual offset inside that container. */
+    const tableRect=table.getBoundingClientRect();
+    const containerRect=container.getBoundingClientRect();
+    line.style.left=(tableRect.left-containerRect.left+cell.right)+'px';
+    line.style.top=(tableRect.top-containerRect.top)+'px';
+    line.style.height=table.offsetHeight+'px';
+  }
+
+  function patchTimeline(){
+    const container=document.getElementById('ganttChartContainer');
+    const table=container?.querySelector('.pm-gantt-task-date-table');
+    if(!container||!table)return;
+    const firstDay=table.querySelector('col.gantt-day-col');
+    const dayW=parseFloat(firstDay ? getComputedStyle(firstDay).width : '')||40;
+    table.style.setProperty('--pm-grid-day-width',dayW+'px');
+    table.querySelectorAll('.gantt-row-track').forEach(t=>t.style.setProperty('--pm-grid-day-width',dayW+'px'));
+    alignBarsToDateHeaders(table);
+    alignTodayToEndOfDateCell(table);
+
+    /* Force every Timeline toggle to remain functional after each re-render. */
+    table.querySelectorAll('.pm-gantt-toggle').forEach(btn=>{
+      if(btn.dataset.v37Toggle==='1')return;
+      btn.dataset.v37Toggle='1';
+      btn.addEventListener('click',function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        /* Inline onclick remains the source of truth and has access to the lexical Sets. */
+        try{ this.onclick && this.onclick.call(this,e); }catch(err){ console.error(err); }
+      });
+    });
+  }
+
+  let lastRender=null;
+  function wrapRenderer(){
+    const render=window.renderGanttChart;
+    if(typeof render!=='function'||render===lastRender||render.__v37Wrapped)return;
+    function wrapped(){
+      const result=render.apply(this,arguments);
+      requestAnimationFrame(()=>{patchTimeline();setTimeout(patchTimeline,30);setTimeout(patchTimeline,120);});
+      return result;
+    }
+    wrapped.__v37Wrapped=true;
+    lastRender=render;
+    window.renderGanttChart=wrapped;
+  }
+
+  function refresh(){
+    tableScrollFix();
+    wrapRenderer();
+    patchTimeline();
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    refresh();
+    setTimeout(refresh,50);
+    setTimeout(refresh,150);
+    setTimeout(refresh,500);
+  });
+  window.addEventListener('resize',()=>{tableScrollFix();setTimeout(patchTimeline,0);});
+  const ganttHost=document.getElementById('ganttChartContainer');
+  if(ganttHost)new MutationObserver(()=>requestAnimationFrame(patchTimeline)).observe(ganttHost,{childList:true,subtree:true});
+  const tableHost=document.getElementById('projectsTableBody');
+  if(tableHost)new MutationObserver(()=>requestAnimationFrame(tableScrollFix)).observe(tableHost,{childList:true,subtree:true});
+  setInterval(wrapRenderer,250);
+})();
+</script>
+
+<style id="projectManagementV38AuthoritativeFixes">
+/* V38: authoritative Project Management fixes. */
+#tab-projects #projectTableView .pm-shared-table-wrap{
+  overflow-x:auto!important;overflow-y:auto!important;scrollbar-width:auto!important;
+  scrollbar-color:#94a3b8 #eef3f7!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar{width:10px!important;height:13px!important;}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar-track{background:#eef3f7!important;}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar-thumb{background:#94a3b8!important;border-radius:7px!important;border:2px solid #eef3f7!important;}
+#tab-projects #projectTableView .pm-shared-project-table{
+  width:max-content!important;min-width:1800px!important;max-width:none!important;table-layout:fixed!important;transform:none!important;
+}
+#tab-projects #projectTableBottomScroll{display:none!important;}
+
+/* Timeline uses the same 40px date coordinate system as the actual date columns. */
+#tab-projects #ganttChartContainer .project-gantt-wrap{position:relative!important;width:max-content!important;min-width:max-content!important;}
+#tab-projects #ganttChartContainer .project-gantt{width:max-content!important;min-width:max-content!important;table-layout:fixed!important;border-collapse:separate!important;border-spacing:0!important;}
+#tab-projects #ganttChartContainer .gantt-project-col{width:260px!important;min-width:260px!important;max-width:260px!important;}
+#tab-projects #ganttChartContainer .gantt-owner-col{width:130px!important;min-width:130px!important;max-width:130px!important;}
+#tab-projects #ganttChartContainer .gantt-status-col{width:130px!important;min-width:130px!important;max-width:130px!important;}
+#tab-projects #ganttChartContainer .gantt-day-col{width:40px!important;min-width:40px!important;max-width:40px!important;}
+#tab-projects #ganttChartContainer .gantt-row-track{
+  display:block!important;position:relative!important;width:var(--timeline-width)!important;min-width:var(--timeline-width)!important;
+  height:34px!important;overflow:hidden!important;background-color:#fff!important;border-bottom:1px dotted rgba(100,116,139,.28)!important;
+  box-sizing:border-box!important;
+}
+/* faint dotted vertical day guides + faint horizontal task-row guides */
+#tab-projects #ganttChartContainer .gantt-row-track::before{
+  content:""!important;position:absolute!important;inset:0!important;z-index:0!important;pointer-events:none!important;
+  background-image:radial-gradient(circle,rgba(100,116,139,.30) .65px,transparent .75px)!important;
+  background-size:40px 4px!important;background-position:0 1px!important;
+}
+#tab-projects #ganttChartContainer .gantt-row-track::after{
+  content:""!important;position:absolute!important;left:0!important;right:0!important;bottom:0!important;height:1px!important;
+  border-bottom:1px dotted rgba(100,116,139,.24)!important;pointer-events:none!important;z-index:1!important;
+}
+#tab-projects #ganttChartContainer .gantt-bar-light,
+#tab-projects #ganttChartContainer .gantt-bar-dark{z-index:3!important;box-sizing:border-box!important;}
+#tab-projects #ganttChartContainer .project-gantt-today-line{z-index:1200!important;width:2px!important;background:#ef4444!important;pointer-events:none!important;}
+</style>
+
+<script id="projectManagementV38AuthoritativeRuntime">
+(function(){
+  'use strict';
+  const DAY=40;
+  function key(v){try{return typeof cleanDateStr==='function'?cleanDateStr(v):String(v||'').slice(0,10)}catch(e){return String(v||'').slice(0,10)}}
+  function getDates(){
+    const set=new Set(), push=v=>{const d=key(v);if(d)set.add(d)};
+    (Array.isArray(window.projectsList)?window.projectsList:[]).forEach(p=>{
+      [p.startDate,p.dueDate,p.actualDate].forEach(push);
+      (p.phases||[]).forEach(ph=>{[ph.startDate,ph.dueDate,ph.actualDate].forEach(push);(ph.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(push))});
+      (p.tasks||[]).forEach(t=>[t.startDate,t.dueDate,t.actualDate].forEach(push));
+    });
+    const a=[...set].sort();return a.length?a:[key(new Date())];
+  }
+  function fixTable(){
+    const wrap=document.querySelector('#tab-projects #projectTableView .pm-shared-table-wrap');
+    const table=wrap?.querySelector('.pm-shared-project-table');
+    if(!wrap||!table)return;
+    table.style.width='1800px';table.style.minWidth='1800px';table.style.maxWidth='none';table.style.transform='none';
+  }
+  function repairToggleButtons(table){
+    table.querySelectorAll('.pm-gantt-toggle').forEach(old=>{
+      if(old.dataset.v38Clean==='1')return;
+      /* V37 added a second listener which invoked onclick manually, causing a double-toggle.
+         Clone the node to remove that listener while preserving the original inline onclick. */
+      const fresh=old.cloneNode(true);fresh.dataset.v38Clean='1';old.replaceWith(fresh);
+    });
+  }
+  function fixTimeline(){
+    const c=document.getElementById('ganttChartContainer');
+    const table=c?.querySelector('.pm-gantt-task-date-table');
+    if(!c||!table)return;
+    const dates=getDates();
+    table.dataset.pmDateKeys=dates.join(',');
+    table.querySelectorAll('.gantt-date-head').forEach((h,i)=>h.dataset.pmDate=dates[i]||'');
+    const tracks=[...table.querySelectorAll('.gantt-row-track')];
+    const timelineW=dates.length*DAY;
+    tracks.forEach(track=>{
+      track.style.setProperty('--timeline-width',timelineW+'px');
+      track.style.width=timelineW+'px';track.style.minWidth=timelineW+'px';track.style.display='block';
+      const bars=track.querySelectorAll('.gantt-bar-light,.gantt-bar-dark');
+      bars.forEach(bar=>{
+        const left=parseFloat(bar.style.left)||0;
+        const width=parseFloat(bar.style.width)||0;
+        const si=Math.max(0,Math.round(left/DAY));
+        const span=Math.max(1,Math.round(width/DAY));
+        const ei=Math.min(dates.length-1,si+span-1);
+        const exactLeft=si*DAY;
+        const exactRight=bar.classList.contains('gantt-bar-light') ? ei*DAY : (ei+1)*DAY;
+        bar.style.left=exactLeft+'px';
+        bar.style.width=Math.max(1,exactRight-exactLeft)+'px';
+      });
+    });
+    /* Today is the right edge of today's actual 40px date cell. */
+    const line=c.querySelector('.project-gantt-today-line');
+    const ti=dates.indexOf(key(new Date()));
+    if(line&&ti>=0){
+      line.style.left=(260+130+130+(ti+1)*DAY)+'px';
+      line.style.top='0px';line.style.height=table.offsetHeight+'px';line.style.bottom='auto';line.style.position='absolute';line.style.display='block';
+    }else if(line){line.style.display='none'}
+    repairToggleButtons(table);
+  }
+  function forceExpandCollapse(){
+    const btn=document.getElementById('projectExpandCollapseBtn');
+    if(!btn||btn.dataset.v38Bound==='1')return;
+    btn.dataset.v38Bound='1';
+    btn.onclick=function(e){
+      e.preventDefault();e.stopPropagation();
+      const projects=Array.isArray(window.projectsList)?window.projectsList.filter(p=>p&&String(p.name||'').trim()):[];
+      if(!projects.length)return;
+      /* Call the original function once. The lexical projectCurrentView is authoritative. */
+      try{
+        const fn=window.toggleAllProjectRows;
+        if(typeof fn==='function')fn();
+      }catch(err){console.error(err)}
+    };
+  }
+  function run(){fixTable();fixTimeline();forceExpandCollapse()}
+  const oldRender=window.renderGanttChart;
+  if(typeof oldRender==='function'&&!oldRender.__v38){
+    const wrapped=function(){const r=oldRender.apply(this,arguments);requestAnimationFrame(run);setTimeout(run,40);return r};
+    wrapped.__v38=true;window.renderGanttChart=wrapped;
+  }
+  document.addEventListener('DOMContentLoaded',()=>{run();setTimeout(run,100);setTimeout(run,400)});
+  window.addEventListener('resize',run);
+  const gh=document.getElementById('ganttChartContainer');if(gh)new MutationObserver(()=>requestAnimationFrame(fixTimeline)).observe(gh,{childList:true,subtree:true});
+  const ph=document.getElementById('projectsTableBody');if(ph)new MutationObserver(()=>requestAnimationFrame(fixTable)).observe(ph,{childList:true,subtree:true});
+  setInterval(run,500);
+})();
+</script>
+
+<style id="projectManagementV39ExpandFixes">
+/* V39: authoritative expand/collapse controls for both Project Table and Timeline. */
+#tab-projects .pm-project-name-button,
+#tab-projects .pm-phase-toggle,
+#tab-projects .pm-gantt-toggle,
+#tab-projects #projectExpandCollapseBtn{cursor:pointer!important;pointer-events:auto!important;}
+#tab-projects .pm-phase-toggle.is-collapsed i{transform:rotate(-90deg)!important;}
+</style>
+<script id="projectManagementV39ExpandRuntime">
+(function(){
+  'use strict';
+  function stop(e){ if(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();} }
+  function invokeTableProject(btn){
+    const oc=String(btn.getAttribute('onclick')||'');
+    const m=oc.match(/toggleProjectRowExpand\(\s*['"]([^'"]+)['"]\s*\)/);
+    if(!m)return false;
+    if(typeof window.toggleProjectRowExpand!=='function')return false;
+    window.toggleProjectRowExpand(m[1]);
+    requestAnimationFrame(window.updateProjectExpandCollapseButton||function(){});
+    return true;
+  }
+  function invokeTablePhase(btn){
+    const oc=String(btn.getAttribute('onclick')||'');
+    const m=oc.match(/toggleProjectPhase\(\s*['"]([^'"]+)['"]\s*,\s*(\d+)\s*\)/);
+    if(!m)return false;
+    if(typeof window.toggleProjectPhase!=='function')return false;
+    window.toggleProjectPhase(m[1],Number(m[2]));
+    requestAnimationFrame(window.updateProjectExpandCollapseButton||function(){});
+    return true;
+  }
+  function invokeGantt(btn){
+    const oc=String(btn.getAttribute('onclick')||'');
+    let m=oc.match(/toggleGanttProject\(\s*['"]([^'"]+)['"]\s*\)/);
+    if(m && typeof window.toggleGanttProject==='function'){
+      window.toggleGanttProject(m[1]);
+      requestAnimationFrame(window.updateProjectExpandCollapseButton||function(){});
+      return true;
+    }
+    m=oc.match(/toggleGanttPhase\(\s*['"]([^'"]+)['"]\s*,\s*(\d+)\s*\)/);
+    if(m && typeof window.toggleGanttPhase==='function'){
+      window.toggleGanttPhase(m[1],Number(m[2]));
+      requestAnimationFrame(window.updateProjectExpandCollapseButton||function(){});
+      return true;
+    }
+    return false;
+  }
+  document.addEventListener('click',function(e){
+    const target=e.target instanceof Element?e.target:null;
+    if(!target)return;
+    const allBtn=target.closest('#projectExpandCollapseBtn');
+    if(allBtn){
+      stop(e);
+      if(typeof window.toggleAllProjectRows==='function') window.toggleAllProjectRows();
+      return;
+    }
+    const ganttBtn=target.closest('#ganttChartContainer .pm-gantt-toggle');
+    if(ganttBtn){
+      stop(e);
+      invokeGantt(ganttBtn);
+      return;
+    }
+    const phaseBtn=target.closest('#projectTableView .pm-phase-toggle');
+    if(phaseBtn){
+      stop(e);
+      invokeTablePhase(phaseBtn);
+      return;
+    }
+    const projectBtn=target.closest('#projectTableView .pm-project-name-button');
+    if(projectBtn){
+      stop(e);
+      invokeTableProject(projectBtn);
+      return;
+    }
+  },true);
+
+  /* Some table layouts also make the project number cell clickable. */
+  document.addEventListener('click',function(e){
+    const target=e.target instanceof Element?e.target:null;
+    const cell=target?.closest('#projectTableView .pm-project-no-cell');
+    if(!cell)return;
+    const oc=String(cell.getAttribute('onclick')||'');
+    const m=oc.match(/toggleProjectRowExpand\(\s*['"]([^'"]+)['"]\s*\)/);
+    if(!m || typeof window.toggleProjectRowExpand!=='function')return;
+    stop(e); window.toggleProjectRowExpand(m[1]);
+  },true);
+
+  function refresh(){try{if(typeof window.updateProjectExpandCollapseButton==='function')window.updateProjectExpandCollapseButton();}catch(_){} }
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(refresh,0));
+  window.addEventListener('resize',refresh);
 })();
 </script>
