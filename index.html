@@ -3026,6 +3026,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
 
                 <div id="projectTableView" class="project-view-panel pm-panel pm-active pm-reference-table-panel">
                     <div id="projectsTableBody" class="pm-project-stack"></div>
+                    <div id="projectTableBottomScroll" class="pm-project-bottom-scroll" aria-label="Horizontal scroll"><div></div></div>
                 </div>
 
                 <div id="projectGanttView" class="project-view-panel pm-panel pm-transition hidden">
@@ -4860,8 +4861,9 @@ function setupInlineRequiredValidation(){
                 if(key==='Plan'&&p.dueDate)v.add(formatDateMMDDYYYY(p.dueDate));
                 if(key==='Actual'&&p.actualDate)v.add(formatDateMMDDYYYY(p.actualDate));
                 if(key==='Status'){
-                    if(p.status) v.add(String(p.status));
-                    getGanttProjectDailyStatuses(p).forEach(st=>v.add(st));
+                    const ps=calculateProjectOverallStatus(p); if(ps) v.add(String(ps));
+                    (p.phases||[]).forEach(ph=>{const sm=projectPhaseSummary(ph,p); if(sm.status)v.add(String(sm.status)); (ph.tasks||[]).forEach(t=>{const ts=calculateProjectTaskStatus(t); if(ts)v.add(String(ts));});});
+                    (p.tasks||[]).forEach(t=>{const ts=calculateProjectTaskStatus(t); if(ts)v.add(String(ts));});
                 }
                 if(key==='Progress')v.add(`${progress}%`);
                 if(key==='Owner')(Array.isArray(p.owners)?p.owners:String(p.owner||'').split(',')).map(x=>String(x).trim()).filter(Boolean).forEach(x=>v.add(x));
@@ -4880,7 +4882,7 @@ function setupInlineRequiredValidation(){
             if(key==='Start')return[p.startDate?formatDateMMDDYYYY(p.startDate):''];
             if(key==='Plan')return[p.dueDate?formatDateMMDDYYYY(p.dueDate):''];
             if(key==='Actual')return[p.actualDate?formatDateMMDDYYYY(p.actualDate):''];
-            if(key==='Status')return[String(p.status||''),...getGanttProjectDailyStatuses(p)];
+            if(key==='Status'){const vals=[calculateProjectOverallStatus(p)]; (p.phases||[]).forEach(ph=>{const sm=projectPhaseSummary(ph,p); if(sm.status)vals.push(sm.status); (ph.tasks||[]).forEach(t=>vals.push(calculateProjectTaskStatus(t)));}); (p.tasks||[]).forEach(t=>vals.push(calculateProjectTaskStatus(t))); return vals.map(String);}
             if(key==='Progress')return[`${progress}%`];
             if(key==='Owner')return(Array.isArray(p.owners)?p.owners:String(p.owner||'').split(',')).map(x=>String(x).trim()).filter(Boolean);
             return[];
@@ -8028,7 +8030,31 @@ function setupInlineRequiredValidation(){
         let projectCurrentView='table';
         let projectGanttAnchor=new Date();
         let activeScheduleProjectId=null;
-        function setProjectView(view,skipRender=false){projectCurrentView=view==='gantt'?'gantt':'table';updateProjectExpandCollapseButton();const table=document.getElementById('projectTableView'),gantt=document.getElementById('projectGanttView'),bt=document.getElementById('projectViewTableBtn'),bg=document.getElementById('projectViewGanttBtn');if(bt)bt.classList.toggle('active',projectCurrentView==='table');if(bg)bg.classList.toggle('active',projectCurrentView==='gantt');[table,gantt].forEach(x=>x?.classList.remove('pm-active','pm-leaving'));const target=projectCurrentView==='table'?table:gantt;const other=projectCurrentView==='table'?gantt:table;if(other){other.classList.add('pm-leaving');setTimeout(()=>other.classList.add('hidden'),170);}if(target){target.classList.remove('hidden');requestAnimationFrame(()=>target.classList.add('pm-active'));}if(!skipRender&&projectCurrentView==='gantt')setTimeout(renderGanttChart,80);}
+        function setProjectView(view,skipRender=false){
+            projectCurrentView=view==='gantt'?'gantt':'table';
+            updateProjectExpandCollapseButton();
+            const table=document.getElementById('projectTableView'),gantt=document.getElementById('projectGanttView'),bt=document.getElementById('projectViewTableBtn'),bg=document.getElementById('projectViewGanttBtn');
+            if(bt)bt.classList.toggle('active',projectCurrentView==='table');
+            if(bg)bg.classList.toggle('active',projectCurrentView==='gantt');
+            if(table)table.classList.toggle('hidden',projectCurrentView!=='table');
+            if(gantt)gantt.classList.toggle('hidden',projectCurrentView!=='gantt');
+            if(projectCurrentView==='gantt') renderGanttChart(); else syncProjectBottomScroll();
+        }
+        function syncProjectBottomScroll(){
+            const view=document.getElementById('projectTableView');
+            const wrap=view?.querySelector('.pm-shared-table-wrap');
+            const bar=document.getElementById('projectTableBottomScroll');
+            const inner=bar?.firstElementChild;
+            if(!view||!wrap||!bar||!inner)return;
+            inner.style.width=Math.max(wrap.scrollWidth,wrap.clientWidth)+'px';
+            bar.scrollLeft=wrap.scrollLeft;
+            if(!bar._bound){
+                bar._bound=true;
+                bar.addEventListener('scroll',()=>{wrap.scrollLeft=bar.scrollLeft;});
+                wrap.addEventListener('scroll',()=>{if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1)bar.scrollLeft=wrap.scrollLeft;});
+                window.addEventListener('resize',syncProjectBottomScroll);
+            }
+        }
         function getProjectGanttRange(){const dates=[];projectsList.forEach(p=>{if(p.startDate)dates.push(new Date(p.startDate+'T00:00:00'));if(p.dueDate)dates.push(new Date(p.dueDate+'T00:00:00'));(p.phases||[]).forEach(ph=>{if(ph.startDate)dates.push(new Date(ph.startDate+'T00:00:00'));if(ph.dueDate)dates.push(new Date(ph.dueDate+'T00:00:00'));(ph.tasks||[]).forEach(t=>{if(t.startDate)dates.push(new Date(t.startDate+'T00:00:00'));if(t.dueDate)dates.push(new Date(t.dueDate+'T00:00:00'));});});});const anchor=new Date(projectGanttAnchor);anchor.setHours(0,0,0,0);let start=weekStart(anchor),end=addDays(start,41);if(dates.length&&!projectGanttAnchor){start=weekStart(new Date(Math.min(...dates.map(d=>d.getTime()))));end=addDays(start,41);}return {start,end};}
         function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
         function weekStart(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
@@ -8157,18 +8183,15 @@ function setupInlineRequiredValidation(){
             const observedDates=[...observedSet].sort();
             if(!observedDates.length) observedDates.push(formatDateLocal(new Date()));
 
-            // Use a continuous day axis so bar endpoints always map to the real calendar day.
-            // Only dates that actually occur in the data receive a visible day number.
-            const minDate=new Date(observedDates[0]+'T00:00:00');
-            const maxDate=new Date(observedDates[observedDates.length-1]+'T00:00:00');
-            const allDates=[];
-            for(let d=new Date(minDate);d<=maxDate;d.setDate(d.getDate()+1)) allDates.push(formatDateLocal(d));
-            const observedLookup=new Set(observedDates);
+            // Timeline columns are only the dates that actually exist in Project / Phase / Task data.
+            // This avoids rendering every calendar day across empty months while keeping exact start/end columns.
+            const allDates=[...observedDates];
+            const observedLookup=new Set(allDates);
             const dayWidth=40;
             const timelineWidth=allDates.length*dayWidth;
-            const offsets=new Map(allDates.map((d,i)=>[d,i*dayWidth]));
-            const xForDate=d=>{const v=cleanDateStr(d); if(!v)return null; const idx=offsets.get(v); return idx==null?null:idx;};
-            const endXForDate=d=>{const v=cleanDateStr(d); if(!v)return null; const idx=offsets.get(v); return idx==null?null:idx+dayWidth;};
+            const offsets=new Map(allDates.map((d,i)=>[d,i]));
+            const xForDate=d=>{const v=cleanDateStr(d); if(!v)return null; const idx=offsets.get(v); return idx==null?null:idx*dayWidth;};
+            const endXForDate=d=>{const v=cleanDateStr(d); if(!v)return null; const idx=offsets.get(v); return idx==null?null:(idx+1)*dayWidth;};
             const rangeLabel=document.getElementById('projectGanttRangeLabel');
             if(rangeLabel)rangeLabel.textContent='';
 
@@ -10158,6 +10181,15 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
 #tab-projects .gantt-inline-filter-actions .gantt-filter-apply{background:#1976d2!important;color:#fff!important;border-color:#1976d2!important}
 #tab-projects .gantt-row-title{font-size:12px!important}
 </style>
+<script id="projectBottomScrollSync">
+(function(){
+  function sync(){try{if(typeof syncProjectBottomScroll==='function')syncProjectBottomScroll();}catch(e){}}
+  document.addEventListener('DOMContentLoaded',()=>{sync();setTimeout(sync,200);setTimeout(sync,800);});
+  const host=document.getElementById('projectsTableBody');
+  if(host){new MutationObserver(sync).observe(host,{childList:true,subtree:true});}
+  window.addEventListener('resize',sync);
+})();
+</script>
 </body>
 </html>
 <style id="projectManagementV25Fixes">
@@ -10351,3 +10383,71 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
 #tab-projects #ganttChartContainer .gantt-filter-head{width:100%!important;justify-content:space-between!important;gap:4px!important;}
 #tab-projects #ganttChartContainer .gantt-filter-btn{margin-left:auto!important;flex:0 0 auto!important;}
 </style>
+
+<style id="projectManagementV28Fixes">
+/* Table: keep a visible horizontal scrollbar at the bottom of the project view. */
+#tab-projects #projectTableView{display:flex!important;flex-direction:column!important;min-height:0!important;}
+#tab-projects #projectTableView .pm-project-stack{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important;}
+#tab-projects #projectTableView .pm-shared-table-wrap{overflow:auto!important;max-height:none!important;height:100%!important;min-height:0!important;}
+#tab-projects #projectTableBottomScroll{display:block!important;flex:0 0 15px!important;height:15px!important;min-height:15px!important;overflow-x:auto!important;overflow-y:hidden!important;background:#eef3f7!important;border-top:1px solid #d5e0e8!important;position:relative!important;z-index:400!important;}
+#tab-projects #projectTableBottomScroll>div{height:1px!important;min-width:100%!important;}
+
+/* No transition/animation when switching Table <-> Timeline. */
+#tab-projects .pm-transition,#tab-projects .pm-panel,#tab-projects .project-view-panel{transition:none!important;animation:none!important;}
+#tab-projects .pm-active,#tab-projects .pm-leaving{transition:none!important;animation:none!important;}
+
+/* Timeline: one compact header with no blank gap between month/day rows. */
+#tab-projects #ganttChartContainer .project-gantt thead tr{height:28px!important;}
+#tab-projects #ganttChartContainer .project-gantt thead tr:nth-child(2){height:27px!important;}
+#tab-projects #ganttChartContainer .project-gantt thead th{padding-top:0!important;padding-bottom:0!important;line-height:1!important;border-bottom:0!important;}
+#tab-projects #ganttChartContainer .project-gantt thead tr:nth-child(2) th{border-top:0!important;}
+
+/* Timeline row colors match the table hierarchy. */
+#tab-projects #ganttChartContainer .project-row .label-col,
+#tab-projects #ganttChartContainer .project-row .gantt-owner-cell,
+#tab-projects #ganttChartContainer .project-row .gantt-status-cell{background:#315c7a!important;color:#fff!important;}
+#tab-projects #ganttChartContainer .phase-row .label-col,
+#tab-projects #ganttChartContainer .phase-row .gantt-owner-cell,
+#tab-projects #ganttChartContainer .phase-row .gantt-status-cell{background:#eaf4fb!important;color:#315c7a!important;}
+#tab-projects #ganttChartContainer .task-row .label-col,
+#tab-projects #ganttChartContainer .task-row .gantt-owner-cell,
+#tab-projects #ganttChartContainer .task-row .gantt-status-cell{background:#f7fbfe!important;color:#234c6f!important;}
+#tab-projects #ganttChartContainer .project-row .gantt-row-title{color:#fff!important;font-weight:700!important;}
+#tab-projects #ganttChartContainer .phase-row .gantt-row-title,#tab-projects #ganttChartContainer .task-row .gantt-row-title{color:#234c6f!important;}
+#tab-projects #ganttChartContainer .gantt-owner-cell,#tab-projects #ganttChartContainer .gantt-status-cell{text-align:center!important;}
+</style>
+<style id="projectManagementV29Fixes">
+/* Keep the two Project views mutually exclusive. The shared .hidden utility must win over legacy display:flex rules. */
+#tab-projects #projectTableView.hidden,
+#tab-projects #projectGanttView.hidden{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+#tab-projects #projectTableView:not(.hidden),
+#tab-projects #projectGanttView:not(.hidden){visibility:visible!important;pointer-events:auto!important;}
+
+/* Table: use the dedicated bottom scrollbar only; prevent a second horizontal scrollbar inside the table body. */
+#tab-projects #projectTableView .pm-shared-table-wrap{overflow-x:hidden!important;overflow-y:auto!important;}
+#tab-projects #projectTableBottomScroll{display:block!important;overflow-x:auto!important;overflow-y:hidden!important;}
+
+/* Timeline must never inherit or display the Table stack. */
+#tab-projects #projectGanttView #projectsTableBody,
+#tab-projects #projectGanttView #projectTableBottomScroll{display:none!important;}
+</style>
+<script>
+(function(){
+  const originalSetProjectView=window.setProjectView;
+  window.setProjectView=function(view,skipRender=false){
+    const v=view==='gantt'?'gantt':'table';
+    const table=document.getElementById('projectTableView');
+    const gantt=document.getElementById('projectGanttView');
+    const bt=document.getElementById('projectViewTableBtn');
+    const bg=document.getElementById('projectViewGanttBtn');
+    if(table) table.classList.toggle('hidden',v!=='table');
+    if(gantt) gantt.classList.toggle('hidden',v!=='gantt');
+    if(bt) bt.classList.toggle('active',v==='table');
+    if(bg) bg.classList.toggle('active',v==='gantt');
+    window.projectCurrentView=v;
+    if(typeof window.updateProjectExpandCollapseButton==='function') window.updateProjectExpandCollapseButton();
+    if(v==='gantt' && typeof window.renderGanttChart==='function') window.renderGanttChart();
+    if(v==='table' && typeof window.syncProjectBottomScroll==='function') window.syncProjectBottomScroll();
+  };
+})();
+</script>
