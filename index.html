@@ -9090,14 +9090,14 @@ function setCalendarView(view) {
             const s=new Date(start+'T00:00:00'), e=new Date(end+'T00:00:00');
 
             // Standard capacity minus approved time off, day by day.
+            // This is the denominator used by workload percentages.
             for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1)){
                 const iso=formatDateLocal(d);
                 total += Math.max(0, getStandardDayHours(d) - getTimeOffHoursForPIC(member,iso));
             }
 
-            // Add approved overtime. A multi-day OT request stores its total
-            // hours, so only the portion overlapping the selected period is
-            // added; a fully overlapping request is added exactly once.
+            // Add approved overtime only for the separate "Available Team Hours"
+            // calculation. Do not include OT in the workload-% denominator.
             timeoffOtList.forEach(o=>{
                 if(String(o.pic||'').trim().toLowerCase()!==String(member||'').trim().toLowerCase())return;
                 if(String(o.type||'').trim().toLowerCase()!=='over time')return;
@@ -9108,6 +9108,19 @@ function setCalendarView(view) {
                 const overlapDays=Math.max(1,Math.round((new Date(overlapEnd+'T00:00:00')-new Date(overlapStart+'T00:00:00'))/86400000)+1);
                 total += (Number(o.hours)||0) * (overlapDays/fullDays);
             });
+            return Math.max(0,total);
+        }
+
+        // Workload-% denominator: Standard hours minus time off only.
+        // Approved overtime is intentionally excluded from this denominator.
+        function calculateMemberStandardNetCapacityForPeriod(member,start,end){
+            if(!member||!start||!end||start>end)return 0;
+            let total=0;
+            const s=new Date(start+'T00:00:00'), e=new Date(end+'T00:00:00');
+            for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1)){
+                const iso=formatDateLocal(d);
+                total += Math.max(0, getStandardDayHours(d) - getTimeOffHoursForPIC(member,iso));
+            }
             return Math.max(0,total);
         }
 
@@ -9232,7 +9245,7 @@ function setCalendarView(view) {
             const ps=getTeamReportingPeriods();
             const selectedMembers=[...bomTopFilterState.Member];
             const members=(selectedMembers.length?users.filter(u=>u.status==='Active'&&selectedMembers.includes(String(u.name))&&String(u.name).trim().toLowerCase()!=='anny'):users.filter(u=>u.status==='Active'&&String(u.name).trim().toLowerCase()!=='anny')).map(u=>u.name);
-            const vals=ps.map(p=>{let sum=0,n=0;members.forEach(m=>{const cap=calculateMemberCapacityForPeriod(m,p.start,p.end);if(cap<=0)return;let h=0;filteredTasks.forEach(t=>{if(!bomTaskValues('Member',t).includes(m))return;const capTask=getCapacityTaskForDailyTask(t),usage=Number(t.usageTime),raw=(Number.isFinite(usage)&&usage>0)?usage:Number(t.workload??capTask?.workload??0)||0,st=cleanDateStr(t.start||t.plan||t.actual),en=cleanDateStr(t.actual||t.plan||t.start);if(!raw||!st||!en||en<p.start||st>p.end)return;const a=Math.max(new Date(st+'T00:00:00').getTime(),new Date(p.start+'T00:00:00').getTime()),b=Math.min(new Date(en+'T00:00:00').getTime(),new Date(p.end+'T00:00:00').getTime()),td=Math.max(1,Math.round((new Date(en)-new Date(st))/86400000)+1),od=Math.max(0,Math.round((new Date(b)-new Date(a))/86400000)+1);h+=raw*(od/td)/Math.max(1,bomTaskValues('Member',t).length);});sum+=h/cap*100;n++;});return n?sum/n:0;});
+            const vals=ps.map(p=>{let sum=0,n=0;members.forEach(m=>{const cap=calculateMemberStandardNetCapacityForPeriod(m,p.start,p.end);if(cap<=0)return;let h=0;filteredTasks.forEach(t=>{if(!bomTaskValues('Member',t).includes(m))return;const capTask=getCapacityTaskForDailyTask(t),usage=Number(t.usageTime),raw=(Number.isFinite(usage)&&usage>0)?usage:Number(t.workload??capTask?.workload??0)||0,st=cleanDateStr(t.start||t.plan||t.actual),en=cleanDateStr(t.actual||t.plan||t.start);if(!raw||!st||!en||en<p.start||st>p.end)return;const a=Math.max(new Date(st+'T00:00:00').getTime(),new Date(p.start+'T00:00:00').getTime()),b=Math.min(new Date(en+'T00:00:00').getTime(),new Date(p.end+'T00:00:00').getTime()),td=Math.max(1,Math.round((new Date(en)-new Date(st))/86400000)+1),od=Math.max(0,Math.round((new Date(b)-new Date(a))/86400000)+1);h+=raw*(od/td)/Math.max(1,bomTaskValues('Member',t).length);});sum+=h/cap*100;n++;});return n?sum/n:0;});
             if(!chartAverageWorkloadTrend)chartAverageWorkloadTrend=new Chart(canvas,{type:'line',data:{labels:[],datasets:[{label:'Average % Workload',data:[],borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.12)',fill:true,tension:.25,borderWidth:2,pointRadius:4,pointHoverRadius:5}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${Math.round(c.parsed.y)}%`}}},layout:{padding:{top:22,bottom:4}},scales:{y:{beginAtZero:true,suggestedMax:100,ticks:{callback:v=>v+'%'}}}}});
             chartAverageWorkloadTrend.data.labels=ps.map(x=>[x.labelTop,x.labelBottom]);
             chartAverageWorkloadTrend.data.datasets[0].data=vals.map(x=>+x.toFixed(1));
@@ -9308,7 +9321,9 @@ function setCalendarView(view) {
                 const h=raw*(overlapDays/totalDays)*share;
                 pics.forEach(p=>{if(memberWorkloadHours[p]!==undefined)memberWorkloadHours[p]+=h;});
             });
-            chartWorkload.data.datasets[3].data=labels.map(l=>{const cap=calculateMemberCapacityForPeriod(l,pr.start,pr.end);return cap>0?Math.round(memberWorkloadHours[l]/cap*100):0;});
+            // % Workload = Total task workload / (Standard hours - Time Off).
+            // Overtime is excluded from the denominator for this percentage line.
+            chartWorkload.data.datasets[3].data=labels.map(l=>{const cap=calculateMemberStandardNetCapacityForPeriod(l,pr.start,pr.end);return cap>0?Math.round(memberWorkloadHours[l]/cap*100):0;});
             chartWorkload.update("none");
 
             const statusCounts = {
