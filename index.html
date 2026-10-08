@@ -8204,14 +8204,16 @@ function setupInlineRequiredValidation(){
             const lastMs=dateMs(allDates[allDates.length-1]);
             const totalDays=Math.max(1,Math.round((lastMs-firstMs)/dayMs)+1);
 
-            /* Keep the entire Timeline inside the viewport. The date columns get the
-               remaining width, with gaps between real dates represented proportionally. */
-            const viewportWidth=Math.max(320,container.clientWidth||window.innerWidth||1200);
-            const projectWidth=viewportWidth*0.30;
-            const ownerWidth=viewportWidth*0.10;
-            const statusWidth=viewportWidth*0.10;
-            const timelineWidth=Math.max(1,viewportWidth-projectWidth-ownerWidth-statusWidth);
-            const dayWidth=timelineWidth/totalDays;
+            /* Horizontal Timeline: use a real fixed-width date grid.  The previous
+               renderer calculated every date from the viewport width, which made the
+               table exactly fit the screen and therefore made horizontal scrolling
+               impossible. */
+            const projectWidth=260;
+            const ownerWidth=130;
+            const statusWidth=130;
+            const dayWidth=44;
+            const timelineWidth=Math.max(dayWidth,totalDays*dayWidth);
+            const totalGanttWidth=projectWidth+ownerWidth+statusWidth+timelineWidth;
             const pos=d=>{
                 const v=cleanDateStr(d); if(!v)return null;
                 return Math.max(0,Math.min(timelineWidth,(dateMs(v)-firstMs)/dayMs*dayWidth));
@@ -8237,8 +8239,9 @@ function setupInlineRequiredValidation(){
 
             const table=document.createElement('table');
             table.className='project-gantt pm-gantt-task-date-table';
-            table.style.width='100%';
-            table.style.minWidth='0';
+            table.style.width=totalGanttWidth+'px';
+            table.style.minWidth=totalGanttWidth+'px';
+            table.style.maxWidth='none';
             table.style.tableLayout='fixed';
             table.style.setProperty('--gantt-day-width',dayWidth+'px');
             table.innerHTML=`<colgroup><col class="gantt-project-col" style="width:${projectWidth}px"><col class="gantt-owner-col" style="width:${ownerWidth}px"><col class="gantt-status-col" style="width:${statusWidth}px">${cellWidths.map(w=>`<col class="gantt-day-col" style="width:${w}px;min-width:${w}px;max-width:${w}px">`).join('')}</colgroup><thead><tr><th class="label-head label-col" rowspan="2">${ganttFilterHeader('Project','Project')}</th><th class="label-head owner-head" rowspan="2">${ganttFilterHeader('Owner','Owner')}</th><th class="label-head status-head" rowspan="2">${ganttFilterHeader('Status','Status')}</th>${monthHeaders}</tr><tr>${dateHeaders}</tr></thead><tbody></tbody>`;
@@ -8324,8 +8327,9 @@ function setupInlineRequiredValidation(){
             addTodayLine();
             const wrap=document.createElement('div');
             wrap.className='project-gantt-wrap';
-            wrap.style.width='100%';
-            wrap.style.minWidth='0';
+            wrap.style.width=totalGanttWidth+'px';
+            wrap.style.minWidth=totalGanttWidth+'px';
+            wrap.style.maxWidth='none';
             wrap.style.paddingTop='0';
             wrap.appendChild(table);
             container.appendChild(wrap);
@@ -10533,6 +10537,295 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
   window.addEventListener('resize',fixRealTableScroll);
 })();
 </script>
+
+<!-- PROJECT MANAGEMENT SCROLL FIX V47 - AUTHORITATIVE -->
+<style id="projectManagementV47ScrollFix">
+/* ================= TABLE VIEW ================= */
+#tab-projects #projectTableView{
+  display:flex!important;
+  flex-direction:column!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#tab-projects #projectsTableBody{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  scrollbar-width:none!important;
+  position:relative!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar{
+  width:0!important;height:0!important;
+}
+#tab-projects #projectTableView .pm-shared-project-table{
+  width:max-content!important;
+  min-width:1500px!important;
+  max-width:none!important;
+  table-layout:fixed!important;
+  transform:none!important;
+}
+#tab-projects #projectTableBottomScroll{
+  display:block!important;
+  flex:0 0 16px!important;
+  width:100%!important;
+  height:16px!important;
+  min-height:16px!important;
+  min-width:0!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  scrollbar-width:auto!important;
+  position:relative!important;
+  z-index:9999!important;
+  background:#eef3f7!important;
+  border-top:1px solid #d5e0e8!important;
+  box-sizing:border-box!important;
+}
+#tab-projects #projectTableBottomScroll>div{
+  display:block!important;
+  height:1px!important;
+  min-height:1px!important;
+  width:1500px!important;
+}
+#tab-projects #projectTableBottomScroll::-webkit-scrollbar{height:14px!important;}
+#tab-projects #projectTableBottomScroll::-webkit-scrollbar-track{background:#eef3f7!important;}
+#tab-projects #projectTableBottomScroll::-webkit-scrollbar-thumb{background:#94a3b8!important;border-radius:7px!important;border:2px solid #eef3f7!important;}
+
+/* ================= TIMELINE VIEW ================= */
+#tab-projects #projectGanttView{
+  min-width:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#tab-projects #ganttChartContainer{
+  position:relative!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  overflow-x:auto!important;
+  overflow-y:auto!important;
+  scrollbar-width:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+#tab-projects #ganttChartContainer .project-gantt-wrap{
+  width:max-content!important;
+  min-width:max-content!important;
+  max-width:none!important;
+  overflow:visible!important;
+}
+#tab-projects #ganttChartContainer .project-gantt{
+  width:max-content!important;
+  min-width:max-content!important;
+  max-width:none!important;
+  table-layout:fixed!important;
+}
+#tab-projects #ganttChartContainer .project-gantt .gantt-day-col{
+  width:44px!important;
+  min-width:44px!important;
+  max-width:44px!important;
+}
+#tab-projects #ganttChartContainer .project-gantt .gantt-project-col{width:260px!important;min-width:260px!important;}
+#tab-projects #ganttChartContainer .project-gantt .gantt-owner-col{width:130px!important;min-width:130px!important;}
+#tab-projects #ganttChartContainer .project-gantt .gantt-status-col{width:130px!important;min-width:130px!important;}
+#tab-projects #ganttChartContainer .project-gantt .timeline-span{width:auto!important;min-width:0!important;}
+#tab-projects #ganttChartContainer .project-gantt .gantt-row-track{
+  overflow:visible!important;
+  position:relative!important;
+}
+</style>
+<script id="projectManagementV47ScrollRuntime">
+(function(){
+  'use strict';
+  const TABLE_MIN_WIDTH=1500;
+  const GANTT_DAY_WIDTH=44;
+  let tableObserver=null;
+  let tableResizeObserver=null;
+  let tableSyncQueued=false;
+  let ganttSyncQueued=false;
+
+  function tableParts(){
+    const view=document.getElementById('projectTableView');
+    if(!view)return {};
+    return {
+      view,
+      host:document.getElementById('projectsTableBody'),
+      wrap:view.querySelector('.pm-shared-table-wrap'),
+      table:view.querySelector('.pm-shared-project-table'),
+      bar:document.getElementById('projectTableBottomScroll'),
+      inner:document.getElementById('projectTableBottomScroll')?.firstElementChild
+    };
+  }
+
+  function syncTableScroll(){
+    tableSyncQueued=false;
+    const {view,host,wrap,table,bar,inner}=tableParts();
+    if(!view||!host||!wrap||!table||!bar||!inner)return;
+
+    /* The real table is the source of the horizontal scroll position. */
+    table.style.width='max-content';
+    table.style.minWidth=TABLE_MIN_WIDTH+'px';
+    table.style.maxWidth='none';
+    table.style.transform='none';
+
+    const contentWidth=Math.max(TABLE_MIN_WIDTH,table.scrollWidth,table.offsetWidth,wrap.scrollWidth);
+    inner.style.width=contentWidth+'px';
+    inner.style.minWidth=contentWidth+'px';
+
+    if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1) bar.scrollLeft=wrap.scrollLeft;
+
+    if(bar.dataset.v47Bound!=='1'){
+      bar.dataset.v47Bound='1';
+      bar.addEventListener('scroll',function(){
+        if(Math.abs(wrap.scrollLeft-bar.scrollLeft)>0.5) wrap.scrollLeft=bar.scrollLeft;
+      },{passive:true});
+      wrap.addEventListener('scroll',function(){
+        if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>0.5) bar.scrollLeft=wrap.scrollLeft;
+      },{passive:true});
+      bar.addEventListener('wheel',function(e){
+        if(Math.abs(e.deltaY)>Math.abs(e.deltaX) && contentWidth>bar.clientWidth){
+          bar.scrollLeft+=e.deltaY;
+          e.preventDefault();
+        }
+      },{passive:false});
+    }
+  }
+
+  function queueTableSync(){
+    if(tableSyncQueued)return;
+    tableSyncQueued=true;
+    requestAnimationFrame(syncTableScroll);
+  }
+
+  function forceTimelineHorizontal(){
+    ganttSyncQueued=false;
+    const container=document.getElementById('ganttChartContainer');
+    const view=document.getElementById('projectGanttView');
+    if(!container||!view||view.classList.contains('hidden'))return;
+    const table=container.querySelector('.project-gantt');
+    const wrap=container.querySelector('.project-gantt-wrap');
+    if(!table||!wrap)return;
+
+    const dateCols=Array.from(table.querySelectorAll('thead tr:nth-child(2) .gantt-date-head'));
+    if(!dateCols.length)return;
+
+    const identityWidth=260+130+130;
+    const timelineWidth=dateCols.length*GANTT_DAY_WIDTH;
+    const totalWidth=identityWidth+timelineWidth;
+
+    /* Override the renderer's viewport-sized layout with a real wide canvas. */
+    table.style.width=totalWidth+'px';
+    table.style.minWidth=totalWidth+'px';
+    table.style.maxWidth='none';
+    table.style.tableLayout='fixed';
+    table.style.setProperty('--gantt-day-width',GANTT_DAY_WIDTH+'px');
+    wrap.style.width=totalWidth+'px';
+    wrap.style.minWidth=totalWidth+'px';
+    wrap.style.maxWidth='none';
+
+    table.querySelectorAll('.gantt-project-col').forEach(c=>{c.style.width='260px';c.style.minWidth='260px';c.style.maxWidth='260px';});
+    table.querySelectorAll('.gantt-owner-col').forEach(c=>{c.style.width='130px';c.style.minWidth='130px';c.style.maxWidth='130px';});
+    table.querySelectorAll('.gantt-status-col').forEach(c=>{c.style.width='130px';c.style.minWidth='130px';c.style.maxWidth='130px';});
+    table.querySelectorAll('.gantt-day-col').forEach(c=>{c.style.width=GANTT_DAY_WIDTH+'px';c.style.minWidth=GANTT_DAY_WIDTH+'px';c.style.maxWidth=GANTT_DAY_WIDTH+'px';});
+
+    table.querySelectorAll('.gantt-row-track').forEach(track=>{
+      track.style.width=timelineWidth+'px';
+      track.style.minWidth=timelineWidth+'px';
+      track.style.maxWidth=timelineWidth+'px';
+      track.style.setProperty('--timeline-width',timelineWidth+'px');
+      track.style.setProperty('--pm-grid-day-width',GANTT_DAY_WIDTH+'px');
+    });
+
+    /* Re-run the existing geometry helpers after the real widths are applied. */
+    requestAnimationFrame(()=>{
+      if(typeof window.alignProjectTimelineGrid==='function')window.alignProjectTimelineGrid();
+      if(typeof window.alignProjectTimelineBars==='function')window.alignProjectTimelineBars();
+    });
+  }
+
+  function queueGanttSync(){
+    if(ganttSyncQueued)return;
+    ganttSyncQueued=true;
+    requestAnimationFrame(forceTimelineHorizontal);
+  }
+
+  function bindObservers(){
+    const host=document.getElementById('projectsTableBody');
+    if(host && !tableObserver){
+      tableObserver=new MutationObserver(queueTableSync);
+      tableObserver.observe(host,{childList:true,subtree:true});
+    }
+    const wrap=tableParts().wrap;
+    if(wrap && !tableResizeObserver && typeof ResizeObserver==='function'){
+      tableResizeObserver=new ResizeObserver(queueTableSync);
+      tableResizeObserver.observe(wrap);
+    }
+  }
+
+  /* Expose the same API name used by older fixes, but point it to the real sync. */
+  window.syncProjectBottomScroll=syncTableScroll;
+  window.syncProjectTableScroll=syncTableScroll;
+  window.syncProjectHorizontalScroll=syncTableScroll;
+  window.forceProjectTimelineHorizontal=forceTimelineHorizontal;
+
+  document.addEventListener('DOMContentLoaded',function(){
+    bindObservers();
+    queueTableSync();
+    queueGanttSync();
+    setTimeout(()=>{bindObservers();queueTableSync();queueGanttSync();},100);
+    setTimeout(()=>{queueTableSync();queueGanttSync();},500);
+  },{once:true});
+
+  window.addEventListener('load',function(){
+    bindObservers();
+    queueTableSync();
+    queueGanttSync();
+  },{once:true});
+
+  window.addEventListener('resize',function(){
+    queueTableSync();
+    queueGanttSync();
+  },{passive:true});
+
+  /* Catch view switching/rendering without replacing the app's existing functions. */
+  const originalRenderGantt=window.renderGanttChart;
+  if(typeof originalRenderGantt==='function'&&!originalRenderGantt.__v47Wrapped){
+    const wrapped=function(){
+      const result=originalRenderGantt.apply(this,arguments);
+      setTimeout(queueGanttSync,0);
+      setTimeout(queueGanttSync,80);
+      setTimeout(queueGanttSync,250);
+      return result;
+    };
+    wrapped.__v47Wrapped=true;
+    window.renderGanttChart=wrapped;
+  }
+
+  const originalRenderTable=window.renderProjectsTable;
+  if(typeof originalRenderTable==='function'&&!originalRenderTable.__v47Wrapped){
+    const wrapped=function(){
+      const result=originalRenderTable.apply(this,arguments);
+      setTimeout(()=>{bindObservers();queueTableSync();},0);
+      setTimeout(queueTableSync,80);
+      return result;
+    };
+    wrapped.__v47Wrapped=true;
+    window.renderProjectsTable=wrapped;
+  }
+})();
+</script>
+
 </body>
 </html>
 <style id="projectManagementV25Fixes">
@@ -11524,5 +11817,199 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
   window.addEventListener('resize',schedule,{passive:true});
   window.addEventListener('load',schedule,{once:true});
   document.addEventListener('DOMContentLoaded',schedule,{once:true});
+})();
+</script>
+
+<!-- PROJECT MANAGEMENT NATIVE HORIZONTAL SCROLL FIX V49 - AUTHORITATIVE -->
+<style id="projectManagementV49NativeHorizontalScrollFix">
+/* V49: stop fighting the browser scrollbar.  Both views use their real scroll
+   containers; no fake scrollbar is required. */
+#tab-projects #projectTableView,
+#tab-projects #projectGanttView{
+  box-sizing:border-box!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+
+/* TABLE VIEW */
+#tab-projects #projectTableView{
+  height:calc(100vh - 155px)!important;
+  max-height:calc(100vh - 155px)!important;
+  min-height:420px!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+#tab-projects #projectTableView #projectsTableBody{
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  height:auto!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  padding:0!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:none!important;
+  max-height:none!important;
+  overflow-x:auto!important;
+  overflow-y:auto!important;
+  scrollbar-width:auto!important;
+  scrollbar-color:#71859a #e8eef3!important;
+  -webkit-overflow-scrolling:touch!important;
+  box-sizing:border-box!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar{
+  width:12px!important;
+  height:14px!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar-track{
+  background:#e8eef3!important;
+}
+#tab-projects #projectTableView .pm-shared-table-wrap::-webkit-scrollbar-thumb{
+  background:#71859a!important;
+  border:2px solid #e8eef3!important;
+  border-radius:7px!important;
+}
+#tab-projects #projectTableView .pm-shared-project-table{
+  width:1800px!important;
+  min-width:1800px!important;
+  max-width:none!important;
+  table-layout:fixed!important;
+  margin:0!important;
+  transform:none!important;
+}
+/* The old fake scrollbar is intentionally hidden; the visible scrollbar is
+   the actual scrollbar of .pm-shared-table-wrap. */
+#tab-projects #projectTableBottomScroll{
+  display:none!important;
+}
+
+/* TIMELINE VIEW */
+#tab-projects #projectGanttView{
+  height:calc(100vh - 155px)!important;
+  max-height:calc(100vh - 155px)!important;
+  min-height:420px!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+#tab-projects #projectGanttView .pm-gantt-toolbar{
+  flex:0 0 auto!important;
+}
+#tab-projects #ganttChartContainer{
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:none!important;
+  max-height:none!important;
+  height:auto!important;
+  overflow-x:auto!important;
+  overflow-y:auto!important;
+  scrollbar-width:auto!important;
+  scrollbar-color:#71859a #e8eef3!important;
+  -webkit-overflow-scrolling:touch!important;
+  box-sizing:border-box!important;
+}
+#tab-projects #ganttChartContainer::-webkit-scrollbar{
+  width:12px!important;
+  height:14px!important;
+}
+#tab-projects #ganttChartContainer::-webkit-scrollbar-track{
+  background:#e8eef3!important;
+}
+#tab-projects #ganttChartContainer::-webkit-scrollbar-thumb{
+  background:#71859a!important;
+  border:2px solid #e8eef3!important;
+  border-radius:7px!important;
+}
+#tab-projects #ganttChartContainer .project-gantt-wrap{
+  width:max-content!important;
+  min-width:max-content!important;
+  max-width:none!important;
+  overflow:visible!important;
+  padding:0!important;
+  margin:0!important;
+}
+#tab-projects #ganttChartContainer .project-gantt{
+  width:max-content!important;
+  min-width:max-content!important;
+  max-width:none!important;
+  table-layout:fixed!important;
+  overflow:visible!important;
+}
+#tab-projects #ganttChartContainer .project-gantt .gantt-project-col{
+  width:260px!important;
+  min-width:260px!important;
+  max-width:260px!important;
+}
+#tab-projects #ganttChartContainer .project-gantt .gantt-owner-col{
+  width:130px!important;
+  min-width:130px!important;
+  max-width:130px!important;
+}
+#tab-projects #ganttChartContainer .project-gantt .gantt-status-col{
+  width:130px!important;
+  min-width:130px!important;
+  max-width:130px!important;
+}
+#tab-projects #ganttChartContainer .project-gantt .gantt-day-col{
+  width:44px!important;
+  min-width:44px!important;
+  max-width:44px!important;
+}
+#tab-projects #ganttChartContainer .project-gantt .gantt-row-track{
+  overflow:visible!important;
+}
+</style>
+<script id="projectManagementV49NativeHorizontalScrollRuntime">
+(function(){
+  'use strict';
+  function tableFix(){
+    const view=document.getElementById('projectTableView');
+    const wrap=view?.querySelector('.pm-shared-table-wrap');
+    const table=view?.querySelector('.pm-shared-project-table');
+    if(!wrap||!table)return;
+    table.style.width='1800px';
+    table.style.minWidth='1800px';
+    table.style.maxWidth='none';
+    wrap.style.overflowX='auto';
+    wrap.style.overflowY='auto';
+  }
+  function timelineFix(){
+    const c=document.getElementById('ganttChartContainer');
+    const t=c?.querySelector('.project-gantt');
+    const w=c?.querySelector('.project-gantt-wrap');
+    if(!c||!t||!w)return;
+    const days=t.querySelectorAll('.gantt-day-col').length;
+    const width=260+130+130+Math.max(1,days)*44;
+    t.style.width=width+'px';
+    t.style.minWidth=width+'px';
+    t.style.maxWidth='none';
+    w.style.width=width+'px';
+    w.style.minWidth=width+'px';
+    w.style.maxWidth='none';
+    c.style.overflowX='auto';
+    c.style.overflowY='auto';
+  }
+  function fix(){tableFix();timelineFix();}
+  const oldTable=window.renderProjectsTable;
+  if(typeof oldTable==='function'&&!oldTable.__v49Wrapped){
+    const f=function(){const r=oldTable.apply(this,arguments);requestAnimationFrame(()=>requestAnimationFrame(tableFix));return r;};
+    f.__v49Wrapped=true;window.renderProjectsTable=f;
+  }
+  const oldGantt=window.renderGanttChart;
+  if(typeof oldGantt==='function'&&!oldGantt.__v49Wrapped){
+    const f=function(){const r=oldGantt.apply(this,arguments);requestAnimationFrame(()=>requestAnimationFrame(timelineFix));return r;};
+    f.__v49Wrapped=true;window.renderGanttChart=f;
+  }
+  document.addEventListener('DOMContentLoaded',()=>{fix();setTimeout(fix,300);setTimeout(fix,1000);},{once:true});
+  window.addEventListener('resize',fix,{passive:true});
+  window.fixProjectNativeHorizontalScroll=fix;
 })();
 </script>
