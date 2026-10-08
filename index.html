@@ -2739,6 +2739,9 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
             <a href="#" onclick="switchTab('workload')" id="nav-workload" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800">
                 <i class="fa-solid fa-calculator w-6"></i><span>Category Setup</span>
             </a>
+            <a href="#" onclick="switchTab('bom-cs-scope')" id="nav-bom-cs-scope" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+                <i class="fa-solid fa-people-group w-6"></i><span>BOM C&amp;S Scope</span>
+            </a>
             <div id="nav-users-divider" class="pt-2 border-t border-slate-800 my-2 hidden"></div>
             <a href="#" onclick="switchTab('users')" id="nav-users" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800 hidden">
                 <i class="fa-solid fa-users-gear w-6"></i><span>Users</span>
@@ -3188,6 +3191,401 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                             <tbody id="capacityTableBody" class="divide-y divide-slate-100 font-medium"></tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <!-- TAB: BOM C&amp;S SCOPE -->
+            <div id="tab-bom-cs-scope" class="tab-content hidden h-full min-h-0">
+                <div class="h-full min-h-0 bg-slate-50 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                    <iframe
+                        id="bomCsScopeFrame"
+                        title="BOM C&amp;S Scope"
+                        class="w-full h-full border-0 block"
+                        loading="eager"
+                        srcdoc="&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;UTF-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+&lt;title&gt;Team BOM C&amp;S – Scope &amp; Responsibility&lt;/title&gt;
+&lt;style&gt;
+  :root{
+    --navy:#07345f;
+    --navy2:#0b4a80;
+    --cyan:#45d6ef;
+    --ink:#12304f;
+    --muted:#5f7690;
+    --line:#d8e6f2;
+    --panel:#f7fbff;
+    --white:#fff;
+    --pink:#f7c7dc;
+    --lav:#d8cdf8;
+    --mint:#ccefe3;
+    --sky:#cce8fb;
+    --gold:#ffe4a8;
+    --orange:#ffd2ad;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    width:100%;
+    height:100vh;
+    overflow:hidden;
+    background:#edf4fa;
+    color:var(--ink);
+    font-family:Inter,Segoe UI,Arial,sans-serif;
+  }
+  .page{
+    width:100%;
+    height:100vh;
+    margin:0;
+    background:white;
+    border-radius:0;
+    overflow:hidden;
+    box-shadow:none;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* Header */
+  .hero{
+    background:linear-gradient(135deg,#062e55,#0a477a);
+    color:white;
+    padding:28px 34px 24px;
+    display:flex;
+    align-items:center;
+    gap:28px;
+  }
+  .brand{
+    flex:1.1;
+    min-width:360px;
+  }
+  .eyebrow{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:1.8px;
+    color:#9de9f6;
+    text-transform:uppercase;
+  }
+  .target{
+    width:46px;height:46px;
+    display:grid;place-items:center;
+    border:2px solid #9de9f6;
+    border-radius:50%;
+    font-size:25px;
+  }
+  h1{
+    margin:8px 0 4px;
+    font-size:42px;
+    line-height:1;
+    letter-spacing:-1px;
+  }
+  .subtitle{
+    color:#bfefff;
+    font-size:17px;
+    margin-top:10px;
+  }
+  .goal{
+    flex:1;
+    background:rgba(255,255,255,.96);
+    color:var(--ink);
+    border-radius:18px;
+    padding:19px 24px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    box-shadow:0 8px 22px rgba(0,0,0,.08);
+  }
+  .goal-icon{font-size:42px}
+  .goal strong{display:block;font-size:22px;color:#0a4d82;margin-bottom:4px}
+  .goal p{margin:0;font-size:14px;line-height:1.5}
+
+  /* Table */
+  .wrap{
+    flex:1 1 auto;
+    min-height:0;
+    min-width:0;
+    padding:0;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  .matrix{
+    display:grid;
+    grid-template-columns:380px minmax(520px,1fr) repeat(10,minmax(70px,1fr));
+    border:0;
+    border-radius:0;
+    overflow:visible;
+    min-width:1600px;
+  }
+  .scroll{
+    flex:1 1 auto;
+    min-height:0;
+    min-width:0;
+    overflow:auto;
+    padding:0;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+  }
+  .head{
+    background:linear-gradient(180deg,#0b4d82,#0a416f);
+    color:white;
+    min-height:58px;
+    position:sticky;
+    top:0;
+    z-index:20;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px;
+    border-right:1px solid rgba(255,255,255,.22);
+    font-weight:700;
+    font-size:14px;
+  }
+  .head.scope{text-align:left;justify-content:flex-start;padding-left:18px}
+  .head.member{
+    flex-direction:column;
+    gap:5px;
+    padding:7px 3px;
+  }
+  .avatar{
+    width:28px;height:28px;
+    border-radius:50%;
+    display:grid;place-items:center;
+    color:white;font-size:12px;font-weight:800;
+    border:2px solid rgba(255,255,255,.8);
+  }
+  .member-name{font-size:12px}
+
+  .cell{
+    min-height:56px;
+    border-top:1px solid var(--line);
+    border-right:1px solid var(--line);
+    background:#fff;
+    display:flex;
+    align-items:center;
+    padding:9px 12px;
+    font-size:13px;
+  }
+  .group{
+    font-weight:700;
+    font-size:15px;
+    line-height:1.25;
+    align-items:flex-start;
+    padding-top:15px;
+    gap:10px;
+  }
+  .group-badge{
+    flex:0 0 34px;
+    width:34px;height:34px;
+    border-radius:12px;
+    color:white;
+    display:grid;place-items:center;
+    font-weight:800;
+    font-size:15px;
+  }
+  .task{color:#234463;line-height:1.25}
+  .member-cell{justify-content:center;padding:0}
+  .check{
+    width:27px;height:27px;border-radius:50%;
+    display:grid;place-items:center;
+    font-weight:900;
+    font-size:15px;
+  }
+
+  /* row colors */
+  .r1{background:#edf8ff}
+  .r2{background:#edf9f5}
+  .r3{background:#f1edff}
+  .r4{background:#fff0f0}
+  .r5{background:#eefbfc}
+  .r6{background:#f4efff}
+  .r7{background:#fff7e9}
+  .r8{background:#edf8ff}
+  .r9{background:#faefff}
+  .r10{background:#edf9f5}
+
+  .b1{background:#1795d1}.b2{background:#15a681}.b3{background:#6b45ca}
+  .b4{background:#d84d56}.b5{background:#0e9ab2}.b6{background:#6944c8}
+  .b7{background:#e49a10}.b8{background:#157cc2}.b9{background:#9d42b8}.b10{background:#168d78}
+
+  .x1{background:#ffd2e3;color:#be2464}.x2{background:#d0f1e5;color:#118367}
+  .x3{background:#ded5ff;color:#6944c8}.x4{background:#ffd8d8;color:#c83d47}
+  .x5{background:#cef0f6;color:#087d93}.x6{background:#ded5ff;color:#6944c8}
+  .x7{background:#ffe0aa;color:#bc7200}.x8{background:#cfe9ff;color:#1373b5}
+  .x9{background:#efcdf5;color:#8e329e}.x10{background:#d2f1e7;color:#13836f}
+
+  /* Footer */
+  .footer{
+    margin:0 22px 22px;
+    background:linear-gradient(135deg,#082f58,#0b4b7e);
+    color:white;
+    border-radius:18px;
+    padding:15px 22px;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:0;
+  }
+  .foot-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:3px 22px;
+    border-right:1px solid rgba(255,255,255,.25);
+  }
+  .foot-item:last-child{border:0}
+  .foot-icon{font-size:27px}
+  .foot-title{font-weight:800;color:#75e7f6;font-size:15px}
+  .foot-text{font-size:12px;line-height:1.35;color:#e5f2fa}
+
+  .legend{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:10px 4px 0;
+    color:#6d8194;
+    font-size:12px;
+  }
+  .legend .mini{
+    width:17px;height:17px;border-radius:50%;background:#ffd2e3;display:inline-grid;place-items:center;
+    color:#be2464;font-weight:800;font-size:10px;
+  }
+
+  @media(max-width:900px){
+    .page{width:100%;margin:0;border-radius:0}
+    .hero{padding:22px;display:block}
+    .brand{min-width:0}
+    h1{font-size:32px}
+    .goal{margin-top:18px}
+    .wrap{padding:14px}
+    .footer{margin:0 14px 14px;grid-template-columns:1fr 1fr}
+    .foot-item{padding:10px 12px}
+  }
+
+  @media print{
+    body{background:white}
+    .page{width:100%;margin:0;box-shadow:none;border-radius:0}
+    .scroll{overflow:visible}
+    .matrix{min-width:0}
+    @page{size:A3 landscape;margin:8mm}
+  }
+
+  /* Scope-only layout: full-height table, fixed column headers, vertically scrollable scope/task rows. */
+  html,body{width:100%;height:100%;margin:0;overflow:hidden}
+  .page{width:100%;height:100vh;margin:0;border-radius:0;box-shadow:none;overflow:hidden;display:flex;flex-direction:column}
+  .wrap{flex:1 1 auto;min-height:0;min-width:0;padding:0;overflow:hidden;display:flex;flex-direction:column}
+  .scroll{flex:1 1 auto;min-height:0;min-width:0;overflow:auto;padding:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .matrix{grid-template-columns:380px minmax(520px,1fr) repeat(10,minmax(70px,1fr));min-width:1600px;border:0;border-radius:0;overflow:visible}
+  .head{position:sticky;top:0;z-index:50}
+
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class=&quot;page&quot;&gt;
+&lt;main class=&quot;wrap&quot;&gt;
+    &lt;div class=&quot;scroll&quot;&gt;
+            &lt;section class=&quot;matrix&quot;&gt;
+        &lt;div class=&quot;head&quot;&gt;SCOPE&lt;/div&gt;
+        &lt;div class=&quot;head scope&quot;&gt;TASK&lt;/div&gt;
+        
+        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#e5a42a&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Anny&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#e44b87&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Rita&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#7b62d9&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Tonya&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#2da981&quot;&gt;M&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Muriel&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#2388c9&quot;&gt;W&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Windy&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#2c9ed4&quot;&gt;M&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Mia&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#e58a35&quot;&gt;M&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Mark&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#6177cf&quot;&gt;V&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Venti&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#35a68e&quot;&gt;K&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Kitsune&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#55aee5&quot;&gt;S&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Snow&lt;/span&gt;&lt;/div&gt;
+
+        &lt;!-- 1 --&gt;
+        &lt;div class=&quot;cell group r1&quot;&gt;&lt;span class=&quot;group-badge b1&quot;&gt;1&lt;/span&gt;&lt;span&gt;Cut &amp;amp; Sew BOM Management – Wanek &amp;amp; Millennium&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r1&quot;&gt;1. Cut &amp;amp; Sew BOM Management – Wanek &amp;amp; Millennium&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 1.1 --&gt;
+        &lt;div class=&quot;cell group r1&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r1&quot;&gt;1.1 BOM RP/Swatch Card&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;
+
+        &lt;!-- 1.2 --&gt;
+        &lt;div class=&quot;cell group r1&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r1&quot;&gt;1.2 BOM new Go&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 1.3 --&gt;
+        &lt;div class=&quot;cell group r1&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r1&quot;&gt;1.3 ECO changes&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 1.4 --&gt;
+        &lt;div class=&quot;cell group r1&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r1&quot;&gt;1.4 BOM changes for other requires&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;
+
+        &lt;!-- 1.5 --&gt;
+        &lt;div class=&quot;cell group r1&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r1&quot;&gt;1.5 Labels related to compliance management&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 2 --&gt;
+        &lt;div class=&quot;cell group r2&quot;&gt;&lt;span class=&quot;group-badge b2&quot;&gt;2&lt;/span&gt;&lt;span&gt;R&amp;amp;D BOM for Costing – C&amp;amp;S &amp;amp; Wanek 4&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r2&quot;&gt;2. R&amp;amp;D BOM for Costing – C&amp;amp;S &amp;amp; Wanek 4&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x2&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x2&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x2&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 3 --&gt;
+        &lt;div class=&quot;cell group r3&quot;&gt;&lt;span class=&quot;group-badge b3&quot;&gt;3&lt;/span&gt;&lt;span&gt;R&amp;amp;D Material Purchasing&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r3&quot;&gt;3. R&amp;amp;D Material Purchasing&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;span class=&quot;check x3&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;span class=&quot;check x3&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;span class=&quot;check x3&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 4 --&gt;
+        &lt;div class=&quot;cell group r4&quot;&gt;&lt;span class=&quot;group-badge b4&quot;&gt;4&lt;/span&gt;&lt;span&gt;Outsource Project Management&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r4&quot;&gt;4. Outsource Project Management&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;span class=&quot;check x4&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;span class=&quot;check x4&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;span class=&quot;check x4&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 5 --&gt;
+        &lt;div class=&quot;cell group r5&quot;&gt;&lt;span class=&quot;group-badge b5&quot;&gt;5&lt;/span&gt;&lt;span&gt;New Material Development&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r5&quot;&gt;5. New material development&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;span class=&quot;check x5&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;span class=&quot;check x5&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;span class=&quot;check x5&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;span class=&quot;check x5&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 6 --&gt;
+        &lt;div class=&quot;cell group r6&quot;&gt;&lt;span class=&quot;group-badge b6&quot;&gt;6&lt;/span&gt;&lt;span&gt;New Go Timeline &amp;amp; Speed-to-Market Management&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r6&quot;&gt;6. New Go Timeline &amp;amp; Speed-to-Market Management&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;span class=&quot;check x6&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;span class=&quot;check x6&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 7 --&gt;
+        &lt;div class=&quot;cell group r7&quot;&gt;&lt;span class=&quot;group-badge b7&quot;&gt;7&lt;/span&gt;&lt;span&gt;AI Applications, Data Analytics, Automation &amp;amp; Dashboard Development&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r7&quot;&gt;7. AI Applications, Data Analytics, Automation &amp;amp; Dashboard Development&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;span class=&quot;check x7&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;span class=&quot;check x7&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 8 --&gt;
+        &lt;div class=&quot;cell group r8&quot;&gt;&lt;span class=&quot;group-badge b8&quot;&gt;8&lt;/span&gt;&lt;span&gt;Project &amp;amp; Product Compliance – Wanek &amp;amp; Millennium&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r8&quot;&gt;8. Project &amp;amp; Product Compliance – Wanek &amp;amp; Millennium&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;span class=&quot;check x8&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;span class=&quot;check x8&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 9 --&gt;
+        &lt;div class=&quot;cell group r9&quot;&gt;&lt;span class=&quot;group-badge b9&quot;&gt;9&lt;/span&gt;&lt;span&gt;Process Optimization &amp;amp; New Business Process Development&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r9&quot;&gt;9. Process Optimization &amp;amp; New Business Process Development&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;span class=&quot;check x9&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;
+
+        &lt;!-- 10 --&gt;
+        &lt;div class=&quot;cell group r10&quot;&gt;&lt;span class=&quot;group-badge b10&quot;&gt;10&lt;/span&gt;&lt;span&gt;Managing system project setup, Bill of Materials, and troubleshooting&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell task r10&quot;&gt;10. Managing system project setup, Bill of Materials, and troubleshooting&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;span class=&quot;check x10&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;span class=&quot;check x10&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;
+      &lt;/section&gt;
+    &lt;/div&gt;
+    &lt;/main&gt;
+&lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+">
+                    </iframe>
                 </div>
             </div>
 
@@ -3998,7 +4396,7 @@ function setupInlineRequiredValidation(){
             if(sheetName==='Users') return {name:String(row.name||'').trim(),password:String(row.password??''),role:row.role||'Member',status:row.status||'Active'};
             if(sheetName==='Capacity') return {category:String(row.category||'').trim(),task:String(row.task||'').trim(),scope:String(row.scope||"In BOM's scope").trim(),workload:Math.max(0,Number(row.workload)||0)};
             if(sheetName==='TimeOff_OT') return {type:row.type||'',pic:row.pic||'',start_date:cleanDateStr(row.startDate),end_date:cleanDateStr(row.endDate||row.startDate),hours:Math.max(0,Number(row.hours)||0),reason:row.reason||null};
-            if(sheetName==='Projects') return {name:String(row.name||'').trim(),owner:Array.isArray(row.owners)?row.owners.join(', '):(row.owner||null),owners:Array.isArray(row.owners)?row.owners:[],scope:row.scope||'Projects',detail:row.detail||'',status:row.status||'Not Started',progress:Math.max(0,Math.min(100,Number(row.progress)||0)),start_date:cleanDateStr(row.startDate)||null,due_date:cleanDateStr(row.dueDate)||null,actual_date:cleanDateStr(row.actualDate)||null,priority:Number(row.priority)||3,gain_demand:row.gainDemand??'',saving:row.saving===''?0:Number(row.saving)||0,actual_saving:row.actualSaving===''?null:Number(row.actualSaving)||0,note:row.note||null,hours_used:buildProjectStorageHours(row)};
+            if(sheetName==='Projects') return {name:String(row.name||'').trim(),owner:Array.isArray(row.owners)?row.owners.join(', '):(row.owner||null),owners:Array.isArray(row.owners)?row.owners:[],scope:row.scope||'Projects',detail:row.detail||'',status:row.status||'Not Started',progress:Math.max(0,Math.min(100,Number(row.progress)||0)),start_date:cleanDateStr(row.startDate)||null,due_date:cleanDateStr(row.dueDate)||null,actual_date:cleanDateStr(row.actualDate)||null,priority:Number(row.priority)||3,gain_demand:row.gainDemand??'',saving:row.saving===''?0:(Number.isFinite(Number(row.saving))?Number(row.saving):0),actual_saving:row.actualSaving===''?null:(Number.isFinite(Number(row.actualSaving))?Number(row.actualSaving):0),note:row.note||null,hours_used:buildProjectStorageHours(row)};
             return null;
         }
         function mapSavedRow(sheetName,r){
@@ -7097,10 +7495,13 @@ function setupInlineRequiredValidation(){
         }
 
         function projectRefMoneyInput(value, onChange){
+            // Allow both positive and negative annual saving values.
+            // Keep the input as text so values such as -2342 can be entered
+            // directly without browser min=0 validation blocking the minus sign.
             const n=projectParseMoney(value);
-            const display=n===''?'':Math.round(Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:0});
+            const display=n===''?'':Math.round(Number(n)).toLocaleString('en-US',{maximumFractionDigits:0});
             const safeChange=String(onChange||'').replace(/"/g,'&quot;');
-            return `<input type="text" inputmode="decimal" autocomplete="off" class="pm-ref-input pm-ref-money" value="${escapeHtml(display)}" data-money-value="${n===""?"":Number(n)||0}" onfocus="this.value=this.value.replace(/,/g,'')" onchange="this.value=this.value.trim()?Number(String(this.value).replace(/,/g,'' )||0).toLocaleString('en-US',{maximumFractionDigits:0}):'';${safeChange}">`;
+            return `<input type="text" inputmode="decimal" autocomplete="off" class="pm-ref-input pm-ref-money" value="${escapeHtml(display)}" data-money-value="${n===""?"":Number(n)}" onfocus="this.value=this.value.replace(/,/g,'')" onkeydown="if(event.key==='e'||event.key==='E')event.preventDefault();" onchange="this.value=this.value.trim()?Number(String(this.value).replace(/,/g,'')||0).toLocaleString('en-US',{maximumFractionDigits:0}):'';${safeChange}">`;
         }
 
         function projectInlineTaskRow(p,phaseIndex,task,taskIndex,phaseColor=0,phaseName=''){
@@ -7497,6 +7898,7 @@ function setupInlineRequiredValidation(){
         }
         function getProjectPdfRows(){
             const out=[];
+            let projectNo=0;
             const add=(row,kind,color=0,level=0)=>out.push({...row,__kind:kind,__color:color,__level:level});
             (projectsList||[]).forEach(p=>{
                 if(!projectMatchesSearch(p))return;
@@ -7506,7 +7908,8 @@ function setupInlineRequiredValidation(){
                 const anyPhase=(p.phases||[]).some(ph=>{const sum=projectPhaseSummary(ph,p);return projectFilterMatch({projectName:p.name,phaseName:ph.name,name:ph.name,owner:sum.owner,startDate:sum.startDate,dueDate:sum.dueDate,actualDate:sum.actualDate,gainDemand:sum.gainDemand,estSaving:sum.saving,actualSaving:sum.actualSaving,detail:sum.detail,status:sum.status,note:sum.note});});
                 if(Object.keys(projectHeaderFilters).length && !projectFilterMatch(projectItem) && !anyTask && !anyPhase)return;
                 const projectCompleted=String(calculateProjectOverallStatus(p)||p.status||'').toLowerCase()==='completed';
-                add({No:'',Project:p.name||'',Phase:'',Task:'',Owner:projectOwnerText(p)||'',Start:cleanDateStr(p.startDate)||'',"Planned Completion":cleanDateStr(p.dueDate)||'',"Actual Completion":cleanDateStr(p.actualDate)||'',"Gain Demand/Week":totals.gainDemand||'',"Est. Annual Saving/years":totals.saving||'',"Achieved Annual Saving/years":totals.actualSaving||'',"Detailed Status":projectCompleted?'Completed':projectIncompleteTaskDetails(p)||'',"Overall Status":p.status||'',Note:p.note||''},'project',0,0);
+                projectNo++;
+                add({No:projectNo,Project:p.name||'',Phase:'',Task:'',Owner:projectOwnerText(p)||'',Start:cleanDateStr(p.startDate)||'',"Planned Completion":cleanDateStr(p.dueDate)||'',"Actual Completion":cleanDateStr(p.actualDate)||'',"Gain Demand/Week":totals.gainDemand||'',"Est. Annual Saving/years":totals.saving||'',"Achieved Annual Saving/years":totals.actualSaving||'',"Detailed Status":projectCompleted?'Completed':projectIncompleteTaskDetails(p)||'',"Overall Status":p.status||'',Note:p.note||''},'project',0,0);
                 if(projectCompleted)return;
                 (p.phases||[]).forEach((ph,pi)=>{
                     const sum=projectPhaseSummary(ph,p);
@@ -7562,7 +7965,7 @@ function setupInlineRequiredValidation(){
                     if(['Start','Planned Completion','Actual Completion'].includes(c)&&v)v=formatDateMMDDYYYY(v);
                     if(r.__kind==='phase'&&c==='Phase')v=String(v).replace(/^Phase:\s*/i,'');
                     if(r.__kind==='task'&&c==='Task')v=String(v).replace(/^Task:\s*/i,'');
-                    const align=c==='No'||c==='Gain Demand/Week'||c==='Est. Annual Saving/years'||c==='Achieved Annual Saving/years'?'right':c==='Owner'?'center':'left';
+                    const align=c==='No'?'center':(c==='Gain Demand/Week'||c==='Est. Annual Saving/years'||c==='Achieved Annual Saving/years'?'right':c==='Owner'?'center':'left');
                     const lines=doc.splitTextToSize(String(v),Math.max(10,widths[i]-6)).slice(0,2);doc.text(lines,x+(align==='right'?widths[i]-3:align==='center'?widths[i]/2:3),y+(lines.length>1?8:14),{maxWidth:widths[i]-6,align,baseline:'middle'});doc.line(x,y,x,y+h);x+=widths[i];
                 });
                 doc.line(margin+tableW,y,margin+tableW,y+h);y+=h;
@@ -7832,7 +8235,7 @@ function setupInlineRequiredValidation(){
         function updateProjectField(projectId,key,value){
             const p=projectsList.find(x=>String(x.id)===String(projectId));if(!p)return;
             if(['startDate','dueDate','actualDate'].includes(key)) value=cleanDateStr(value);
-            if(['saving','actualSaving'].includes(key)) value=value===''?'':Number(value)||0;
+            if(['saving','actualSaving'].includes(key)) { const n=Number(value); value=value===''?'':(Number.isFinite(n)?n:0); }
             if(key==='startDate'&&p.dueDate&&value>p.dueDate)p.dueDate=value;
             if(key==='dueDate'&&p.startDate&&value<p.startDate)p.startDate=value;
             if(key==='actualDate'&&value&&(value<p.startDate||value>p.dueDate)) value='';
@@ -7890,7 +8293,7 @@ function setupInlineRequiredValidation(){
             finally{ if(el)el.dataset.creating=''; }
         }
         function updateProjectInlineTask(projectId,phaseIndex,taskIndex,key,value){
-            const p=projectsList.find(x=>String(x.id)===String(projectId));if(!p)return;const list=getProjectInlineTaskList(p,phaseIndex),t=list[taskIndex];if(!t)return;if(key==='status')return;if(['startDate','dueDate','actualDate'].includes(key))value=cleanDateStr(value);if(['estSaving','actualSaving'].includes(key))value=value===''?'':Number(value)||0;
+            const p=projectsList.find(x=>String(x.id)===String(projectId));if(!p)return;const list=getProjectInlineTaskList(p,phaseIndex),t=list[taskIndex];if(!t)return;if(key==='status')return;if(['startDate','dueDate','actualDate'].includes(key))value=cleanDateStr(value);if(['estSaving','actualSaving'].includes(key)){ const n=Number(value); value=value===''?'':(Number.isFinite(n)?n:0); }
             if(key==='dueDate' && t.startDate && value && value<=t.startDate){showToast('Planned Completion must be later than Start');renderProjectsTable();return;}
             t[key]=value;if(key==='startDate'){if(t.dueDate&&t.dueDate<=value)t.dueDate=projectNextDate(value);if(t.actualDate&&t.actualDate<value)t.actualDate=value;}
             if(key==='actualDate'&&t.dueDate&&value>t.dueDate)t.dueDate=value>t.dueDate?value:t.dueDate;
@@ -10822,6 +11225,99 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
     };
     wrapped.__v47Wrapped=true;
     window.renderProjectsTable=wrapped;
+  }
+})();
+</script>
+
+
+<!-- PROJECT MANAGEMENT V50 SAVING + PDF NUMBER FIX -->
+<style id="projectManagementV50SavingFix">
+#tab-projects .pm-ref-money input,
+#tab-projects input.pm-ref-money{font-variant-numeric:tabular-nums;}
+</style>
+<script id="projectManagementV50SavingFixScript">
+(function(){
+  'use strict';
+  // Preserve negative Est. Annual Saving/years and Achieved Annual Saving/years
+  // when values are edited, imported, normalized, or re-rendered.
+  function normalizeSavingValue(v){
+    if(v===null||v===undefined||String(v).trim()==='') return '';
+    const n=Number(String(v).replace(/[$€£¥\s,]/g,''));
+    return Number.isFinite(n)?n:'';
+  }
+  const originalUpdate=window.updateProjectInlineTask;
+  if(typeof originalUpdate==='function' && !originalUpdate.__v50SavingFix){
+    const wrapped=function(projectId,phaseIndex,taskIndex,key,value){
+      if(key==='estSaving'||key==='actualSaving') value=normalizeSavingValue(value);
+      return originalUpdate.apply(this,arguments);
+    };
+    wrapped.__v50SavingFix=true;
+    window.updateProjectInlineTask=wrapped;
+  }
+  // Ensure PDF rows always contain a visible project number even if an older
+  // getProjectPdfRows implementation is encountered by the page.
+  const originalPdfRows=window.getProjectPdfRows;
+  if(typeof originalPdfRows==='function' && !originalPdfRows.__v50NoFix){
+    const wrappedRows=function(){
+      const rows=originalPdfRows.apply(this,arguments)||[];
+      let no=0;
+      rows.forEach(r=>{
+        if(r && r.__kind==='project'){ no++; r.No=no; }
+        else if(r) r.No='';
+      });
+      return rows;
+    };
+    wrappedRows.__v50NoFix=true;
+    window.getProjectPdfRows=wrappedRows;
+  }
+})();
+</script>
+
+<!-- PROJECT MANAGEMENT V51 NEGATIVE SAVING + PDF NO CENTER FIX -->
+<style id="projectManagementV51SavingPdfFix">
+#tab-projects .pm-ref-money input,
+#tab-projects input.pm-ref-money{
+  min-width:0;
+  font-variant-numeric:tabular-nums;
+}
+</style>
+<script id="projectManagementV51SavingPdfFixScript">
+(function(){
+  'use strict';
+  function normalizeNegativeSaving(v){
+    if(v===null || v===undefined || String(v).trim()==='') return '';
+    const raw=String(v).trim().replace(/[$€£¥\s,]/g,'');
+    const n=Number(raw);
+    return Number.isFinite(n) ? n : '';
+  }
+  // Re-wrap the public field updater and pass the normalized value explicitly.
+  // This prevents the old Number(value)||0 logic from converting invalid/intermediate
+  // values while still preserving valid negative numbers such as -2342.
+  const oldField=window.updateProjectField;
+  if(typeof oldField==='function' && !oldField.__v51){
+    const f=function(projectId,key,value){
+      if(key==='saving'||key==='actualSaving') value=normalizeNegativeSaving(value);
+      return oldField.call(this,projectId,key,value);
+    };
+    f.__v51=true;
+    window.updateProjectField=f;
+  }
+  const oldTask=window.updateProjectInlineTask;
+  if(typeof oldTask==='function' && !oldTask.__v51){
+    const f=function(projectId,phaseIndex,taskIndex,key,value){
+      if(key==='estSaving'||key==='actualSaving') value=normalizeNegativeSaving(value);
+      return oldTask.call(this,projectId,phaseIndex,taskIndex,key,value);
+    };
+    f.__v51=true;
+    window.updateProjectInlineTask=f;
+  }
+  // Make the PDF No. column centered even if an older renderer is still present.
+  // The authoritative renderer source is also patched above.
+  const originalProjectMoney = window.projectMoney;
+  if(typeof originalProjectMoney==='function' && !originalProjectMoney.__v51){
+    const f=function(v){ return originalProjectMoney.call(this,v); };
+    f.__v51=true;
+    window.projectMoney=f;
   }
 })();
 </script>
