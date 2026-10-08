@@ -12554,6 +12554,17 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
   function v51HasValue(v){
     return v!==null && v!==undefined && String(v).trim()!=='';
   }
+  // Saving values are numeric database fields. Accept normal decimal input and
+  // also tolerate pasted values such as "1,234.50" without turning them into null.
+  function v52Number(v){
+    if(v===null || v===undefined || String(v).trim()==='') return null;
+    const raw=String(v).trim().replace(/[$€£¥\s]/g,'');
+    const normalized=raw.includes(',') && !raw.includes('.')
+      ? raw.replace(',', '.')
+      : raw.replace(/,/g,'');
+    const n=Number(normalized);
+    return Number.isFinite(n) ? n : null;
+  }
   function v51Children(project){
     const phases=Array.isArray(project?.phases)?project.phases:[];
     const phaseTasks=phases.flatMap(ph=>Array.isArray(ph?.tasks)?ph.tasks:[]);
@@ -12590,16 +12601,26 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
    */
   function v51AggregateSaving(project){
     const children=v51Children(project);
-    const hasEst=children.some(t=>v51HasValue(t?.estSaving));
-    const hasAct=children.some(t=>v51HasValue(t?.actualSaving));
-    const est=hasEst
-      ? children.reduce((sum,t)=>sum+(Number(t?.estSaving)||0),0)
-      : (Number(project?.saving)||0);
-    const act=hasAct
-      ? children.reduce((sum,t)=>sum+(Number(t?.actualSaving)||0),0)
-      : (v51HasValue(project?.actualSaving)?Number(project.actualSaving)||0:0);
-    return {saving:est,actualSaving:act,hasChildSaving:hasEst||hasAct};
+    const estValues=children.map(t=>v52Number(t?.estSaving)).filter(v=>v!==null);
+    const actValues=children.map(t=>v52Number(t?.actualSaving)).filter(v=>v!==null);
+
+    // IMPORTANT: Project popup values remain the displayed values until a task
+    // actually contains a saving value. Once task saving exists, the project row
+    // switches to the sum of task values (including zero-valued tasks).
+    const hasEst=estValues.length>0;
+    const hasAct=actValues.length>0;
+    const projectEst=v52Number(project?.saving);
+    const projectAct=v52Number(project?.actualSaving);
+    return {
+      saving:hasEst ? estValues.reduce((a,b)=>a+b,0) : (projectEst===null?0:projectEst),
+      actualSaving:hasAct ? actValues.reduce((a,b)=>a+b,0) : (projectAct===null?0:projectAct),
+      hasChildSaving:hasEst||hasAct
+    };
   }
+
+  window.getProjectSavingDisplayValues=function(project){
+    return v51AggregateSaving(project);
+  };
 
   const oldAggregate=window.projectAggregateSummary;
   window.projectAggregateSummary=function(project){
@@ -12624,6 +12645,9 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
 
   function v51RefreshProjectOnlyStatuses(){
     (window.projectsList||[]).forEach(p=>{
+      // Normalize only the project-level fields; task fields are left untouched.
+      if(v51HasValue(p?.saving)) p.saving=v52Number(p.saving);
+      if(v51HasValue(p?.actualSaving)) p.actualSaving=v52Number(p.actualSaving);
       if(!v51Children(p).length){
         p.status=v51ProjectOnlyStatus(p);
       }
@@ -12686,12 +12710,8 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
       dueDate,
       actualDate,
       gainDemand:String(document.getElementById('projectGainDemand')?.value||'').trim(),
-      saving:typeof numOrNull==='function'
-        ? numOrNull(document.getElementById('projectSaving')?.value)
-        : (document.getElementById('projectSaving')?.value===''?null:Number(document.getElementById('projectSaving')?.value||0)),
-      actualSaving:typeof numOrNull==='function'
-        ? numOrNull(document.getElementById('projectActualSaving')?.value)
-        : (document.getElementById('projectActualSaving')?.value===''?null:Number(document.getElementById('projectActualSaving')?.value||0)),
+      saving:v52Number(document.getElementById('projectSaving')?.value),
+      actualSaving:v52Number(document.getElementById('projectActualSaving')?.value),
       note:String(document.getElementById('projectNote')?.value||'').trim(),
       status:existing?.status||'Not Started',
       progress:existing?.progress||0,
@@ -12724,8 +12744,8 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
       actual_date:typeof dateOrNull==='function'?dateOrNull(project.actualDate):project.actualDate||null,
       priority:Number(project.priority)||3,
       gain_demand:typeof numOrNull==='function'?numOrNull(project.gainDemand):null,
-      saving:typeof numOrNull==='function'?numOrNull(project.saving):null,
-      actual_saving:typeof numOrNull==='function'?numOrNull(project.actualSaving):null,
+      saving:v52Number(project.saving),
+      actual_saving:v52Number(project.actualSaving),
       note:project.note||null,
       hours_used:typeof buildProjectStorageHours==='function'
         ? buildProjectStorageHours(project)
@@ -12764,6 +12784,8 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
       mapped.phases=project.phases;
       mapped.tasks=project.tasks;
       mapped.hoursUsed=project.hoursUsed;
+      mapped.saving=v52Number(result.data?.saving);
+      mapped.actualSaving=v52Number(result.data?.actual_saving);
       mapped.status=project.status;
 
       if(id){
@@ -12833,5 +12855,105 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
   }
 
   v51RefreshProjectOnlyStatuses();
+})();
+</script>
+
+<!-- PROJECT MANAGEMENT V53 DASHBOARD / REPORT COST SAVING FIX -->
+<script id="projectManagementV53DashboardCostSavingFix">
+(function(){
+  'use strict';
+
+  function v53Money(v){
+    if(v===null || v===undefined || String(v).trim()==='') return null;
+    const raw=String(v).trim().replace(/[$€£¥\s,]/g,'');
+    const n=Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function v53Children(project){
+    const phases=Array.isArray(project?.phases)?project.phases:[];
+    const phaseTasks=phases.flatMap(ph=>Array.isArray(ph?.tasks)?ph.tasks:[]);
+    const direct=Array.isArray(project?.tasks)?project.tasks:[];
+    return phaseTasks.concat(direct);
+  }
+
+  /*
+   * Dashboard / Report Cost Saving must use exactly the same rule as the
+   * Project Management table:
+   *   1. If a child task has Actual Saving, use the child Actual Saving total.
+   *   2. Otherwise, if a child task has Estimated Saving, use the child
+   *      Estimated Saving total.
+   *   3. If there are no child saving values, use the values entered directly
+   *      on the Project popup.
+   *
+   * This fixes project-only projects being omitted from the dashboard KPI.
+   */
+  window.calcProjectEffectiveSaving=function(project){
+    const children=v53Children(project);
+
+    const childActual=[];
+    const childEstimated=[];
+    children.forEach(t=>{
+      const actual=v53Money(t?.actualSaving);
+      const estimated=v53Money(t?.estSaving);
+      if(actual!==null) childActual.push(actual);
+      if(estimated!==null) childEstimated.push(estimated);
+    });
+
+    if(childActual.length) return childActual.reduce((a,b)=>a+b,0);
+    if(childEstimated.length) return childEstimated.reduce((a,b)=>a+b,0);
+
+    const projectActual=v53Money(project?.actualSaving);
+    if(projectActual!==null) return projectActual;
+
+    const projectEstimated=v53Money(project?.saving);
+    return projectEstimated!==null ? projectEstimated : 0;
+  };
+
+  window.calcBomCostSaving=function(){
+    return (Array.isArray(window.projectsList)?window.projectsList:[])
+      .reduce((sum,p)=>sum+Number(window.calcProjectEffectiveSaving(p)||0),0);
+  };
+
+  window.updateDashboardFinancialKpis=function(){
+    const c=document.getElementById('dashCostSaving');
+    const o=document.getElementById('dashOvertime');
+    if(c)c.textContent='$'+Number(window.calcBomCostSaving()||0).toLocaleString(undefined,{maximumFractionDigits:2});
+    if(o){
+      const list=Array.isArray(window.timeoffOtList)?window.timeoffOtList:[];
+      const hours=list.filter(x=>x.type==='Over Time').reduce((sum,x)=>sum+(parseFloat(x.hours)||0),0);
+      o.textContent=hours.toLocaleString(undefined,{maximumFractionDigits:2})+' h';
+    }
+  };
+
+  // Recalculate after project data is loaded/rendered so Dashboard and Report
+  // always reflect the same current project/task values.
+  const refresh=function(){
+    try{window.updateDashboardFinancialKpis?.();}catch(_){ }
+  };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',refresh,{once:true});
+  else refresh();
+
+  const oldFetch=window.fetchAllDataFromSheet;
+  if(typeof oldFetch==='function' && !oldFetch.__v53CostSavingWrapped){
+    const wrapped=async function(){
+      const result=await oldFetch.apply(this,arguments);
+      refresh();
+      return result;
+    };
+    wrapped.__v53CostSavingWrapped=true;
+    window.fetchAllDataFromSheet=wrapped;
+  }
+
+  const oldUpdate=window.updateDashboardCharts;
+  if(typeof oldUpdate==='function' && !oldUpdate.__v53CostSavingWrapped){
+    const wrapped=function(){
+      const result=oldUpdate.apply(this,arguments);
+      refresh();
+      return result;
+    };
+    wrapped.__v53CostSavingWrapped=true;
+    window.updateDashboardCharts=wrapped;
+  }
 })();
 </script>
