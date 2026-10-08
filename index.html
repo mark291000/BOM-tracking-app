@@ -4420,32 +4420,34 @@ function setupInlineRequiredValidation(){
             return r;
         }
         function taskDbPayload(row){
-            const meId=Number(currentUser?.id);
-            const createdById=Number(row?.createdById);
-            const updatedById=Number(row?.updatedById);
-            let createdBy = Number.isSafeInteger(createdById) && createdById>0 ? createdById : null;
-            if(!createdBy && row?.createdBy){
-                const u=users.find(x=>String(x.name||'').trim().toLowerCase()===String(row.createdBy).trim().toLowerCase());
-                if(u?.id) createdBy=Number(u.id);
-            }
-            if(!createdBy && Number.isSafeInteger(meId) && meId>0) createdBy=meId;
-            const updatedBy = Number.isSafeInteger(updatedById) && updatedById>0 ? updatedById : (Number.isSafeInteger(meId) && meId>0 ? meId : null);
+            // Keep this payload strictly aligned with public.tasks.
+            // `scope` is an application/UI field but is NOT a column in public.tasks.
+            // created_by / updated_by are nullable UUIDs in the current schema, while
+            // the legacy public.users.id used by this app is numeric. Do not send those
+            // numeric IDs into UUID columns; they can safely remain NULL.
+            const projectId = (row?.projectId!==undefined && row?.projectId!==null && String(row.projectId)!=='' && Number.isFinite(Number(row.projectId)))
+                ? Number(row.projectId) : null;
+            const startDate = cleanDateStr(row?.start||row?.startDate);
+            const planDate = cleanDateStr(row?.plan||row?.planDate);
+            const actualDate = cleanDateStr(row?.actual||row?.actualDate);
+            const usage = Number(row?.usageTime);
             return {
                 category:String(row?.category||'').trim(),
                 name:String(row?.name||'').trim(),
                 items:row?.items==null?'':String(row.items),
-                scope:String(row?.scope||'').trim(),
-                priority:normalizeTaskPriority(row?.priority||'Medium'),
+                priority:normalizeTaskPriority(row?.priority||'Medium') || 'Medium',
                 pic:Array.isArray(row?.pics)?row.pics.join(', '):(row?.pic||''),
-                start_date:cleanDateStr(row?.start||row?.startDate),
-                plan_date:cleanDateStr(row?.plan||row?.planDate),
-                actual_date:cleanDateStr(row?.actual||row?.actualDate)||null,
-                usage_time:Math.max(0,Number(row?.usageTime)||0),
+                start_date:startDate,
+                plan_date:planDate,
+                actual_date:actualDate || null,
+                usage_time:Number.isFinite(usage) ? Math.max(0,usage) : 0,
                 discipline:row?.discipline||null,
                 status:row?.status||null,
-                project_id:(row?.projectId!==undefined && row?.projectId!=='' && Number.isFinite(Number(row.projectId)))?Number(row.projectId):null,
-                created_by:createdBy,
-                updated_by:updatedBy,
+                project_id:projectId,
+                // These columns are nullable in public.tasks and must not receive
+                // the numeric public.users.id values used by this application.
+                created_by:null,
+                updated_by:null,
                 saved_at:row?.savedAt||new Date().toISOString()
             };
         }
@@ -6612,17 +6614,24 @@ function setupInlineRequiredValidation(){
 
         async function saveTaskRecordDirect(task) {
             if(!initSupabaseClient()) throw (supabaseInitError || new Error('Supabase client is not available.'));
+            const localId = task?.id;
             const recordId=await findTaskRecordId(task);
             const payload=taskDbPayload(task);
             let result;
-            if(recordId) result=await supabaseClient.from(SUPABASE_TASK_TABLE).update(payload).eq('id',recordId).select('*').single();
-            else result=await supabaseClient.from(SUPABASE_TASK_TABLE).insert(payload).select('*').single();
+            if(recordId) {
+                result=await supabaseClient.from(SUPABASE_TASK_TABLE).update(payload).eq('id',recordId).select('*').single();
+            } else {
+                result=await supabaseClient.from(SUPABASE_TASK_TABLE).insert(payload).select('*').single();
+            }
             if(result.error) throw result.error;
             const mapped=mapDbTaskToApp(result.data);
-            Object.assign(task,mapped);
-            const idx=dailyTasks.findIndex(t=>String(t.id)===String(task.id));
+            const idx=dailyTasks.findIndex(t=>String(t.id)===String(localId));
             if(idx>=0) dailyTasks[idx]=mapped;
-            sheetSyncSnapshots.Tasks=JSON.parse(JSON.stringify(dailyTasks)); lastLocalSaveAt.Tasks=Date.now(); return true;
+            else dailyTasks.unshift(mapped);
+            Object.assign(task,mapped);
+            sheetSyncSnapshots.Tasks=JSON.parse(JSON.stringify(dailyTasks));
+            lastLocalSaveAt.Tasks=Date.now();
+            return true;
         }
 
         async function deleteTaskRecordDirect(task) {
@@ -6678,7 +6687,11 @@ function setupInlineRequiredValidation(){
         async function saveDailyTask(e) {
             e.preventDefault();
             const id = document.getElementById('taskId').value;
-            if (id) { const existing = dailyTasks.find(t=>String(t.id)===String(id)); if (existing && !assertCanEditTask(existing)) return; }
+            if (id) {
+                const existing = dailyTasks.find(t=>String(t.id)===String(id));
+                if (existing && !assertCanEditTask(existing)) return;
+            }
+
             const picsCheckboxes = document.querySelectorAll('.task-pic-checkbox');
             const selectedPics = Array.from(picsCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
             const category = document.getElementById('taskCategory').value.trim();
@@ -6712,60 +6725,61 @@ function setupInlineRequiredValidation(){
 
             const createFingerprint = !id ? makeCreateFingerprint('task',[category,taskName,items,selectedPics.join(','),startDate,planDate,actualDate,usageTime,scope]) : '';
             if(!beginFormSave('taskForm', createFingerprint)) return;
-            try {
-            const existingTask = id ? dailyTasks.find(t=>String(t.id)===String(id)) : null;
-            let newId = existingTask ? existingTask.id : (id ? id : Date.now());
-            if (!existingTask) while (dailyTasks.some(t=>String(t.id)===String(newId))) newId = Number(newId)+1 || `${newId}-1`;
-            let newTask = {
-                id: newId, category, name: taskName, items, scope, priority,
-                pic: selectedPics.join(', '), pics: selectedPics,
-                start: startDate, plan: planDate, actual: actualDate,
-                startDate, planDate, actualDate, usageTime,
-                createdBy: existingTask?.createdBy || currentUser?.name || '',
-                createdAt: existingTask?.createdAt || new Date().toISOString(),
-                savedAt: new Date().toISOString()
-            };
-            if (existingTask && existingTask.projectId !== undefined) newTask.projectId = existingTask.projectId;
-            newTask = calculateTaskMetadata(newTask);
 
-            const idx = id ? dailyTasks.findIndex(t => String(t.id) === String(id)) : -1;
-            if (idx !== -1) dailyTasks[idx] = newTask; else dailyTasks.unshift(newTask);
-
-            // Optimistic UI: show the result immediately, sync in the background.
-            closeTaskModal();
-            applyGlobalFilters();
             try {
-                if(!existingTask) {
-                    // New task: normal batch save keeps the existing import/create workflow.
-                    await saveSheetData('Tasks', dailyTasks);
+                const existingTask = id ? dailyTasks.find(t=>String(t.id)===String(id)) : null;
+                // New tasks must NOT use Date.now() as a database id. public.tasks.id is
+                // an identity column; a temporary client id is used only until INSERT returns.
+                const newId = existingTask ? existingTask.id : `tmp_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+                let newTask = {
+                    id: newId, category, name: taskName, items, scope, priority,
+                    pic: selectedPics.join(', '), pics: selectedPics,
+                    start: startDate, plan: planDate, actual: actualDate,
+                    startDate, planDate, actualDate, usageTime,
+                    createdBy: existingTask?.createdBy || currentUser?.name || '',
+                    createdAt: existingTask?.createdAt || new Date().toISOString(),
+                    savedAt: new Date().toISOString()
+                };
+                if (existingTask && existingTask.projectId !== undefined) newTask.projectId = existingTask.projectId;
+                newTask = calculateTaskMetadata(newTask);
+
+                const idx = id ? dailyTasks.findIndex(t => String(t.id) === String(id)) : -1;
+                if (idx !== -1) dailyTasks[idx] = newTask; else dailyTasks.unshift(newTask);
+                applyGlobalFilters();
+
+                // Save the single task directly. This avoids sending the whole task table
+                // on every new task and guarantees that the identity id is generated by DB.
+                await saveTaskRecordDirect(newTask);
+                closeTaskModal();
+                applyGlobalFilters();
+
+                // Capacity is a secondary calculation. It must never make an otherwise
+                // successful Task insert look like a failed Task save.
+                try {
                     await syncCapacityWorkloadsFromTasks();
-                    try {
-                        await sendPowerAutomateAssignmentNotification({
-                            type: 'task',
-                            creator: newTask.createdBy || currentUser?.name || '',
-                            assignees: selectedPics,
-                            planDate: newTask.planDate || newTask.plan,
-                            recordId: newTask.id,
-                            item: newTask.items,
-                            priority: newTask.priority
-                        });
-                    } catch (notifyErr) {
-                        // Notification failure must not undo a successfully saved task.
-                        console.error('Power Automate task notification error:', notifyErr);
-                    }
-                } else {
-                    // Edit task: update exactly this Supabase record.
-                    await saveTaskRecordDirect(newTask);
-                    await syncCapacityWorkloadsFromTasks();
+                } catch (capacityErr) {
+                    console.error('Capacity sync after task save failed:', capacityErr);
                 }
-                showToast('Task saved');
+
+                try {
+                    await sendPowerAutomateAssignmentNotification({
+                        type: 'task',
+                        creator: newTask.createdBy || currentUser?.name || '',
+                        assignees: selectedPics,
+                        planDate: newTask.planDate || newTask.plan,
+                        recordId: newTask.id,
+                        item: newTask.items,
+                        priority: newTask.priority
+                    });
+                } catch (notifyErr) {
+                    console.error('Power Automate task notification error:', notifyErr);
+                }
+                showToast(existingTask ? 'Task updated' : 'Task saved');
             } catch(err) {
                 forgetCreateFingerprint(createFingerprint);
                 console.error('Task save error:', err);
                 showAppNotification(`Unable to save task. ${err?.message || err || 'Unknown error'}`, 'Save Error');
-                // Reload the authoritative task list so a failed optimistic edit does not leave stale UI.
                 await fetchAllDataFromSheet({background:false});
-            }
             } finally {
                 endFormSave('taskForm');
             }
