@@ -3730,7 +3730,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                     <div><label class="block text-xs font-semibold text-slate-700 mb-1">Assigned PICs</label><div id="taskPICsWrapper" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs min-h-28 overflow-visible"></div></div>
                     <div class="space-y-3"><div><label class="block text-xs font-semibold text-slate-700 mb-1">Start Date</label><input type="date" id="taskStart" required onchange="onTaskStartChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"></div><div><label class="block text-xs font-semibold text-slate-700 mb-1">Plan Date</label><input type="date" id="taskPlan" required onchange="onTaskPlanChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"></div><div><label class="block text-xs font-semibold text-slate-700 mb-1">Actual Date</label><input type="date" id="taskActual" onchange="onTaskActualChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"></div></div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div><label class="block text-xs font-semibold text-slate-700 mb-1">Priority</label><select id="taskPriority" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600"><option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select></div><div><label class="block text-xs font-semibold text-slate-700 mb-1">Total Usage Time (Hour)</label><input type="number" step="any" min="0.000001" inputmode="decimal" id="taskUsageTime" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600 font-bold text-indigo-600"></div><div id="taskScopeWrap"><label class="block text-xs font-semibold text-slate-700 mb-1">Scope <span class="text-rose-500">*</span></label><select id="taskScope" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600"><option value="">-- Select Scope --</option><option value="In BOM's scope">In BOM's scope</option><option value="Out of BOM's scope">Out of BOM's scope</option><option value="RND process">RND process</option><option value="Compliance">Compliance</option><option value="Projects">Projects</option><option value="New Go Tracking">New Go Tracking</option></select></div></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div><label class="block text-xs font-semibold text-slate-700 mb-1">Priority</label><select id="taskPriority" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600"><option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select></div><div><label class="block text-xs font-semibold text-slate-700 mb-1">Total Usage Time (Hour)</label><input type="number" step="any" min="0.000001" inputmode="decimal" id="taskUsageTime" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600 font-bold text-indigo-600"></div><div id="taskScopeWrap"><label class="block text-xs font-semibold text-slate-700 mb-1">Scope <span class="text-rose-500">*</span></label><input id="taskScope" type="text" list="taskScopeOptions" placeholder="Select or type a Scope" oninput="onTaskScopeUserChange()" onchange="onTaskScopeUserChange()" required autocomplete="off" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600"><datalist id="taskScopeOptions"><option value="In BOM's scope"></option><option value="Out of BOM's scope"></option><option value="RND process"></option><option value="Compliance"></option><option value="Projects"></option><option value="New Go Tracking"></option></datalist></div></div>
                 <div class="pt-3 border-t border-slate-100 flex justify-end space-x-3"><button type="button" onclick="closeTaskModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition">Cancel</button><button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-md transition">Save Task</button></div>
             </form>
         </div>
@@ -4443,8 +4443,8 @@ function setupInlineRequiredValidation(){
             return r;
         }
         function taskDbPayload(row){
-            // Keep this payload strictly aligned with public.tasks.
-            // `scope` is an application/UI field but is NOT a column in public.tasks.
+            // Keep this payload aligned with public.tasks, including the user-selected Scope.
+            // Run the SQL migration provided with this file to add public.tasks.scope.
             // created_by / updated_by are nullable UUIDs in the current schema, while
             // the legacy public.users.id used by this app is numeric. Do not send those
             // numeric IDs into UUID columns; they can safely remain NULL.
@@ -4458,6 +4458,7 @@ function setupInlineRequiredValidation(){
                 category:String(row?.category||'').trim(),
                 name:String(row?.name||'').trim(),
                 items:row?.items==null?'':String(row.items),
+                scope:String(row?.scope||'').trim(),
                 priority:normalizeTaskPriority(row?.priority||'Medium') || 'Medium',
                 pic:Array.isArray(row?.pics)?row.pics.join(', '):(row?.pic||''),
                 start_date:startDate,
@@ -6296,25 +6297,38 @@ function setupInlineRequiredValidation(){
             if (select.value === '__OTHER_NEW__') return document.getElementById('taskNameOther').value.trim();
             return (document.getElementById('taskNameSearch')?.value || select.value || '').trim();
         }
+        // Scope from Category Setup is only a suggestion. Once the user manually
+        // chooses a Scope, category/task changes must not overwrite that choice.
+        let taskScopeUserChanged = false;
+        function onTaskScopeUserChange(){
+            taskScopeUserChanged = true;
+            const field=document.getElementById('taskScope');
+            const options=document.getElementById('taskScopeOptions');
+            const value=String(field?.value||'').trim();
+            if(value && options && !Array.from(options.options).some(o=>String(o.value).trim()===value)) options.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(value)}"></option>`);
+        }
         function updateTaskScopeSuggestion(preserveExplicit=false){
             const wrap=document.getElementById('taskScopeWrap'), select=document.getElementById('taskScope');
             if(!wrap||!select)return;
             const category=String(document.getElementById('taskCategory')?.value||'').trim();
             const taskName=getSelectedTaskName();
-            const isOther=category.toLowerCase()==='other';
+            // Keep standard and Category Setup scopes available as suggestions, while
+            // allowing any custom scope to be typed into the field.
+            const scopeOptions=document.getElementById('taskScopeOptions');
+            if(scopeOptions){
+                const known=["In BOM's scope","Out of BOM's scope","RND process","Compliance","Projects","New Go Tracking",...capacityData.map(c=>String(c.scope||'').trim())];
+                const current=String(select.value||'').trim();
+                if(current) known.push(current);
+                scopeOptions.innerHTML=[...new Set(known.filter(Boolean))].map(v=>`<option value="${escapeHtml(v)}"></option>`).join('');
+            }
             wrap.classList.remove('hidden');
             select.required=true;
-            if(isOther){
-                if(!preserveExplicit) select.value='';
-                return;
-            }
+            // Preserve a deliberate user choice, including when it differs from
+            // the Category Setup mapping. Existing task values are preserved too.
+            if(taskScopeUserChanged || (preserveExplicit && String(select.value||'').trim())) return;
             const match=capacityData.find(c=>normalizeWorkloadKey(c.category)===normalizeWorkloadKey(category)&&normalizeWorkloadKey(c.task)===normalizeWorkloadKey(taskName));
             const suggested=String(match?.scope||'').trim();
-            if(suggested) {
-                if(!preserveExplicit || !String(select.value||'').trim()) select.value=suggested;
-            } else if(!preserveExplicit) {
-                select.value='';
-            }
+            select.value=suggested;
         }
         function updateTaskScopeField(){ updateTaskScopeSuggestion(false); }
 
@@ -6675,7 +6689,7 @@ function setupInlineRequiredValidation(){
             document.getElementById('taskNameOther').value = '';
             document.getElementById('taskNameOther').classList.add('hidden');
             document.getElementById('taskNameOther').required = false;
-            const taskScope=document.getElementById('taskScope'); if(taskScope) taskScope.value='';
+            const taskScope=document.getElementById('taskScope'); taskScopeUserChanged=false; if(taskScope) taskScope.value='';
             updateTaskScopeField();
             document.getElementById('taskModal').classList.remove('opacity-0', 'pointer-events-none');
             document.body.classList.add('modal-active');
