@@ -6796,6 +6796,12 @@ function setupInlineRequiredValidation(){
 
                     dailyTasks=[...imported,...dailyTasks];
                     await saveSheetData('Tasks',dailyTasks);
+                    // Re-read the authoritative Supabase rows so newly inserted tasks use their
+                    // database identity and are not left in the UI with temporary client IDs.
+                    if(typeof fetchAllDataFromSheet==='function'){
+                        const refreshed=await fetchAllDataFromSheet({background:false});
+                        if(refreshed===false) throw new Error('Tasks were submitted but Supabase refresh failed. Please check the database connection and try again.');
+                    }
                     await syncCapacityWorkloadsFromTasks();
                     applyGlobalFilters();
                     showAppNotification(`${imported.length} task(s) imported and synchronized. Status & Discipline were auto-calculated.`);
@@ -8595,7 +8601,14 @@ function setupInlineRequiredValidation(){
                         expandedProjectRows.add(String(incoming.id));
                     });
                     showProjectImportProgress(98,100,'Saving imported projects...');
-                    await saveSheetData('Projects',projectsList);
+                    const projectSaveResult=await saveSheetData('Projects',projectsList);
+                    if(projectSaveResult===false) throw new Error('Supabase did not save the imported projects. Check access permissions and database policies.');
+                    // Refresh project/phase/task rows from Supabase so the view reflects
+                    // the persisted relational records and their database IDs.
+                    if(typeof fetchAllDataFromSheet==='function'){
+                        const refreshed=await fetchAllDataFromSheet({background:false});
+                        if(refreshed===false) throw new Error('Projects were submitted but Supabase refresh failed. Please check the database connection and try again.');
+                    }
                     showProjectImportProgress(100,100,'Import completed.');
                     renderProjectsTable();
                     renderGanttChart();
