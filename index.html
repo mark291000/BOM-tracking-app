@@ -2649,6 +2649,8 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
 #tab-projects .pm-ref-project-table .pm-ref-drag-handle{cursor:grab!important;user-select:none!important;-webkit-user-drag:element!important;touch-action:none!important}
 #tab-projects .pm-ref-project-table .pm-ref-drag-handle:active{cursor:grabbing!important}
 </style>
+
+<style id="projectDirectEntryStyles">#tab-projects .pm-project-direct-edit{display:block;width:100%;min-width:64px;min-height:28px;padding:4px 5px;border:1px solid #cbdde9;border-radius:5px;background:#fff;color:#183b5b;font-size:11px;box-sizing:border-box}#tab-projects .pm-project-direct-edit:focus{outline:2px solid #78b7e4;border-color:#3b82b8}#tab-projects .pm-project-direct-edit:disabled{background:#f1f5f9;color:#64748b;cursor:not-allowed}#tab-projects td.pm-project-detail-cell .pm-project-direct-edit{min-width:120px}</style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased h-screen flex overflow-hidden">
 
@@ -3851,10 +3853,11 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="md:col-span-1"><label class="block text-xs font-semibold text-slate-700 mb-1">Gain Demand</label><input type="text" id="projectGainDemand" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600" placeholder="Productivity / Cost / Quality..."></div>
+                    <div class="md:col-span-1"><label class="block text-xs font-semibold text-slate-700 mb-1">Gain Demand</label><input type="number" step="any" id="projectGainDemand" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600" placeholder="Gain Demand per week..."></div>
                     <div><label class="block text-xs font-semibold text-slate-700 mb-1">Estimated Saving ($)</label><input type="number" step="0.01" id="projectSaving" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"></div>
                     <div><label class="block text-xs font-semibold text-slate-700 mb-1">Actual Saving ($)</label><input type="number" step="0.01" id="projectActualSaving" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"></div>
                 </div>
+                <div><label class="block text-xs font-semibold text-slate-700 mb-1">Detailed Status</label><textarea id="projectDetailedStatus" rows="2" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600" placeholder="Enter detailed project status..."></textarea></div>
                 <div><label class="block text-xs font-semibold text-slate-700 mb-1">Note</label><textarea id="projectNote" rows="2" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none" placeholder="Project-level note..."></textarea></div>
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3"><div class="text-[10px] text-slate-400"><i class="fa-solid fa-circle-info mr-1"></i>Use Add Phase and Add Task to build the project structure.</div><div class="flex space-x-3"><button type="button" onclick="closeProjectModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition">Cancel</button><button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-md transition"><i class="fa-solid fa-floppy-disk mr-1"></i> Save Project</button></div></div>
             </form>
@@ -4167,7 +4170,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
         function getProjectMetaFromStorage(hoursUsed){
             const raw=(hoursUsed&&typeof hoursUsed==='object')?hoursUsed:{};
             const meta=(raw.__projectMeta&&typeof raw.__projectMeta==='object')?raw.__projectMeta:{};
-            return {gainDemand:String(meta.gainDemand||''),phases:Array.isArray(meta.phases)?meta.phases:[],tasks:Array.isArray(meta.tasks)?meta.tasks:[]};
+            return {gainDemand:meta.gainDemand??'',detailedStatus:String(meta.detailedStatus??''),phases:Array.isArray(meta.phases)?meta.phases:[],tasks:Array.isArray(meta.tasks)?meta.tasks:[]};
         }
         let projectBuilderIdCounter=0;
         function projectBuilderId(type){
@@ -4182,7 +4185,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                 tasks:(Array.isArray(ph?.tasks)?ph.tasks:[]).map((t,ti)=>({...t,sortOrder:ti}))
             }));
             const directTasks=(Array.isArray(project?.tasks)?project.tasks:[]).map((t,ti)=>({...t,sortOrder:ti}));
-            raw.__projectMeta={gainDemand:String(project?.gainDemand||''),phases,tasks:directTasks};
+            raw.__projectMeta={gainDemand:project?.gainDemand??'',detailedStatus:String(project?.detailedStatus??''),phases,tasks:directTasks};
             return raw;
         }
 
@@ -4252,7 +4255,7 @@ function normalizeProjectTasks(tasks,project){
             const owners=Array.isArray(r?.owners)?r.owners:(r?.owner?String(r.owner).split(',').map(x=>x.trim()).filter(Boolean):[]);
             const hoursUsed=(r?.hours_used&&typeof r.hours_used==='object')?r.hours_used:{};
             const meta=getProjectMetaFromStorage(hoursUsed);
-            const project={ id:r?.id, name:r?.name||'', owner:r?.owner||owners.join(', '), owners, scope:r?.scope||'Projects', detail:r?.detail||'', status:r?.status||'Working on it', progress:Number(r?.progress||0), startDate:cleanDateStr(r?.start_date), dueDate:cleanDateStr(r?.due_date), actualDate:cleanDateStr(r?.actual_date), priority:Number(r?.priority||3), gainDemand:r?.gain_demand??meta.gainDemand, phases:meta.phases, tasks:meta.tasks, saving:r?.saving??0, actualSaving:r?.actual_saving??'', note:r?.note||'', hoursUsed, createdAt:r?.created_at||'', updatedAt:r?.updated_at||'' };
+            const project={ id:r?.id, name:r?.name||'', owner:r?.owner||owners.join(', '), owners, scope:r?.scope||'Projects', detail:r?.detail||'', status:r?.status||'Working on it', progress:Number(r?.progress||0), startDate:cleanDateStr(r?.start_date), dueDate:cleanDateStr(r?.due_date), actualDate:cleanDateStr(r?.actual_date), priority:Number(r?.priority||3), gainDemand:r?.gain_demand??meta.gainDemand, detailedStatus:meta.detailedStatus||'', phases:meta.phases, tasks:meta.tasks, saving:r?.saving??0, actualSaving:r?.actual_saving??'', note:r?.note||'', hoursUsed, createdAt:r?.created_at||'', updatedAt:r?.updated_at||'' };
             project.phases=normalizeProjectPhases(project.phases,project);
             return project;
         }
@@ -7615,6 +7618,15 @@ function setupInlineRequiredValidation(){
             if(details.length===1) return details[0].detail;
             return details.map((x,i)=>`${i+1}. ${x.name ? x.name+': ' : ''}${x.detail}`).join('\n');
         }
+        function projectRowDetailedStatus(project){
+            const own=String(project?.detailedStatus||'').trim();
+            const child=projectIncompleteTaskDetails(project);
+            const parts=[];
+            if(own) parts.push(own);
+            if(child && child!=='Completed' && child!==own) parts.push(child);
+            if(!parts.length && child==='Completed') return 'Completed';
+            return parts.join('\n');
+        }
         function projectDetailedStatusHtml(value){
             const v=String(value||'').trim();
             if(!v) return '<span class="pm-ref-empty">-</span>';
@@ -7628,7 +7640,7 @@ function setupInlineRequiredValidation(){
             const row=document.querySelector(`#projectsTableBody .pm-ref-project-data-row[data-project-id="${CSS.escape(String(projectId))}"]`);
             if(!row)return;
             const cell=row.querySelector('.pm-project-detail-cell');
-            if(cell)cell.innerHTML=projectDetailedStatusHtml(projectIncompleteTaskDetails(p));
+            if(cell)cell.innerHTML=projectDetailedStatusHtml(projectRowDetailedStatus(p));
         }
         function updateProjectInlineTaskDetailRealtime(projectId,phaseIndex,taskIndex,value){
             const p=projectsList.find(x=>String(x.id)===String(projectId));
@@ -7804,6 +7816,45 @@ function setupInlineRequiredValidation(){
 
         function projectRefDate(value){
             return formatDateMMDDYYYY(cleanDateStr(value)) || '-';
+        }
+
+        // Projects without child tasks store their schedule and savings directly on the project row.
+        function projectDirectEditCell(project, field, type='text', placeholder=''){
+            const id=String(project?.id??'');
+            const value=project?.[field]??'';
+            const readOnly=!!currentUser?.isReadOnly;
+            const cls=type==='date'?'pm-ref-input pm-ref-date pm-project-direct-edit':'pm-ref-input pm-project-direct-edit';
+            const inputType=type==='date'?'date':(type==='number'?'number':'text');
+            const extra=type==='number'?' step=\"any\"':'';
+            return `<input type=\"${inputType}\" class=\"${cls}\" value=\"${escapeHtml(value)}\" placeholder=\"${escapeHtml(placeholder)}\" aria-label=\"${escapeHtml(field)}\" ${readOnly?'disabled':''}${extra} onchange=\"updateProjectDirectField('${id}','${field}',this.value)\">`;
+        }
+        async function updateProjectDirectField(projectId, field, value){
+            if(currentUser?.isReadOnly){showToast('Viewer mode is read-only');return;}
+            const p=projectsList.find(x=>String(x.id)===String(projectId));
+            if(!p)return;
+            const allowed=['startDate','dueDate','actualDate','gainDemand','saving','actualSaving','detailedStatus'];
+            if(!allowed.includes(field))return;
+            const oldValue=p[field];
+            let next=value;
+            if(['startDate','dueDate','actualDate'].includes(field))next=cleanDateStr(value);
+            if(['saving','actualSaving','gainDemand'].includes(field)){
+                if(String(value??'').trim()==='') next='';
+                else {
+                    const parsed=Number(String(value).replace(/[$€£¥,\s]/g,''));
+                    if(!Number.isFinite(parsed)){showToast('Please enter a valid number');renderProjectsTable();return;}
+                    next=parsed;
+                }
+            }
+            if(field==='startDate' && p.dueDate && next && next>=p.dueDate){showToast('Plan date must be later than Start date');renderProjectsTable();return;}
+            if(field==='dueDate' && p.startDate && next && next<=p.startDate){showToast('Plan date must be later than Start date');renderProjectsTable();return;}
+            if(field==='actualDate' && next && ((p.startDate&&next<p.startDate)||(p.dueDate&&next>p.dueDate))){showToast('Actual date must be between Start and Plan dates');renderProjectsTable();return;}
+            p[field]=next;
+            try{
+                p.hoursUsed=buildProjectStorageHours(p);
+                await saveSheetData('Projects',projectsList);
+                renderProjectsTable();renderGanttChart();updateDashboardCharts();
+                showToast('Project updated successfully');
+            }catch(err){p[field]=oldValue;console.error(err);renderProjectsTable();showToast('Unable to save project change');}
         }
 
         function projectRefTextInput(value, cls, onChange, placeholder=''){
@@ -8329,7 +8380,7 @@ function setupInlineRequiredValidation(){
                 if(!projectMatchesSearch(p))return;
 
                 const projectTotals=projectAggregateSummary(p);
-                const projectItem={projectName:p.name,phaseName:'',name:p.name,owner:projectOwnerText(p),startDate:p.startDate,dueDate:p.dueDate,actualDate:p.actualDate,gainDemand:projectTotals.gainDemand,estSaving:projectTotals.saving,actualSaving:projectTotals.actualSaving,detail:'',status:p.status,note:p.note};
+                const projectItem={projectName:p.name,phaseName:'',name:p.name,owner:projectOwnerText(p),startDate:p.startDate,dueDate:p.dueDate,actualDate:p.actualDate,gainDemand:projectTotals.gainDemand,estSaving:projectTotals.saving,actualSaving:projectTotals.actualSaving,detail:projectRowDetailedStatus(p),status:p.status,note:p.note};
                 const anyTask=(p.tasks||[]).some(t=>projectFilterMatch({...t,projectName:p.name,phaseName:''}));
                 const anyPhase=(p.phases||[]).some(ph=>{const sum=projectPhaseSummary(ph,p);return projectFilterMatch({projectName:p.name,phaseName:ph.name,name:ph.name,owner:sum.owner,startDate:sum.startDate,dueDate:sum.dueDate,actualDate:sum.actualDate,gainDemand:sum.gainDemand,estSaving:sum.saving,actualSaving:sum.actualSaving,detail:sum.detail,status:sum.status,note:sum.note});});
                 if(Object.keys(projectHeaderFilters).length && !projectFilterMatch(projectItem) && !anyTask && !anyPhase)return;
@@ -8338,6 +8389,8 @@ function setupInlineRequiredValidation(){
                 const phases=p.phases||[];
                 const taskCount=phases.reduce((n,ph)=>n+(ph.tasks||[]).length,0)+(p.tasks||[]).length;
                 const phaseCount=phases.length;
+                const hasSmallTasks=taskCount>0;
+                const rowTotals=hasSmallTasks?projectTotals:{gainDemand:p.gainDemand,saving:p.saving,actualSaving:p.actualSaving};
                 const expanded=expandedProjectRows.has(String(p.id));
                 const owners=projectOwnerText(p);
 
@@ -8346,9 +8399,9 @@ function setupInlineRequiredValidation(){
                     <td class="pm-ref-no pm-project-no-cell" onclick="toggleProjectRowExpand('${pid}')"><span class="pm-ref-project-index">${projectIndex+1}</span></td>
                     <td colspan="2" class="pm-project-name-cell"><div class="pm-project-name-actions-wrap"><div class="pm-project-name-stack"><button type="button" class="pm-project-name-button" onclick="toggleProjectRowExpand('${pid}')" title="Expand / collapse project">${escapeHtml(p.name||'Unnamed Project')}</button><div class="pm-project-inline-detail">${escapeHtml(p.detail||'')}</div></div><button type="button" class="pm-project-more-btn" onclick="toggleProjectRowMenu(event,'${pid}')" title="Project actions" aria-label="Project actions"><i class="fa-solid fa-ellipsis"></i></button><div class="pm-project-row-menu" data-project-menu="${escapeHtml(String(p.id))}"><button type="button" onclick="openAddProjectModal('${pid}');closeProjectRowMenus()"><i class="fa-solid fa-pen"></i><span>Edit</span></button><button type="button" class="danger" onclick="deleteProject('${pid}');closeProjectRowMenus()"><i class="fa-solid fa-trash"></i><span>Delete</span></button></div></div></td>
                     <td class="pm-project-owner-cell"><span>${escapeHtml(owners||'-')}</span></td>
-                    <td>${projectRefDate(p.startDate)}</td><td>${projectRefDate(p.dueDate)}</td><td>${projectRefDate(p.actualDate)}</td>
-                    <td class="pm-ref-number">${projectNumber(projectTotals.gainDemand)||'-'}</td><td class="pm-ref-money">${projectMoney(projectTotals.saving)||'-'}</td><td class="pm-ref-money">${projectMoney(projectTotals.actualSaving)||'-'}</td>
-                    <td class="pm-project-detail-cell">${projectDetailedStatusHtml(projectDetailList)}</td>
+                    <td>${escapeHtml(projectRefDate(p.startDate))}</td><td>${escapeHtml(projectRefDate(p.dueDate))}</td><td>${escapeHtml(projectRefDate(p.actualDate))}</td>
+                    <td class="pm-ref-number">${escapeHtml(p.gainDemand===0?'0':(p.gainDemand??'-'))}</td><td class="pm-ref-money">${escapeHtml(p.saving===0?'0':(p.saving??'-'))}</td><td class="pm-ref-money">${escapeHtml(p.actualSaving===0?'0':(p.actualSaving??'-'))}</td>
+                    <td class="pm-project-detail-cell">${projectDetailedStatusHtml(projectRowDetailedStatus(p))}</td>
                     <td>${projectOverallBadge(p.status,false,'')}</td>
                     <td><span>${escapeHtml(p.note||'')}</span></td>
                 </tr>`;
@@ -9085,16 +9138,19 @@ function setupInlineRequiredValidation(){
                     document.getElementById('projectStartDate').value=cleanDateStr(p.startDate);
                     document.getElementById('projectDueDate').value=cleanDateStr(p.dueDate);
                     document.getElementById('projectActualDate').value=cleanDateStr(p.actualDate);
-                    document.getElementById('projectGainDemand').value=p.gainDemand||'';
+                    document.getElementById('projectGainDemand').value=p.gainDemand??'';
+                    document.getElementById('projectDetailedStatus').value=p.detailedStatus||'';
                     document.getElementById('projectSaving').value=p.saving||'';
                     document.getElementById('projectActualSaving').value=p.actualSaving||'';
                     document.getElementById('projectNote').value=p.note||'';
+                    const submitBtn=document.querySelector('#projectForm button[type="submit"]');if(submitBtn)submitBtn.innerHTML='<i class="fa-solid fa-check mr-1"></i> Update';
                     const ownersArr=Array.isArray(p.owners)?p.owners:(p.owner?[p.owner]:[]);
                     document.querySelectorAll('.project-pic-checkbox').forEach(cb=>cb.checked=ownersArr.includes(cb.value));
                 }
             }else{
                 if(title)title.textContent='Create Project';
                 document.getElementById('projectForm').reset();document.getElementById('projectId').value='';
+                const submitBtn=document.querySelector('#projectForm button[type="submit"]');if(submitBtn)submitBtn.innerHTML='<i class="fa-solid fa-floppy-disk mr-1"></i> Save Project';
                 document.querySelectorAll('.project-pic-checkbox').forEach(cb=>cb.checked=currentUser&&cb.value===currentUser.name);
             }
             document.getElementById('projectModal').classList.remove('opacity-0','pointer-events-none');document.body.classList.add('modal-active');
@@ -9113,7 +9169,7 @@ function setupInlineRequiredValidation(){
             const createFingerprint=!id?makeCreateFingerprint('project',[projectName,projectStartDate,projectDueDate,owners.join(',')]):'';if(!beginFormSave('projectForm',createFingerprint))return;
             try{
                 const existingProject=id?projectsList.find(p=>p.id==id):null;
-                const proj={id:id?parseInt(id):Date.now(),name:projectName,scope:existingProject?.scope||'Projects',detail:document.getElementById('projectDetail').value.trim(),owners,status:existingProject?.status||'Not Started',progress:existingProject?.progress||0,startDate:projectStartDate,dueDate:projectDueDate,actualDate:projectActualDate,priority:existingProject?.priority||3,gainDemand:document.getElementById('projectGainDemand').value.trim(),saving:parseFloat(document.getElementById('projectSaving').value||0),actualSaving:document.getElementById('projectActualSaving').value===''?'':parseFloat(document.getElementById('projectActualSaving').value||0),note:document.getElementById('projectNote').value.trim(),hoursUsed:existingProject?.hoursUsed&&typeof existingProject.hoursUsed==='object'?existingProject.hoursUsed:{},tasks:normalizeProjectTasks(existingProject?.tasks||[],{startDate:projectStartDate,dueDate:projectDueDate}),phases:normalizeProjectPhases(existingProject?.phases||[],{startDate:projectStartDate,dueDate:projectDueDate}),createdBy:existingProject?.createdBy||currentUser?.name||'',createdAt:existingProject?.createdAt||new Date().toISOString()};
+                const proj={id:id?parseInt(id):Date.now(),name:projectName,scope:existingProject?.scope||'Projects',detail:document.getElementById('projectDetail').value.trim(),owners,status:existingProject?.status||'Not Started',progress:existingProject?.progress||0,startDate:projectStartDate,dueDate:projectDueDate,actualDate:projectActualDate,priority:existingProject?.priority||3,gainDemand:document.getElementById('projectGainDemand').value===''?'':Number(document.getElementById('projectGainDemand').value),saving:document.getElementById('projectSaving').value===''?'':Number(document.getElementById('projectSaving').value),actualSaving:document.getElementById('projectActualSaving').value===''?'':Number(document.getElementById('projectActualSaving').value),detailedStatus:document.getElementById('projectDetailedStatus').value.trim(),note:document.getElementById('projectNote').value.trim(),hoursUsed:existingProject?.hoursUsed&&typeof existingProject.hoursUsed==='object'?existingProject.hoursUsed:{},tasks:normalizeProjectTasks(existingProject?.tasks||[],{startDate:projectStartDate,dueDate:projectDueDate}),phases:normalizeProjectPhases(existingProject?.phases||[],{startDate:projectStartDate,dueDate:projectDueDate}),createdBy:existingProject?.createdBy||currentUser?.name||'',createdAt:existingProject?.createdAt||new Date().toISOString()};
                 proj.hoursUsed=buildProjectStorageHours(proj);
                 if(id){const idx=projectsList.findIndex(p=>p.id==id);if(idx!==-1)projectsList[idx]=proj;}else projectsList.unshift(proj);
                 await saveSheetData('Projects',projectsList);
@@ -10641,7 +10697,9 @@ function buildRelationalProjects(projectRows,phaseRows,taskRows){
  (taskRows||[]).forEach(r=>{const t=mapTask(r);if(t.phaseId==null){const a=direct.get(String(r.project_id))||[];a.push(t);direct.set(String(r.project_id),a);}else{const k=String(r.project_id)+'::'+String(r.phase_id);const a=tasksByPhase.get(k)||[];a.push(t);tasksByPhase.set(k,a);}});
  return (projectRows||[]).map(r=>{
   const owners=Array.isArray(r?.owners)?r.owners:(r?.owner?String(r.owner).split(',').map(x=>x.trim()).filter(Boolean):[]);
-  const p={id:r.id,name:r.name||'',owner:r.owner||owners.join(', '),owners,scope:r.scope||'Projects',detail:r.detail||'',status:r.status||'Not Started',progress:Number(r.progress||0),startDate:dateOrNull(r.start_date),dueDate:dateOrNull(r.due_date),actualDate:dateOrNull(r.actual_date),priority:Number(r.priority||3),gainDemand:r.gain_demand??'',phases:[],tasks:(direct.get(String(r.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder),saving:r.saving??0,actualSaving:r.actual_saving??'',note:r.note||'',hoursUsed:(r.hours_used&&typeof r.hours_used==='object')?r.hours_used:{},createdAt:r.created_at||'',updatedAt:r.updated_at||''};
+  const hoursUsed=(r.hours_used&&typeof r.hours_used==='object')?r.hours_used:{};
+  const projectMeta=hoursUsed.__projectMeta&&typeof hoursUsed.__projectMeta==='object'?hoursUsed.__projectMeta:{};
+  const p={id:r.id,name:r.name||'',owner:r.owner||owners.join(', '),owners,scope:r.scope||'Projects',detail:r.detail||'',status:r.status||'Not Started',progress:Number(r.progress||0),startDate:dateOrNull(r.start_date),dueDate:dateOrNull(r.due_date),actualDate:dateOrNull(r.actual_date),priority:Number(r.priority||3),gainDemand:r.gain_demand??projectMeta.gainDemand??'',detailedStatus:String(projectMeta.detailedStatus??''),phases:[],tasks:(direct.get(String(r.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder),saving:r.saving??0,actualSaving:r.actual_saving??'',note:r.note||'',hoursUsed,createdAt:r.created_at||'',updatedAt:r.updated_at||''};
   p.phases=(phasesByProject.get(String(r.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder);
   p.phases.forEach(ph=>{ph.tasks=(tasksByPhase.get(String(r.id)+'::'+String(ph.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder);const d=phaseDates(ph);ph.startDate=d.startDate;ph.dueDate=d.dueDate;ph.actualDate=d.actualDate;});
   syncProjectOverallStatus(p);return p;
@@ -10725,12 +10783,22 @@ dbPayloadForSheet=function(sheetName,row){
  return _baseDbPayloadForSheet(sheetName,row);
 };
 
-/* Keep only YYYY-MM-DD keys in hours_used. */
+/* Preserve project metadata inside hours_used alongside daily hour entries.
+   Detailed Status has no dedicated Projects column in the current schema, so it
+   must travel in __projectMeta or it is lost on every save/reload. */
 buildProjectStorageHours=function(project){
  const raw=project?.hoursUsed&&typeof project.hoursUsed==='object'?project.hoursUsed:{};const clean={};
- Object.entries(raw).forEach(([k,v])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(k)){const n=Number(v);if(Number.isFinite(n)&&n>0)clean[k]=n;}});return clean;
+ Object.entries(raw).forEach(([k,v])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(k)){const n=Number(v);if(Number.isFinite(n)&&n>0)clean[k]=n;}});
+ const oldMeta=raw.__projectMeta&&typeof raw.__projectMeta==='object'?raw.__projectMeta:{};
+ const phases=(Array.isArray(project?.phases)?project.phases:(Array.isArray(oldMeta.phases)?oldMeta.phases:[])).map((ph,pi)=>({...ph,sortOrder:pi,tasks:(Array.isArray(ph?.tasks)?ph.tasks:[]).map((t,ti)=>({...t,sortOrder:ti}))}));
+ const tasks=(Array.isArray(project?.tasks)?project.tasks:(Array.isArray(oldMeta.tasks)?oldMeta.tasks:[])).map((t,ti)=>({...t,sortOrder:ti}));
+ clean.__projectMeta={...oldMeta,gainDemand:project?.gainDemand??oldMeta.gainDemand??'',detailedStatus:String(project?.detailedStatus??oldMeta.detailedStatus??''),phases,tasks};
+ return clean;
 };
-getProjectMetaFromStorage=function(){return {gainDemand:'',phases:[],tasks:[]};};
+getProjectMetaFromStorage=function(hoursUsed){
+ const raw=hoursUsed&&typeof hoursUsed==='object'?hoursUsed:{};const meta=raw.__projectMeta&&typeof raw.__projectMeta==='object'?raw.__projectMeta:{};
+ return {gainDemand:meta.gainDemand??'',detailedStatus:String(meta.detailedStatus??''),phases:Array.isArray(meta.phases)?meta.phases:[],tasks:Array.isArray(meta.tasks)?meta.tasks:[]};
+};
 
 window._originalRunSheetSave = window._originalRunSheetSave || runSheetSave;
 runSheetSave=async function(sheetName){
@@ -10768,8 +10836,15 @@ addProjectInlineTask=async function(projectId,phaseIndex,name){
 saveProject=async function(e){
  e.preventDefault();const id=document.getElementById('projectId').value;const owners=Array.from(document.querySelectorAll('.project-pic-checkbox')).filter(cb=>cb.checked).map(cb=>cb.value);const name=document.getElementById('projectName').value.trim();
  if(!name){validateRequiredFormFields(document.getElementById('projectForm'));return;}
- const existing=id?projectsList.find(p=>String(p.id)===String(id)):null;const p={...(existing||{}),id:id?Number(id):undefined,name,scope:existing?.scope||'Projects',detail:document.getElementById('projectDetail').value.trim(),owners,owner:owners.join(', '),status:existing?.status||'Not Started',progress:existing?.progress||0,startDate:dateOrNull(document.getElementById('projectStartDate').value),dueDate:dateOrNull(document.getElementById('projectDueDate').value),actualDate:dateOrNull(document.getElementById('projectActualDate').value),gainDemand:document.getElementById('projectGainDemand').value.trim(),saving:numOrNull(document.getElementById('projectSaving').value),actualSaving:numOrNull(document.getElementById('projectActualSaving').value),note:document.getElementById('projectNote').value.trim(),hoursUsed:existing?.hoursUsed||{},phases:existing?.phases||[],tasks:existing?.tasks||[]};
- if(p.startDate&&p.dueDate&&p.dueDate<p.startDate){showToast('Planned Completion must be later than Start');return;}
+ const existing=id?projectsList.find(p=>String(p.id)===String(id)):null;
+ const startDate=dateOrNull(document.getElementById('projectStartDate').value),dueDate=dateOrNull(document.getElementById('projectDueDate').value),actualDate=dateOrNull(document.getElementById('projectActualDate').value);
+ const numberField=(field)=>{const raw=document.getElementById(field).value;if(String(raw).trim()==='')return '';const n=Number(raw);return Number.isFinite(n)?n:NaN;};
+ const gainDemand=numberField('projectGainDemand'),saving=numberField('projectSaving'),actualSaving=numberField('projectActualSaving');
+ if([gainDemand,saving,actualSaving].some(v=>typeof v==='number'&&!Number.isFinite(v))){showToast('Please enter valid numeric values');return;}
+ if(startDate&&dueDate&&dueDate<=startDate){showToast('Plan date must be later than Start date');return;}
+ if(actualDate&&((startDate&&actualDate<startDate)||(dueDate&&actualDate>dueDate))){showToast('Actual date must be between Start and Plan dates');return;}
+ const p={...(existing||{}),id:id?Number(id):undefined,name,scope:existing?.scope||'Projects',detail:document.getElementById('projectDetail').value.trim(),owners,owner:owners.join(', '),status:existing?.status||'Not Started',progress:existing?.progress||0,startDate,dueDate,actualDate,gainDemand,saving,actualSaving,detailedStatus:document.getElementById('projectDetailedStatus').value.trim(),note:document.getElementById('projectNote').value.trim(),hoursUsed:existing?.hoursUsed&&typeof existing.hoursUsed==='object'?existing.hoursUsed:{},phases:existing?.phases||[],tasks:existing?.tasks||[]};
+ p.hoursUsed=buildProjectStorageHours(p);
  if(id){const i=projectsList.findIndex(x=>String(x.id)===String(id));if(i>=0)projectsList[i]=p;}else projectsList.unshift(p);
  try{await saveSheetData('Projects',projectsList);closeProjectModal();renderProjectsTable();renderGanttChart();updateDashboardCharts();showAppNotification(id?'Project updated successfully.':'Project created successfully.');}catch(err){showAppNotification(`Unable to save project. ${err.message||err}`,'Save Error');}
 };
@@ -13034,6 +13109,8 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
       gainDemand:String(document.getElementById('projectGainDemand')?.value||'').trim(),
       saving:v52Number(document.getElementById('projectSaving')?.value),
       actualSaving:v52Number(document.getElementById('projectActualSaving')?.value),
+      // Keep project-level Detailed Status from both Create and Edit forms.
+      detailedStatus:String(document.getElementById('projectDetailedStatus')?.value||'').trim(),
       note:String(document.getElementById('projectNote')?.value||'').trim(),
       status:existing?.status||'Not Started',
       progress:existing?.progress||0,
@@ -13106,6 +13183,12 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
       mapped.phases=project.phases;
       mapped.tasks=project.tasks;
       mapped.hoursUsed=project.hoursUsed;
+      // The returned DB mapping is authoritative for other fields, but make sure
+      // the form value remains visible immediately after save as well.
+      mapped.detailedStatus=String(project.detailedStatus||'');
+      mapped.hoursUsed=typeof buildProjectStorageHours==='function'
+        ? buildProjectStorageHours({...mapped,detailedStatus:mapped.detailedStatus})
+        : project.hoursUsed;
       mapped.saving=v52Number(result.data?.saving);
       mapped.actualSaving=v52Number(result.data?.actual_saving);
       mapped.status=project.status;
