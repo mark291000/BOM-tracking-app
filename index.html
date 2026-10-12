@@ -13383,21 +13383,46 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
       .reduce((sum,p)=>sum+Number(window.calcProjectEffectiveSaving(p)||0),0);
   };
 
+  window.calcBomOvertimeHours=function(){
+    const list=Array.isArray(window.timeoffOtList)?window.timeoffOtList:(Array.isArray(timeoffOtList)?timeoffOtList:[]);
+    const state=typeof bomTopFilterState!=='undefined'?bomTopFilterState:null;
+    const selectedMembers=state&&state.Member instanceof Set?[...state.Member].map(v=>String(v).trim().toLowerCase()).filter(Boolean):[];
+    const years=state&&state.Year instanceof Set?state.Year.size:0;
+    const months=state&&state.Month instanceof Set?state.Month.size:0;
+    const weeks=state&&state.Week instanceof Set?state.Week.size:0;
+    // No date selection means all overtime records, even if their dates are outside task dates.
+    const hasDateFilter=years+months+weeks>0;
+    const range=hasDateFilter&&typeof getDashboardPeriodRange==='function'?getDashboardPeriodRange():null;
+    const toDate=v=>{
+      if(typeof cleanDateStr==='function') return cleanDateStr(v);
+      const d=String(v??'').trim();
+      return /^\d{4}-\d{2}-\d{2}$/.test(d)?d:'';
+    };
+    return list.reduce((sum,x)=>{
+      const type=String(x?.type??x?.request_type??'').trim().toLowerCase().replace(/[\s_-]+/g,'');
+      if(type!=='overtime') return sum;
+      const pic=String(x?.pic??x?.PIC??'').trim().toLowerCase();
+      if(selectedMembers.length&&!selectedMembers.includes(pic)) return sum;
+      const raw=String(x?.hours??x?.total_hours??0).trim().replace(',','.');
+      const hours=Number.parseFloat(raw);
+      if(!Number.isFinite(hours)||hours<=0) return sum;
+      if(!range||!range.start||!range.end) return sum+hours;
+      const start=toDate(x?.startDate??x?.start_date??x?.start);
+      const end=toDate(x?.endDate??x?.end_date??x?.end)||start;
+      if(!start||!end||end<range.start||start>range.end) return sum;
+      const clippedStart=start<range.start?range.start:start;
+      const clippedEnd=end>range.end?range.end:end;
+      const totalDays=Math.max(1,Math.round((new Date(end+'T00:00:00')-new Date(start+'T00:00:00'))/86400000)+1);
+      const overlapDays=Math.max(0,Math.round((new Date(clippedEnd+'T00:00:00')-new Date(clippedStart+'T00:00:00'))/86400000)+1);
+      return sum+hours*(overlapDays/totalDays);
+    },0);
+  };
+
   window.updateDashboardFinancialKpis=function(){
     const c=document.getElementById('dashCostSaving');
     const o=document.getElementById('dashOvertime');
     if(c)c.textContent='$'+Number(window.calcBomCostSaving()||0).toLocaleString(undefined,{maximumFractionDigits:2});
-    if(o){
-      const list=Array.isArray(window.timeoffOtList)?window.timeoffOtList:(Array.isArray(timeoffOtList)?timeoffOtList:[]);
-      const hours=list.reduce((sum,x)=>{
-        const type=String(x?.type??x?.request_type??'').trim().toLowerCase().replace(/[\s_-]+/g,'');
-        if(type!=='overtime') return sum;
-        const raw=String(x?.hours??x?.total_hours??0).trim().replace(',','.');
-        const n=Number.parseFloat(raw);
-        return sum+(Number.isFinite(n)&&n>0?n:0);
-      },0);
-      o.textContent=hours.toLocaleString(undefined,{maximumFractionDigits:2})+' h';
-    }
+    if(o)o.textContent=Number(window.calcBomOvertimeHours()||0).toLocaleString(undefined,{maximumFractionDigits:2})+' h';
   };
 
   // Recalculate after project data is loaded/rendered so Dashboard and Report
