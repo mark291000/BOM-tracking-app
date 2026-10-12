@@ -27,6 +27,61 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        /* Login access switch: Viewer and Member buttons stay side by side. */
+        .access-switch {
+          position: relative;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          align-items: center;
+          width: 100%;
+          min-height: 42px;
+          padding: 4px;
+          gap: 4px;
+          box-sizing: border-box;
+          border-radius: 12px;
+          background: rgba(15, 23, 42, 0.09);
+          overflow: hidden;
+        }
+        .access-switch .access-thumb {
+          position: absolute;
+          top: 4px;
+          bottom: 4px;
+          left: 4px;
+          width: calc(50% - 6px);
+          border-radius: 9px;
+          background: #ffffff;
+          box-shadow: 0 1px 4px rgba(15, 23, 42, 0.14);
+          transition: transform 0.22s ease;
+          pointer-events: none;
+        }
+        .access-switch.member .access-thumb {
+          transform: translateX(calc(100% + 4px));
+        }
+        .access-switch button {
+          position: relative;
+          z-index: 1;
+          display: block;
+          width: 100%;
+          min-width: 0;
+          min-height: 34px;
+          margin: 0;
+          padding: 7px 10px;
+          border: 0;
+          border-radius: 9px;
+          background: transparent;
+          color: #475569;
+          font: inherit;
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 20px;
+          cursor: pointer;
+        }
+        .access-switch button.active { color: #0f172a; }
+        #memberCredentials.viewer-hidden { display: none !important; }
+        #memberCredentials:not(.viewer-hidden) { display: block !important; }
+        #memberCredentials .form-input:disabled { opacity: 1; cursor: text; }
+        body.viewer-read-only #nav-workload { display: none !important; }
+
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -2645,16 +2700,24 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
         <h2>System Access</h2>
         <p>Task & Project Tracking System</p>
       </div>
+      <div id="accessSwitch" class="access-switch" role="group" aria-label="Choose access type">
+        <span class="access-thumb"></span>
+        <button type="button" id="viewerModeBtn" class="active" onclick="setLoginMode('viewer')">Viewer</button>
+        <button type="button" id="memberModeBtn" onclick="setLoginMode('member')">Member</button>
+      </div>
       <form id="loginForm" onsubmit="handleLogin(event)">
-        <div class="form-group">
-          <label for="loginUsername">User</label>
-          <input type="text" id="loginUsername" class="form-input" placeholder="Enter User ID or Email" required autocomplete="username">
+        <div id="memberCredentials" class="viewer-hidden">
+          <div class="form-group">
+            <label for="loginUsername">User</label>
+            <input type="text" id="loginUsername" class="form-input" placeholder="Enter User ID or Email" autocomplete="username" disabled>
+          </div>
+          <div class="form-group" style="margin-top: 8px;">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" class="form-input" placeholder="Enter Password" autocomplete="current-password" disabled>
+          </div>
         </div>
-        <div class="form-group" style="margin-top: 8px;">
-          <label for="loginPassword">Password</label>
-          <input type="password" id="loginPassword" class="form-input" placeholder="Enter Password" required autocomplete="current-password">
-        </div>
-        <button type="submit" class="login-btn">Log In</button>
+        <p id="viewerHint" class="viewer-hint">View-only access · No account required</p>
+        <button type="submit" id="loginSubmitBtn" class="login-btn">Continue as Viewer</button>
       </form>
       <div id="loginError" class="login-msg" style="display:none"></div>
     </div>
@@ -4395,6 +4458,10 @@ function setupInlineRequiredValidation(){
         }
         function toDbDateValue(v){return typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)?`${v}T12:00:00.000Z`:v;}
         function saveSheetData(sheetName,rowsData){
+            if(currentUser?.isReadOnly){
+                if(typeof showAppNotification==='function') showAppNotification('Viewer access is read-only. Changes were not saved.','View only');
+                return Promise.resolve(false);
+            }
             sheetLatestLocal[sheetName]=JSON.parse(JSON.stringify(Array.isArray(rowsData)?rowsData:[]));
             activeSaves++;updateSaveIndicator();
             sheetSaveQueues[sheetName]=(sheetSaveQueues[sheetName]||Promise.resolve()).catch(()=>{}).then(()=>runSheetSave(sheetName)).finally(()=>{activeSaves--;updateSaveIndicator();});
@@ -4694,53 +4761,109 @@ function setupInlineRequiredValidation(){
             return (data||[]).map(r=>mapSavedRow(sheetName,r));
         }
 
+        let loginMode = 'viewer';
+        function setLoginMode(mode){
+            loginMode = mode === 'member' ? 'member' : 'viewer';
+            const sw=document.getElementById('accessSwitch');
+            const creds=document.getElementById('memberCredentials');
+            const user=document.getElementById('loginUsername');
+            const pass=document.getElementById('loginPassword');
+            const viewerBtn=document.getElementById('viewerModeBtn');
+            const memberBtn=document.getElementById('memberModeBtn');
+            const hint=document.getElementById('viewerHint');
+            const submit=document.getElementById('loginSubmitBtn');
+            sw.classList.toggle('member',loginMode==='member');
+            viewerBtn.classList.toggle('active',loginMode==='viewer');
+            memberBtn.classList.toggle('active',loginMode==='member');
+            creds.classList.toggle('viewer-hidden',loginMode==='viewer');
+            user.disabled=pass.disabled=loginMode!=='member';
+            user.required=pass.required=loginMode==='member';
+            hint.classList.toggle('hidden',loginMode==='member');
+            submit.textContent=loginMode==='viewer'?'Continue as Viewer':'Log In';
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        // Initialize the login controls consistently on first load.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => setLoginMode('viewer'), { once: true });
+        } else {
+            setLoginMode('viewer');
+        }
+
         async function handleLogin(e) {
             e.preventDefault();
-            const uName = document.getElementById('loginUsername').value.trim();
-            const pWord = document.getElementById('loginPassword').value.trim();
             const errDiv = document.getElementById('loginError');
-            const btn = e.submitter || document.querySelector('#loginScreen button[type="submit"]');
-            if(!uName || !pWord) return;
-
+            const btn = document.getElementById('loginSubmitBtn');
             errDiv.classList.add('hidden');
             if(btn){btn.disabled=true;btn.dataset.originalText=btn.textContent;btn.textContent='Connecting...';}
-
             try{
                 if(!initSupabaseClient()) throw supabaseInitError || new Error('Supabase client is not available.');
-
-                const queryPromise = supabaseClient.from(SUPABASE_TABLES.Users).select('*').order('id',{ascending:true});
-                const timeoutPromise = new Promise((_,reject)=>setTimeout(()=>reject(new Error('Supabase connection timed out after 10 seconds. Check your network/firewall access to mctutyvzloefyhpgokbe.supabase.co.')),10000));
-                const result = await Promise.race([queryPromise, timeoutPromise]);
-                if(result.error) throw result.error;
-
-                users = (result.data || []).map(mapDbUserToApp);
-                const found = users.find(u => String(u.name||'').toLowerCase() === uName.toLowerCase() && String(u.password??'') === pWord && String(u.status||'') === 'Active');
-                if(!found){
-                    errDiv.textContent='Invalid username or password.';
-                    errDiv.classList.remove('hidden');
-                    return;
+                if(loginMode === 'viewer'){
+                    currentUser = {id:'readonly-viewer', name:'Viewer', username:'Viewer', role:'Viewer', status:'Active', isReadOnly:true};
+                } else {
+                    const uName = document.getElementById('loginUsername').value.trim();
+                    const pWord = document.getElementById('loginPassword').value.trim();
+                    if(!uName || !pWord) throw new Error('Please enter both username and password.');
+                    const queryPromise = supabaseClient.from(SUPABASE_TABLES.Users).select('*').order('id',{ascending:true});
+                    const timeoutPromise = new Promise((_,reject)=>setTimeout(()=>reject(new Error('Supabase connection timed out after 10 seconds. Check your network/firewall access to mctutyvzloefyhpgokbe.supabase.co.')),10000));
+                    const result = await Promise.race([queryPromise, timeoutPromise]);
+                    if(result.error) throw result.error;
+                    users = (result.data || []).map(mapDbUserToApp);
+                    const found = users.find(u => String(u.name||'').toLowerCase() === uName.toLowerCase() && String(u.password??'') === pWord && String(u.status||'') === 'Active');
+                    if(!found) throw new Error('Invalid username or password.');
+                    currentUser = found;
                 }
-
-                currentUser = found;
-
-                // Load the complete application state directly from Supabase BEFORE showing the app.
-                // This guarantees that an empty Supabase table produces an empty app, regardless of browser history/cache.
                 const loaded = await fetchAllDataFromSheet();
                 if(!loaded) throw new Error('Unable to load application data from Supabase.');
-
                 document.getElementById('loginScreen').classList.add('hidden');
                 initUserSession();
                 subscribeSupabaseRealtime();
                 startMultiUserAutoSync();
                 applyGlobalFilters();
+                if(currentUser?.isReadOnly) applyViewerReadOnlyMode();
             }catch(err){
                 console.error('Login/Supabase Error:',err);
                 errDiv.textContent = err?.message || 'Unable to connect to Supabase.';
                 errDiv.classList.remove('hidden');
+                currentUser=null;
             }finally{
-                if(btn){btn.disabled=false;btn.textContent=btn.dataset.originalText||'Sign In';}
+                if(btn){btn.disabled=false;btn.textContent=loginMode==='viewer'?'Continue as Viewer':'Log In';}
             }
         }
+
+        function applyViewerReadOnlyMode(){
+            document.body.classList.add('viewer-read-only');
+            // Viewer must not see or open Category Setup.
+            const categoryNav = document.getElementById('nav-workload');
+            if (categoryNav) categoryNav.style.display = 'none';
+            const badge=document.getElementById('currentUserRoleBadge');
+            if(badge) badge.textContent='Viewer';
+            // Hide obvious create/edit/admin controls; retain navigation, filters and export.
+            document.querySelectorAll('button,a,[role="button"]').forEach(el=>{
+                const label=((el.innerText||el.getAttribute('aria-label')||el.title||'')+' '+(el.getAttribute('onclick')||'')).toLowerCase();
+                if(/create|add task|new task|edit task|delete task|save task|save project|new project|add project|register|approve|reject|submit request|time.?off request|manage user|add phase|add milestone|delete project|edit project/.test(label)){
+                    el.style.display='none';
+                }
+            });
+            document.querySelectorAll('input,select,textarea').forEach(el=>{
+                if(el.closest('#loginScreen')) return;
+                const id=(el.id||'').toLowerCase(), name=(el.name||'').toLowerCase();
+                if(/search|filter|date|month|year|week|category|status|pic|owner|priority|view|page/.test(id+' '+name)) return;
+                if(el.type==='button'||el.type==='submit') return;
+                el.disabled=true;
+            });
+            document.body.addEventListener('click',function(ev){
+                if(!currentUser?.isReadOnly) return;
+                const el=ev.target.closest('button,a,[role="button"]');
+                if(!el) return;
+                const label=((el.innerText||el.getAttribute('aria-label')||el.title||'')+' '+(el.getAttribute('onclick')||'')).toLowerCase();
+                if(/create|add task|new task|edit task|delete task|save|register|approve|reject|submit request|add phase|add milestone|delete project|edit project/.test(label)){
+                    ev.preventDefault();ev.stopImmediatePropagation();
+                    if(typeof showAppNotification==='function') showAppNotification('Viewer access is read-only. Switch to Member and sign in to make changes.','View only');
+                }
+            },true);
+        }
+
 
         function initUserSession() {
             if(!currentUser) return;
@@ -4763,7 +4886,12 @@ function setupInlineRequiredValidation(){
 
         function logout() {
             currentUser = null;
+            document.body.classList.remove('viewer-read-only');
+            const categoryNav = document.getElementById('nav-workload');
+            if (categoryNav) categoryNav.style.display = '';
+            setLoginMode('viewer');
             document.getElementById('loginPassword').value = '';
+            document.getElementById('loginUsername').value = '';
             document.getElementById('loginScreen').classList.remove('hidden');
             switchTab('dashboard');
         }
@@ -4774,6 +4902,8 @@ function setupInlineRequiredValidation(){
         }
 
         function switchTab(tabId) {
+            // Prevent Viewer from navigating to Category Setup even through direct calls.
+            if (currentUser?.isReadOnly && tabId === 'workload') tabId = 'dashboard';
             if(typeof closeProjectRowMenus==='function') closeProjectRowMenus();
             if(typeof closeProjectHeaderFilter==='function') closeProjectHeaderFilter();
             closeWorkloadSidebar();
