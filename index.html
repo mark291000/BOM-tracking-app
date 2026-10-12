@@ -3621,7 +3621,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
 
         &lt;!-- 2 --&gt;
         &lt;div class=&quot;cell group r2&quot;&gt;&lt;span class=&quot;group-badge b2&quot;&gt;2&lt;/span&gt;&lt;span&gt;R&amp;amp;D BOM for Costing – C&amp;amp;S &amp;amp; Wanek 4&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;
 
         &lt;!-- 3 --&gt;
         &lt;div class=&quot;cell group r3&quot;&gt;&lt;span class=&quot;group-badge b3&quot;&gt;3&lt;/span&gt;&lt;span&gt;R&amp;amp;D Material Purchasing&lt;/span&gt;&lt;/div&gt;
@@ -8254,7 +8254,7 @@ function setupInlineRequiredValidation(){
         }
         function exportProjectExcel(){
             const rows=getAllProjectExportRows(); if(!rows.length){showAppNotification('No project data to export.','Export');return;}
-            const cols=['No','Project','Description','Phase','Task','Owner','Start','Planned Completion','Actual Completion','Gain Demand/Week','Est. Annual Saving/years','Achieved Annual Saving/years','Detailed Status','Overall Status','Note'];
+            const cols=['No','Project','Description','Phase','Task','Owner','Detailed Status','Overall Status','Start','Planned Completion','Actual Completion','Gain Demand/Week','Est. Annual Saving/years','Achieved Annual Saving/years','Note'];
             const aoa=[cols,...rows.map(r=>cols.map(c=>r[c]??''))];
             const ws=XLSX.utils.aoa_to_sheet(aoa), wb=XLSX.utils.book_new();
             ws['!freeze']={xSplit:0,ySplit:1};
@@ -8317,7 +8317,7 @@ function setupInlineRequiredValidation(){
             if(!window.jspdf?.jsPDF){showAppNotification('PDF export library is not available.','Export');return;}
             const {jsPDF}=window.jspdf;
             const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
-            const cols=['No','Project','Phase','Task','Owner','Start','Planned Completion','Actual Completion','Gain Demand/Week','Est. Annual Saving/years','Achieved Annual Saving/years','Detailed Status','Overall Status','Note'];
+            const cols=['No','Project','Phase','Task','Owner','Detailed Status','Overall Status','Start','Planned Completion','Actual Completion','Gain Demand/Week','Est. Annual Saving/years','Achieved Annual Saving/years','Note'];
             const baseWidths=[18,70,55,72,48,44,48,48,58,62,62,82,50,89];
             const margin=18,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
             const availableW=pageW-(margin*2),baseTotal=baseWidths.reduce((a,b)=>a+b,0);
@@ -8399,10 +8399,10 @@ function setupInlineRequiredValidation(){
                     <td class="pm-ref-no pm-project-no-cell" onclick="toggleProjectRowExpand('${pid}')"><span class="pm-ref-project-index">${projectIndex+1}</span></td>
                     <td colspan="2" class="pm-project-name-cell"><div class="pm-project-name-actions-wrap"><div class="pm-project-name-stack"><button type="button" class="pm-project-name-button" onclick="toggleProjectRowExpand('${pid}')" title="Expand / collapse project">${escapeHtml(p.name||'Unnamed Project')}</button><div class="pm-project-inline-detail">${escapeHtml(p.detail||'')}</div></div><button type="button" class="pm-project-more-btn" onclick="toggleProjectRowMenu(event,'${pid}')" title="Project actions" aria-label="Project actions"><i class="fa-solid fa-ellipsis"></i></button><div class="pm-project-row-menu" data-project-menu="${escapeHtml(String(p.id))}"><button type="button" onclick="openAddProjectModal('${pid}');closeProjectRowMenus()"><i class="fa-solid fa-pen"></i><span>Edit</span></button><button type="button" class="danger" onclick="deleteProject('${pid}');closeProjectRowMenus()"><i class="fa-solid fa-trash"></i><span>Delete</span></button></div></div></td>
                     <td class="pm-project-owner-cell"><span>${escapeHtml(owners||'-')}</span></td>
-                    <td>${escapeHtml(projectRefDate(p.startDate))}</td><td>${escapeHtml(projectRefDate(p.dueDate))}</td><td>${escapeHtml(projectRefDate(p.actualDate))}</td>
-                    <td class="pm-ref-number">${escapeHtml(rowTotals.gainDemand===0?'0':(projectNumber(rowTotals.gainDemand)||'-'))}</td><td class="pm-ref-money">${escapeHtml(projectMoney(rowTotals.saving)||'-')}</td><td class="pm-ref-money">${escapeHtml(projectMoney(rowTotals.actualSaving)||'-')}</td>
                     <td class="pm-project-detail-cell">${projectDetailedStatusHtml(projectRowDetailedStatus(p))}</td>
                     <td>${projectOverallBadge(p.status,false,'')}</td>
+                    <td>${escapeHtml(projectRefDate(p.startDate))}</td><td>${escapeHtml(projectRefDate(p.dueDate))}</td><td>${escapeHtml(projectRefDate(p.actualDate))}</td>
+                    <td class="pm-ref-number">${escapeHtml(rowTotals.gainDemand===0?'0':(projectNumber(rowTotals.gainDemand)||'-'))}</td><td class="pm-ref-money">${escapeHtml(projectMoney(rowTotals.saving)||'-')}</td><td class="pm-ref-money">${escapeHtml(projectMoney(rowTotals.actualSaving)||'-')}</td>
                     <td><span>${escapeHtml(p.note||'')}</span></td>
                 </tr>`;
                 if(expanded){
@@ -8419,8 +8419,8 @@ function setupInlineRequiredValidation(){
                 <table class="pm-ref-project-table pm-shared-project-table">
                     <colgroup>
                         <col class="w-no"><col class="w-phase"><col class="w-task"><col class="w-owner">
-                        <col class="w-date"><col class="w-date"><col class="w-date"><col class="w-gain">
-                        <col class="w-saving"><col class="w-saving"><col class="w-detail"><col class="w-overall"><col class="w-note">
+                        <col class="w-detail"><col class="w-overall"><col class="w-date"><col class="w-date"><col class="w-date"><col class="w-gain">
+                        <col class="w-saving"><col class="w-saving"><col class="w-note">
                     </colgroup>
                     ${projectRefColumnHeader()}
                     <tbody>${body}</tbody>
@@ -11733,6 +11733,51 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
     f.__v51=true;
     window.projectMoney=f;
   }
+})();
+</script>
+
+
+<script id="projectStatusColumnsAfterOwnerFix">
+(function(){
+  'use strict';
+  function norm(t){return String(t||'').replace(/[▼▾⌄↕↑↓]/g,'').replace(/\s+/g,' ').trim().toLowerCase();}
+  function reorderTable(table){
+    const head=table.querySelector('thead tr');
+    if(!head)return;
+    const headers=Array.from(head.children);
+    const owner=headers.findIndex(c=>norm(c.innerText||c.textContent)==='owner');
+    const detail=headers.findIndex(c=>norm(c.innerText||c.textContent).includes('detailed status'));
+    const overall=headers.findIndex(c=>norm(c.innerText||c.textContent).includes('overall status'));
+    if(owner<0||detail<0||overall<0)return;
+    // Desired order: all original columns, except move Detailed Status and
+    // Overall Status together immediately after Owner. Apply the same order
+    // to every row, so the cell values stay aligned with their headers.
+    const order=headers.map((_,i)=>i).filter(i=>i!==detail&&i!==overall);
+    const ownerPos=order.indexOf(owner);
+    order.splice(ownerPos+1,0,detail,overall);
+    if(order.every((v,i)=>v===i))return;
+    const rows=Array.from(table.querySelectorAll('tr'));
+    rows.forEach(row=>{
+      const cells=Array.from(row.children);
+      if(cells.length!==headers.length)return;
+      const frag=document.createDocumentFragment();
+      order.forEach(i=>frag.appendChild(cells[i]));
+      row.appendChild(frag);
+    });
+  }
+  function run(){
+    const root=document.getElementById('tab-projects');
+    if(root)root.querySelectorAll('table').forEach(reorderTable);
+  }
+  let queued=false;
+  const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;run();});};
+  function observe(){
+    schedule();
+    const root=document.getElementById('tab-projects');
+    if(root)new MutationObserver(schedule).observe(root,{childList:true,subtree:true});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',observe,{once:true});
+  else observe();
 })();
 </script>
 
