@@ -7875,13 +7875,12 @@ function setupInlineRequiredValidation(){
         }
 
         function projectRefMoneyInput(value, onChange){
-            // Allow both positive and negative annual saving values.
-            // Keep the input as text so values such as -2342 can be entered
-            // directly without browser min=0 validation blocking the minus sign.
+            // Display financial values consistently with a dollar sign and thousands separators.
+            // Focus switches to a plain editable number; blur restores currency formatting.
             const n=projectParseMoney(value);
-            const display=n===''?'':Math.round(Number(n)).toLocaleString('en-US',{maximumFractionDigits:0});
+            const display=n===''?'':'$'+Math.round(Number(n)).toLocaleString('en-US',{maximumFractionDigits:0});
             const safeChange=String(onChange||'').replace(/"/g,'&quot;');
-            return `<input type="text" inputmode="decimal" autocomplete="off" class="pm-ref-input pm-ref-money" value="${escapeHtml(display)}" data-money-value="${n===""?"":Number(n)}" onfocus="this.value=this.value.replace(/,/g,'')" onkeydown="if(event.key==='e'||event.key==='E')event.preventDefault();" onchange="this.value=this.value.trim()?Number(String(this.value).replace(/,/g,'')||0).toLocaleString('en-US',{maximumFractionDigits:0}):'';${safeChange}">`;
+            return `<input type="text" inputmode="decimal" autocomplete="off" class="pm-ref-input pm-ref-money" value="${escapeHtml(display)}" data-money-value="${n===""?"":Number(n)}" onfocus="this.value=this.value.replace(/[$,\s]/g,'')" onkeydown="if(event.key==='e'||event.key==='E')event.preventDefault();" onchange="this.value=this.value.trim()?'$'+Math.round(Number(String(this.value).replace(/[$,\s]/g,'')||0)).toLocaleString('en-US',{maximumFractionDigits:0}):'';${safeChange}">`;
         }
 
         function projectInlineTaskRow(p,phaseIndex,task,taskIndex,phaseColor=0,phaseName=''){
@@ -8242,26 +8241,27 @@ function setupInlineRequiredValidation(){
                 if(!p||!String(p.name||'').trim())return;
                 no++;
                 const totals=projectAggregateSummary(p);
-                rows.push({No:no,Project:p.name||'',Phase:'',Task:'',Owner:projectOwnerText(p)||'',Start:cleanDateStr(p.startDate)||'',"Planned Completion":cleanDateStr(p.dueDate)||'',"Actual Completion":cleanDateStr(p.actualDate)||'',"Gain Demand/Week":totals.gainDemand||'',"Est. Annual Saving/years":totals.saving||'',"Achieved Annual Saving/years":totals.actualSaving||'',"Detailed Status":projectIncompleteTaskDetails(p)||'',"Overall Status":calculateProjectOverallStatus(p)||p.status||'',Note:p.note||'',__kind:'project'});
+                const description=p.detail||'';
+                rows.push({No:no,Project:p.name||'',Description:description,Phase:'',Task:'',Owner:projectOwnerText(p)||'',Start:cleanDateStr(p.startDate)||'',"Planned Completion":cleanDateStr(p.dueDate)||'',"Actual Completion":cleanDateStr(p.actualDate)||'',"Gain Demand/Week":totals.gainDemand||'',"Est. Annual Saving/years":totals.saving||'',"Achieved Annual Saving/years":totals.actualSaving||'',"Detailed Status":projectIncompleteTaskDetails(p)||p.detailedStatus||'',"Overall Status":calculateProjectOverallStatus(p)||p.status||'',Note:p.note||'',__kind:'project'});
                 (p.phases||[]).forEach((ph,pi)=>{
-                    const sum=projectPhaseSummary(ph,p);
-                    rows.push({No:'',Project:'',Phase:ph.name||`Phase ${pi+1}`,Task:'',Owner:sum.owner||'',Start:cleanDateStr(sum.startDate)||'',"Planned Completion":cleanDateStr(sum.dueDate)||'',"Actual Completion":cleanDateStr(sum.actualDate)||'',"Gain Demand/Week":sum.gainDemand||'',"Est. Annual Saving/years":sum.saving||'',"Achieved Annual Saving/years":sum.actualSaving||'',"Detailed Status":sum.detail||'',"Overall Status":sum.status||'',Note:sum.note||'',__kind:'phase'});
-                    (ph.tasks||[]).forEach(t=>rows.push({No:'',Project:'',Phase:ph.name||`Phase ${pi+1}`,Task:t.name||'',Owner:t.owner||'',Start:cleanDateStr(t.startDate)||'',"Planned Completion":cleanDateStr(t.dueDate)||'',"Actual Completion":cleanDateStr(t.actualDate)||'',"Gain Demand/Week":t.gainDemand??'',"Est. Annual Saving/years":t.estSaving??'',"Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',"Overall Status":calculateProjectTaskStatus(t)||'',Note:t.note||'',__kind:'task'}));
+                    const sum=projectPhaseSummary(ph,p), phaseName=ph.name||`Phase ${pi+1}`;
+                    rows.push({No:'',Project:p.name||'',Description:'',Phase:phaseName,Task:'',Owner:sum.owner||'',Start:cleanDateStr(sum.startDate)||'',"Planned Completion":cleanDateStr(sum.dueDate)||'',"Actual Completion":cleanDateStr(sum.actualDate)||'',"Gain Demand/Week":sum.gainDemand||'',"Est. Annual Saving/years":sum.saving||'',"Achieved Annual Saving/years":sum.actualSaving||'',"Detailed Status":sum.detail||'',"Overall Status":sum.status||'',Note:sum.note||'',__kind:'phase'});
+                    (ph.tasks||[]).forEach(t=>rows.push({No:'',Project:p.name||'',Description:'',Phase:phaseName,Task:t.name||'',Owner:t.owner||'',Start:cleanDateStr(t.startDate)||'',"Planned Completion":cleanDateStr(t.dueDate)||'',"Actual Completion":cleanDateStr(t.actualDate)||'',"Gain Demand/Week":t.gainDemand??'',"Est. Annual Saving/years":t.estSaving??'',"Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',"Overall Status":calculateProjectTaskStatus(t)||'',Note:t.note||'',__kind:'task'}));
                 });
-                (p.tasks||[]).forEach(t=>rows.push({No:'',Project:p.name||'',Phase:'',Task:t.name||'',Owner:t.owner||'',Start:cleanDateStr(t.startDate)||'',"Planned Completion":cleanDateStr(t.dueDate)||'',"Actual Completion":cleanDateStr(t.actualDate)||'',"Gain Demand/Week":t.gainDemand??'',"Est. Annual Saving/years":t.estSaving??'',"Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',"Overall Status":calculateProjectTaskStatus(t)||'',Note:t.note||'',__kind:'task'}));
+                (p.tasks||[]).forEach(t=>rows.push({No:'',Project:p.name||'',Description:'',Phase:'',Task:t.name||'',Owner:t.owner||'',Start:cleanDateStr(t.startDate)||'',"Planned Completion":cleanDateStr(t.dueDate)||'',"Actual Completion":cleanDateStr(t.actualDate)||'',"Gain Demand/Week":t.gainDemand??'',"Est. Annual Saving/years":t.estSaving??'',"Achieved Annual Saving/years":t.actualSaving??'',"Detailed Status":t.detail||'',"Overall Status":calculateProjectTaskStatus(t)||'',Note:t.note||'',__kind:'task'}));
             });
             return rows;
         }
         function exportProjectExcel(){
             const rows=getAllProjectExportRows(); if(!rows.length){showAppNotification('No project data to export.','Export');return;}
-            const cols=['No','Project','Phase','Task','Owner','Start','Planned Completion','Actual Completion','Gain Demand/Week','Est. Annual Saving/years','Achieved Annual Saving/years','Detailed Status','Overall Status','Note'];
+            const cols=['No','Project','Description','Phase','Task','Owner','Start','Planned Completion','Actual Completion','Gain Demand/Week','Est. Annual Saving/years','Achieved Annual Saving/years','Detailed Status','Overall Status','Note'];
             const aoa=[cols,...rows.map(r=>cols.map(c=>r[c]??''))];
             const ws=XLSX.utils.aoa_to_sheet(aoa), wb=XLSX.utils.book_new();
             ws['!freeze']={xSplit:0,ySplit:1};
             ws['!autofilter']={ref:`A1:${XLSX.utils.encode_col(cols.length-1)}${aoa.length}`};
-            ws['!cols']=[8,24,22,28,18,13,17,17,17,22,24,34,17,28].map(w=>({wch:w}));
+            ws['!cols']=[8,24,34,22,28,18,13,17,17,17,22,24,34,17,28].map(w=>({wch:w}));
             const fill={project:'DCEEFF',phase:'EEF1FB',task:'FFFFFF'};
-            const moneyCols=new Set([9,10]); const numberCols=new Set([8]); const dateCols=new Set([5,6,7]);
+            const moneyCols=new Set([10,11]); const numberCols=new Set([9]); const dateCols=new Set([6,7,8]);
             rows.forEach((r,ri)=>{
                 const excelRow=ri+2;
                 cols.forEach((c,ci)=>{
@@ -8400,7 +8400,7 @@ function setupInlineRequiredValidation(){
                     <td colspan="2" class="pm-project-name-cell"><div class="pm-project-name-actions-wrap"><div class="pm-project-name-stack"><button type="button" class="pm-project-name-button" onclick="toggleProjectRowExpand('${pid}')" title="Expand / collapse project">${escapeHtml(p.name||'Unnamed Project')}</button><div class="pm-project-inline-detail">${escapeHtml(p.detail||'')}</div></div><button type="button" class="pm-project-more-btn" onclick="toggleProjectRowMenu(event,'${pid}')" title="Project actions" aria-label="Project actions"><i class="fa-solid fa-ellipsis"></i></button><div class="pm-project-row-menu" data-project-menu="${escapeHtml(String(p.id))}"><button type="button" onclick="openAddProjectModal('${pid}');closeProjectRowMenus()"><i class="fa-solid fa-pen"></i><span>Edit</span></button><button type="button" class="danger" onclick="deleteProject('${pid}');closeProjectRowMenus()"><i class="fa-solid fa-trash"></i><span>Delete</span></button></div></div></td>
                     <td class="pm-project-owner-cell"><span>${escapeHtml(owners||'-')}</span></td>
                     <td>${escapeHtml(projectRefDate(p.startDate))}</td><td>${escapeHtml(projectRefDate(p.dueDate))}</td><td>${escapeHtml(projectRefDate(p.actualDate))}</td>
-                    <td class="pm-ref-number">${escapeHtml(p.gainDemand===0?'0':(p.gainDemand??'-'))}</td><td class="pm-ref-money">${escapeHtml(p.saving===0?'0':(p.saving??'-'))}</td><td class="pm-ref-money">${escapeHtml(p.actualSaving===0?'0':(p.actualSaving??'-'))}</td>
+                    <td class="pm-ref-number">${escapeHtml(rowTotals.gainDemand===0?'0':(projectNumber(rowTotals.gainDemand)||'-'))}</td><td class="pm-ref-money">${escapeHtml(projectMoney(rowTotals.saving)||'-')}</td><td class="pm-ref-money">${escapeHtml(projectMoney(rowTotals.actualSaving)||'-')}</td>
                     <td class="pm-project-detail-cell">${projectDetailedStatusHtml(projectRowDetailedStatus(p))}</td>
                     <td>${projectOverallBadge(p.status,false,'')}</td>
                     <td><span>${escapeHtml(p.note||'')}</span></td>
@@ -8472,7 +8472,8 @@ function setupInlineRequiredValidation(){
                         gain:['gaindemandweek','gaindemand','taskgaindemandweek'],
                         saving:['estannualsavingyears','estannualsaving','estsaving','saving','taskestsaving'],
                         actualSaving:['achievedannualsavingyears','achievedannualsaving','actualsaving','taskactualsaving'],
-                        detail:['detailedstatus','detail','taskdetailedstatus','phasedetailedstatus'],
+                        description:['description','projectdescription','projectdetail'],
+                        detailedStatus:['detailedstatus','taskdetailedstatus','phasedetailedstatus'],
                         status:['overallstatus','status','taskoverallstatus','phasestatus'],
                         note:['note','notes','tasknote']
                     };
@@ -8495,8 +8496,9 @@ function setupInlineRequiredValidation(){
                         const phaseName=text(find(r,aliases.phase));
                         const taskName=text(find(r,aliases.task));
 
-                        // Exported rows intentionally leave Project/Phase blank on child rows.
-                        // Carry the last project/phase forward so a round-trip import preserves hierarchy.
+                        // Export and import use the same flat layout; Project is repeated on every row.
+                        // A row without a Phase belongs to the project-level/direct-task branch, not the prior phase.
+                        if(projectName && !phaseName) currentPhase=null;
                         if(projectName){
                             currentProject=byProject.get(projectName.toLowerCase());
                             if(!currentProject){
@@ -8510,7 +8512,8 @@ function setupInlineRequiredValidation(){
                                     gainDemand:projectParseMoney(find(r,aliases.gain)),
                                     saving:num(find(r,aliases.saving)),
                                     actualSaving:num(find(r,aliases.actualSaving)),
-                                    detail:text(find(r,aliases.detail)),
+                                    detail:(!phaseName&&!taskName)?text(find(r,aliases.description)):'',
+                                    detailedStatus:text(find(r,aliases.detailedStatus)),
                                     status:text(find(r,aliases.status))||'Not Started',
                                     note:text(find(r,aliases.note)),
                                     phases:[],tasks:[],hoursUsed:{}
@@ -8520,6 +8523,8 @@ function setupInlineRequiredValidation(){
                             }else{
                                 // Fill missing project-level values from any repeated project row.
                                 if(!currentProject.owner)currentProject.owner=text(find(r,aliases.owner));
+                                // Description is imported only from the project header row; phase/task rows are ignored.
+                                if(!currentProject.detailedStatus)currentProject.detailedStatus=text(find(r,aliases.detailedStatus));
                                 if(!currentProject.startDate)currentProject.startDate=cleanDateStr(find(r,aliases.start));
                                 if(!currentProject.dueDate)currentProject.dueDate=cleanDateStr(find(r,aliases.plan));
                                 if(!currentProject.actualDate)currentProject.actualDate=cleanDateStr(find(r,aliases.actual));
@@ -8556,7 +8561,7 @@ function setupInlineRequiredValidation(){
                                 gainDemand:projectParseMoney(find(r,aliases.gain)),
                                 estSaving:num(find(r,aliases.saving)),
                                 actualSaving:num(find(r,aliases.actualSaving)),
-                                detail:text(find(r,aliases.detail)),
+                                detail:text(find(r,aliases.detailedStatus)),
                                 status:text(find(r,aliases.status))||'Not Started',
                                 note:text(find(r,aliases.note)),
                                 progress:0
@@ -8675,7 +8680,7 @@ function setupInlineRequiredValidation(){
             finally{ if(el)el.dataset.creating=''; }
         }
         function updateProjectInlineTask(projectId,phaseIndex,taskIndex,key,value){
-            const p=projectsList.find(x=>String(x.id)===String(projectId));if(!p)return;const list=getProjectInlineTaskList(p,phaseIndex),t=list[taskIndex];if(!t)return;if(key==='status')return;if(['startDate','dueDate','actualDate'].includes(key))value=cleanDateStr(value);if(['estSaving','actualSaving'].includes(key)){ const n=Number(value); value=value===''?'':(Number.isFinite(n)?n:0); }
+            const p=projectsList.find(x=>String(x.id)===String(projectId));if(!p)return;const list=getProjectInlineTaskList(p,phaseIndex),t=list[taskIndex];if(!t)return;if(key==='status')return;if(['startDate','dueDate','actualDate'].includes(key))value=cleanDateStr(value);if(['estSaving','actualSaving'].includes(key)){ const n=projectParseMoney(value); value=String(value??'').trim()===''?'':(n!==''&&Number.isFinite(Number(n))?Number(n):0); }
             if(key==='dueDate' && t.startDate && value && value<=t.startDate){showToast('Planned Completion must be later than Start');renderProjectsTable();return;}
             t[key]=value;if(key==='startDate'){if(t.dueDate&&t.dueDate<=value)t.dueDate=projectNextDate(value);if(t.actualDate&&t.actualDate<value)t.actualDate=value;}
             if(key==='actualDate'&&t.dueDate&&value>t.dueDate)t.dueDate=value>t.dueDate?value:t.dueDate;
