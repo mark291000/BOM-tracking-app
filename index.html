@@ -8267,7 +8267,8 @@ function setupInlineRequiredValidation(){
             ws['!autofilter']={ref:`A1:${XLSX.utils.encode_col(cols.length-1)}${aoa.length}`};
             ws['!cols']=[8,24,34,22,28,18,13,17,17,17,22,24,34,17,28].map(w=>({wch:w}));
             const fill={project:'DCEEFF',phase:'EEF1FB',task:'FFFFFF'};
-            const moneyCols=new Set([10,11]); const numberCols=new Set([9]); const dateCols=new Set([6,7,8]);
+            /* Column indexes must match the `cols` header order above (zero-based). */
+            const moneyCols=new Set([12,13]); const numberCols=new Set([11]); const dateCols=new Set([8,9,10]);
             rows.forEach((r,ri)=>{
                 const excelRow=ri+2;
                 cols.forEach((c,ci)=>{
