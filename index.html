@@ -4260,6 +4260,21 @@ function normalizeProjectTasks(tasks,project){
             return project;
         }
 
+        // Supabase REST commonly caps each response at 1,000 rows. Read every page
+        // explicitly so large tables are not silently truncated in the UI.
+        async function fetchAllSupabaseRows(buildQuery, pageSize = 1000) {
+            const allRows = [];
+            for (let from = 0; ; from += pageSize) {
+                const result = await buildQuery().range(from, from + pageSize - 1);
+                if (result.error) return { data: null, error: result.error, count: result.count };
+                const page = Array.isArray(result.data) ? result.data : [];
+                allRows.push(...page);
+                if (page.length < pageSize) {
+                    return { data: allRows, error: null, count: result.count ?? allRows.length };
+                }
+            }
+        }
+
         async function fetchAllDataFromSheet({background = false, forceRender = false} = {}) {
             if(!initSupabaseClient()){
                 const err=supabaseInitError || new Error('Supabase client is not available.');
@@ -4271,11 +4286,11 @@ function normalizeProjectTasks(tasks,project){
             if (!background && currentUser && syncLoader) syncLoader.classList.remove('opacity-0','pointer-events-none');
             try {
                 const [u,c,t,to,p] = await Promise.all([
-                        supabaseClient.from(SUPABASE_TABLES.Users).select('*').order('id',{ascending:true}),
-                        supabaseClient.from(SUPABASE_TABLES.Capacity).select('*').order('id',{ascending:true}),
-                        supabaseClient.from(SUPABASE_TABLES.Tasks).select('*').order('updated_at',{ascending:true}),
-                        supabaseClient.from(SUPABASE_TABLES.TimeOff_OT).select('*').order('id',{ascending:true}),
-                        supabaseClient.from(SUPABASE_TABLES.Projects).select('*').order('id',{ascending:true})
+                        fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Users).select('*').order('id',{ascending:true})),
+                        fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Capacity).select('*').order('id',{ascending:true})),
+                        fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Tasks).select('*').order('updated_at',{ascending:true})),
+                        fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.TimeOff_OT).select('*').order('id',{ascending:true})),
+                        fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Projects).select('*').order('id',{ascending:true}))
                     ]);
                 for(const result of [u,c,t,to,p]) if(result.error) throw result.error;
                 const data={
@@ -4475,7 +4490,7 @@ function setupInlineRequiredValidation(){
         window.testTimeoffOtDatabase=async function(){
             if(!initSupabaseClient()) throw new Error('Supabase client is not initialized.');
             const table=SUPABASE_TABLES.TimeOff_OT;
-            const res=await supabaseClient.from(table).select('*').limit(1);
+            const res=await fetchAllSupabaseRows(()=>supabaseClient.from(table).select('*')).limit(1);
             console.log('TimeOff_OT database test:',{table,data:res.data,error:res.error});
             if(res.error) throw res.error;
             return res.data||[];
@@ -4663,7 +4678,7 @@ function setupInlineRequiredValidation(){
                 }
 
                 // Read the table again so the application state exactly matches Supabase.
-                const refreshed=await supabaseClient.from(table).select('*').order('id',{ascending:true});
+                const refreshed=await fetchAllSupabaseRows(()=>fetchAllSupabaseRows(()=>supabaseClient.from(table).select('*')).order('id',{ascending:true}));
                 if(refreshed.error) throw refreshed.error;
                 const authoritative=(refreshed.data||[]).map(mapDbTimeoffToApp);
                 const requiredSavedIds=savedRows.map(r=>Number(r.id)).filter(Number.isSafeInteger);
@@ -4759,7 +4774,7 @@ function setupInlineRequiredValidation(){
 
         async function fetchSheetRowsForMerge(sheetName){
             const table=tableForSheet(sheetName);
-            const {data,error}=await supabaseClient.from(table).select('*');
+            const {data,error}=await fetchAllSupabaseRows(()=>supabaseClient.from(table).select('*'));
             if(error)throw error;
             return (data||[]).map(r=>mapSavedRow(sheetName,r));
         }
@@ -4807,7 +4822,7 @@ function setupInlineRequiredValidation(){
                     const uName = document.getElementById('loginUsername').value.trim();
                     const pWord = document.getElementById('loginPassword').value.trim();
                     if(!uName || !pWord) throw new Error('Please enter both username and password.');
-                    const queryPromise = supabaseClient.from(SUPABASE_TABLES.Users).select('*').order('id',{ascending:true});
+                    const queryPromise = fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Users).select('*').order('id',{ascending:true}));
                     const timeoutPromise = new Promise((_,reject)=>setTimeout(()=>reject(new Error('Supabase connection timed out after 10 seconds. Check your network/firewall access to mctutyvzloefyhpgokbe.supabase.co.')),10000));
                     const result = await Promise.race([queryPromise, timeoutPromise]);
                     if(result.error) throw result.error;
@@ -10727,8 +10742,8 @@ function buildRelationalProjects(projectRows,phaseRows,taskRows){
 
 async function loadRelationalChildren(){
  const [ph,ta]=await Promise.all([
-  supabaseClient.from(REL_PHASE_TABLE).select('*').order('project_id',{ascending:true}).order('sort_order',{ascending:true}),
-  supabaseClient.from(REL_TASK_TABLE).select('*').order('project_id',{ascending:true}).order('sort_order',{ascending:true})
+  fetchAllSupabaseRows(()=>supabaseClient.from(REL_PHASE_TABLE).select('*').order('project_id',{ascending:true}).order('sort_order',{ascending:true})),
+  fetchAllSupabaseRows(()=>supabaseClient.from(REL_TASK_TABLE).select('*').order('project_id',{ascending:true}).order('sort_order',{ascending:true}))
  ]);
  if(ph.error)throw ph.error;if(ta.error)throw ta.error;
  relationalPhaseSnapshot=ph.data||[];relationalTaskSnapshot=ta.data||[];
@@ -10773,11 +10788,11 @@ fetchAllDataFromSheet=async function({background=false}={}){
  const overlay=document.getElementById('loadingOverlay');if(!background&&currentUser&&overlay)overlay.classList.remove('opacity-0','pointer-events-none');
  try{
   const [u,c,t,to,p,ch]=await Promise.all([
-   supabaseClient.from(SUPABASE_TABLES.Users).select('*').order('id',{ascending:true}),
-   supabaseClient.from(SUPABASE_TABLES.Capacity).select('*').order('id',{ascending:true}),
-   supabaseClient.from(SUPABASE_TABLES.Tasks).select('*').order('updated_at',{ascending:true}),
-   supabaseClient.from(SUPABASE_TABLES.TimeOff_OT).select('*').order('id',{ascending:true}),
-   supabaseClient.from(SUPABASE_TABLES.Projects).select('*').order('id',{ascending:true}),
+   fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Users).select('*').order('id',{ascending:true})),
+   fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Capacity).select('*').order('id',{ascending:true})),
+   fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Tasks).select('*').order('updated_at',{ascending:true})),
+   fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.TimeOff_OT).select('*').order('id',{ascending:true})),
+   fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Projects).select('*').order('id',{ascending:true})),
    loadRelationalChildren()
   ]);
   for(const r of [u,c,t,to,p])if(r.error)throw r.error;
