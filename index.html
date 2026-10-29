@@ -6460,18 +6460,21 @@ function setupInlineRequiredValidation(){
             if(!wrap||!select)return;
             const category=String(document.getElementById('taskCategory')?.value||'').trim();
             const taskName=getSelectedTaskName();
-            // "Other" has no predefined scope: leave it blank so the user must choose/type one.
+            // Declare before the Other branch (avoid a temporal-dead-zone ReferenceError).
+            const scopeOptions=document.getElementById('taskScopeOptions');
+            // "Other" has no predefined scope. Clear it when the category is selected,
+            // but preserve the user's chosen scope when saveTask calls this with true.
             if(category.toLowerCase()==='other'){
-                select.value='';
                 select.required=true;
-                taskScopeUserChanged=false;
                 wrap.classList.remove('hidden');
                 if(scopeOptions) scopeOptions.innerHTML=[...new Set(["In BOM's scope","Out of BOM's scope","RND process","Compliance","Projects","New Go Tracking"])].map(v=>`<option value="${escapeHtml(v)}"></option>`).join('');
+                if(preserveExplicit && String(select.value||'').trim()) return;
+                select.value='';
+                taskScopeUserChanged=false;
                 return;
             }
             // Keep standard and Category Setup scopes available as suggestions, while
             // allowing any custom scope to be typed into the field.
-            const scopeOptions=document.getElementById('taskScopeOptions');
             if(scopeOptions){
                 const known=["In BOM's scope","Out of BOM's scope","RND process","Compliance","Projects","New Go Tracking",...capacityData.map(c=>String(c.scope||'').trim())];
                 const current=String(select.value||'').trim();
