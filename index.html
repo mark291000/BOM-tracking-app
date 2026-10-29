@@ -2924,7 +2924,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                 <!-- Tracking Tables -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
-                        <div class="flex flex-wrap justify-between items-center gap-2"><div><h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center"><i class="fa-solid fa-user-check mr-2 text-indigo-600"></i>Task Tracking by Status (PIC x Status)</h3><p class="text-xs text-slate-500 mt-0.5">Summary by PIC and task status.</p></div><div class="flex items-center gap-1.5"><button onclick="copyTableToClipboard('dashTablePicStatus')" class="bom-action-btn bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300"><i class="fa-solid fa-copy"></i> Copy</button><button onclick="exportStyledTable('dashTablePicStatus','Task_Tracking_PIC_Status')" class="bom-action-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300"><i class="fa-solid fa-file-excel"></i> Export Data</button></div></div>
+                        <div class="flex flex-wrap justify-between items-center gap-2"><div><h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center"><i class="fa-solid fa-user-check mr-2 text-indigo-600"></i>Task Tracking by Status</h3></div><div class="flex items-center gap-1.5"><button onclick="copyTableToClipboard('dashTablePicStatus')" class="bom-action-btn bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300"><i class="fa-solid fa-copy"></i> Copy</button><button onclick="exportStyledTable('dashTablePicStatus','Task_Tracking_PIC_Status')" class="bom-action-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300"><i class="fa-solid fa-file-excel"></i> Export Data</button></div></div>
                         <div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs border-collapse" id="dashTablePicStatus"><thead class="bg-slate-800 text-white uppercase text-[10px] font-semibold"><tr><th class="py-2.5 px-3">PIC Name</th><th class="py-2.5 px-2 text-center bg-emerald-700">Completed</th><th class="py-2.5 px-2 text-center bg-amber-600">Working</th><th class="py-2.5 px-2 text-center bg-rose-700">Overdue</th><th class="py-2.5 px-2 text-center bg-slate-600">Other</th><th class="py-2.5 px-3 text-center bg-slate-900 font-bold">Total</th></tr></thead><tbody id="dashTablePicStatusBody" class="divide-y divide-slate-100 font-medium"><tr><td colspan="6" class="py-4 text-center text-slate-400">No data</td></tr></tbody></table></div>
                     </div>
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
@@ -6460,6 +6460,15 @@ function setupInlineRequiredValidation(){
             if(!wrap||!select)return;
             const category=String(document.getElementById('taskCategory')?.value||'').trim();
             const taskName=getSelectedTaskName();
+            // "Other" has no predefined scope: leave it blank so the user must choose/type one.
+            if(category.toLowerCase()==='other'){
+                select.value='';
+                select.required=true;
+                taskScopeUserChanged=false;
+                wrap.classList.remove('hidden');
+                if(scopeOptions) scopeOptions.innerHTML=[...new Set(["In BOM's scope","Out of BOM's scope","RND process","Compliance","Projects","New Go Tracking"])].map(v=>`<option value="${escapeHtml(v)}"></option>`).join('');
+                return;
+            }
             // Keep standard and Category Setup scopes available as suggestions, while
             // allowing any custom scope to be typed into the field.
             const scopeOptions=document.getElementById('taskScopeOptions');
@@ -7498,6 +7507,23 @@ function setupInlineRequiredValidation(){
                 tr.innerHTML = rowHtml;
                 tbody.appendChild(tr);
             });
+
+            // Final row: headcount expected to work on each Saturday = active members
+            // minus members registered for Saturday Off on that date.
+            const totalRow=document.createElement('tr');
+            totalRow.className='bg-indigo-50 border-t-2 border-indigo-200 font-extrabold text-indigo-900';
+            let totalHtml='<td class="py-3 px-4">Working Headcount</td>';
+            saturdays.forEach(sDate=>{
+                const offCount=activeUsers.filter(u=>timeoffOtList.some(item=>{
+                    const type=String(item.type||'').trim().toLowerCase();
+                    const itemPic=String(item.pic||'').trim().toLowerCase();
+                    const start=cleanDateStr(item.startDate), end=cleanDateStr(item.endDate||item.startDate);
+                    return type==='saturday off' && itemPic===String(u.name||'').trim().toLowerCase() && start && end && start<=sDate && sDate<=end;
+                })).length;
+                totalHtml+=`<td class="py-3 px-2 text-center">${Math.max(0,activeUsers.length-offCount)}</td>`;
+            });
+            totalRow.innerHTML=totalHtml;
+            tbody.appendChild(totalRow);
         }
 
         async function toggleSaturdayMatrix(pic, sDate, isChecked) {
