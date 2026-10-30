@@ -11,7 +11,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="https://images.icon-icons.com/1713/PNG/512/iconfinder-viralvideobombhotnewproduct-3993850_112641.png">
     <link rel="apple-touch-icon" sizes="512x512" href="https://images.icon-icons.com/1713/PNG/512/iconfinder-viralvideobombhotnewproduct-3993850_112641.png">
     <link rel="manifest" href="./manifest.json">
-    <title>BOM Team Management System</title>
+    <title>IE Team Management System</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
@@ -2651,6 +2651,33 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
 </style>
 
 <style id="projectDirectEntryStyles">#tab-projects .pm-project-direct-edit{display:block;width:100%;min-width:64px;min-height:28px;padding:4px 5px;border:1px solid #cbdde9;border-radius:5px;background:#fff;color:#183b5b;font-size:11px;box-sizing:border-box}#tab-projects .pm-project-direct-edit:focus{outline:2px solid #78b7e4;border-color:#3b82b8}#tab-projects .pm-project-direct-edit:disabled{background:#f1f5f9;color:#64748b;cursor:not-allowed}#tab-projects td.pm-project-detail-cell .pm-project-direct-edit{min-width:120px}</style>
+
+<script id="markdb-api-config">
+window.MARKDB_API_BASE = "http://localhost:5055/api";
+window.markDbApi = async function(path, options={}) {
+  const r = await fetch(window.MARKDB_API_BASE + path, { headers:{"Content-Type":"application/json", ...(options.headers||{})}, ...options });
+  if(!r.ok) throw new Error(`API ${r.status}: ${await r.text()}`);
+  const ct=r.headers.get("content-type")||""; return ct.includes("application/json") ? r.json() : r.text();
+};
+</script>
+
+<script id="markdb-full-adapter">
+(()=>{
+ const BASE='http://localhost:5055/api';
+ class Q{
+  constructor(table){this.table=table;this.req={operation:'select',payload:null,filters:[],ascending:true,single:false};}
+  select(){return this;} insert(p){this.req.operation='insert';this.req.payload=p;return this;} upsert(p,o={}){this.req.operation='upsert';this.req.payload=p;this.req.onConflict=o.onConflict||null;return this;}
+  update(p){this.req.operation='update';this.req.payload=p;return this;} delete(){this.req.operation='delete';return this;}
+  eq(c,v){this.req.filters.push({column:c,op:'eq',value:v});return this;} neq(c,v){this.req.filters.push({column:c,op:'neq',value:v});return this;}
+  is(c,v){return this.eq(c,v);} in(c,v){this.req.filters.push({column:c,op:'in',value:v});return this;}
+  order(c,o={}){this.req.orderBy=c;this.req.ascending=o.ascending!==false;return this;} limit(n){this.req.limit=n;return this;}
+  single(){this.req.single=true;return this;} maybeSingle(){this.req.single=true;return this;}
+  async exec(){try{const r=await fetch(`${BASE}/data/${encodeURIComponent(this.table)}/query`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(this.req)});const x=await r.json();if(!r.ok)return {data:null,error:x.error||{message:`HTTP ${r.status}`}};return {data:x,error:null};}catch(e){return {data:null,error:{message:e.message}}}}
+  then(a,b){return this.exec().then(a,b);}
+ }
+ window.markDbClient={from:t=>new Q(t),channel:()=>({on(){return this},subscribe(){return this}}),removeChannel:()=>{},auth:{getSession:async()=>({data:{session:null},error:null}),signOut:async()=>({error:null})}};
+})();
+</script>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased h-screen flex overflow-hidden">
 
@@ -2682,7 +2709,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
 <footer class="footer">
     <!-- Left Info Block: Task Tracking -->
     <div class="jobs">
-      <span class="tag">BOM C&S TASK TRACKING</span>
+      <span class="tag">IE TEAM TASK TRACKING</span>
       <div class="headline job-title">
         <span>Precision & Speed</span><br>
         <span>In Every Project</span>
@@ -2698,7 +2725,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
     <!-- Center Overlay: Transparent Glassmorphism Login Box -->
     <div class="login-overlay">
       <div class="login-header">
-        <span class="login-badge">BOM C&S LOGIN</span>
+        <span class="login-badge">IE TEAM LOGIN</span>
         <h2>System Access</h2>
         <p>Task & Project Tracking System</p>
       </div>
@@ -2718,20 +2745,19 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
             <input type="password" id="loginPassword" class="form-input" placeholder="Enter Password" autocomplete="current-password" disabled>
           </div>
         </div>
-        <p id="viewerHint" class="viewer-hint">View-only access · No account required</p>
+        <div id="viewerTeamBox" class="form-group" style="margin-top:8px;"><label for="loginTeam">Team</label><select id="loginTeam" class="form-input"><option value="">Loading teams...</option></select></div>
         <button type="submit" id="loginSubmitBtn" class="login-btn">Continue as Viewer</button>
       </form>
       <div id="loginError" class="login-msg" style="display:none"></div>
     </div>
 
-    <!-- Right Info Block: C&S Team Portal -->
+    <!-- Right Info Block -->
     <div class="contact">
-      <span class="tag">C&S TEAM PORTAL</span>
       <div class="headline contact-links">
         <span>Streamline Workflows</span>
         <span>Track Progress Live*</span>
       </div>
-      <p class="note">*Stay aligned with real-time updates and seamless BOM execution.</p>
+      <p class="note">*Stay aligned with real-time updates and seamless team execution.</p>
     </div>
 
     <!-- Background Video Container -->
@@ -2766,8 +2792,8 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                     <i class="fa-solid fa-layer-group"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-white tracking-wide text-lg">BOM TEAM</h1>
-                    <p class="text-xs text-slate-400 flex items-center gap-1.5"><span class="realtime-dot"></span>Team BOM xin chào!</p>
+                    <h1 class="font-bold text-white tracking-wide text-lg">IE TEAM</h1>
+                    <p class="text-xs text-slate-400 flex items-center gap-1.5"><span class="realtime-dot"></span>Team <span id="teamGreeting"></span> xin chào!</p>
                 </div>
             </div>
         </div>
@@ -2780,6 +2806,15 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                     <span id="currentUserRoleBadge" class="inline-block px-1.5 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-semibold rounded uppercase tracking-wider">Member</span>
                 </div>
             </div>
+        </div>
+
+        <div id="teamSwitcherCard" class="mx-3 mb-3 px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/60">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5"><i class="fa-solid fa-people-group mr-1"></i>Team</div>
+            <div id="teamStaticLabel" class="text-sm font-semibold text-white truncate">—</div>
+            <div id="teamAdminControls" class="hidden space-y-2">
+                <select id="teamSwitcher" onchange="switchTeamView(this.value)" class="w-full bg-slate-900 border border-slate-600 text-slate-100 text-xs rounded-lg px-2 py-2 outline-none"></select>
+            </div>
+            <p id="teamHint" class="hidden mt-1.5 text-[10px] leading-snug text-amber-300">Viewing all teams. Select one team to add or import data.</p>
         </div>
 
         <nav class="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
@@ -2802,7 +2837,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                 <i class="fa-regular fa-clock w-6"></i><span>Time Off & Overtime</span>
             </a>
             <a href="#" onclick="switchTab('bom-cs-scope')" id="nav-bom-cs-scope" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800">
-                <i class="fa-solid fa-people-group w-6"></i><span>BOM C&amp;S Scope</span>
+                <i class="fa-solid fa-people-group w-6"></i><span>Team Scope</span>
             </a>
             <div id="nav-users-divider" class="pt-2 border-t border-slate-800 my-2 hidden"></div>
             <a href="#" onclick="switchTab('users')" id="nav-users" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800 hidden">
@@ -2924,7 +2959,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                 <!-- Tracking Tables -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
-                        <div class="flex flex-wrap justify-between items-center gap-2"><div><h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center"><i class="fa-solid fa-user-check mr-2 text-indigo-600"></i>Task Tracking by Status</h3></div><div class="flex items-center gap-1.5"><button onclick="copyTableToClipboard('dashTablePicStatus')" class="bom-action-btn bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300"><i class="fa-solid fa-copy"></i> Copy</button><button onclick="exportStyledTable('dashTablePicStatus','Task_Tracking_PIC_Status')" class="bom-action-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300"><i class="fa-solid fa-file-excel"></i> Export Data</button></div></div>
+                        <div class="flex flex-wrap justify-between items-center gap-2"><div><h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center"><i class="fa-solid fa-user-check mr-2 text-indigo-600"></i>Task Tracking by Status (PIC x Status)</h3><p class="text-xs text-slate-500 mt-0.5">Summary by PIC and task status.</p></div><div class="flex items-center gap-1.5"><button onclick="copyTableToClipboard('dashTablePicStatus')" class="bom-action-btn bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300"><i class="fa-solid fa-copy"></i> Copy</button><button onclick="exportStyledTable('dashTablePicStatus','Task_Tracking_PIC_Status')" class="bom-action-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300"><i class="fa-solid fa-file-excel"></i> Export Data</button></div></div>
                         <div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs border-collapse" id="dashTablePicStatus"><thead class="bg-slate-800 text-white uppercase text-[10px] font-semibold"><tr><th class="py-2.5 px-3">PIC Name</th><th class="py-2.5 px-2 text-center bg-emerald-700">Completed</th><th class="py-2.5 px-2 text-center bg-amber-600">Working</th><th class="py-2.5 px-2 text-center bg-rose-700">Overdue</th><th class="py-2.5 px-2 text-center bg-slate-600">Other</th><th class="py-2.5 px-3 text-center bg-slate-900 font-bold">Total</th></tr></thead><tbody id="dashTablePicStatusBody" class="divide-y divide-slate-100 font-medium"><tr><td colspan="6" class="py-4 text-center text-slate-400">No data</td></tr></tbody></table></div>
                     </div>
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
@@ -3225,7 +3260,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                     <div class="bom-multi" data-filter-key="Member"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Member <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
                     <div class="bom-multi" data-filter-key="Status"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Status <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
                     <button onclick="resetBomTopFilters()" class="bom-action-btn bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-                    <button onclick="openCapacityCategoryModal()" class="bom-action-btn bg-purple-600 hover:bg-purple-700 text-white"><i class="fa-solid fa-plus"></i> Add / Edit Capacity</button>
+                    <button onclick="openCapacityCategoryModal()" class="bom-action-btn bg-purple-600 hover:bg-purple-700 text-white"><i class="fa-solid fa-plus"></i> Add / Edit Category</button>
                     <button onclick="document.getElementById('capacityImportInput').click()" class="bom-action-btn bg-blue-600 hover:bg-blue-700 text-white"><i class="fa-solid fa-file-import"></i> Import File</button>
                     <input type="file" id="capacityImportInput" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleCapacityImport(event)">
                     <div class="ml-auto flex flex-wrap gap-1.5">
@@ -3249,7 +3284,8 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                                         Scope
                                         <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-capacity', 3)"></i>
                                     </th>
-                                    <th class="py-3 px-4 w-40 text-center">Workload (Hour)</th>
+                                    
+                                    <th class="py-3 px-4 w-28 text-center">Team</th>
                                     <th class="py-3 px-4 w-24 text-center">Action</th>
                                 </tr>
                             </thead>
@@ -3264,403 +3300,9 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                 <div class="h-full min-h-0 bg-slate-50 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
                     <iframe
                         id="bomCsScopeFrame"
-                        title="BOM C&amp;S Scope"
+                        title="Team Scope"
                         class="w-full h-full border-0 block"
-                        loading="eager"
-                        srcdoc="&lt;!DOCTYPE html&gt;
-&lt;html lang=&quot;en&quot;&gt;
-&lt;head&gt;
-&lt;meta charset=&quot;UTF-8&quot;&gt;
-&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
-&lt;title&gt;Team BOM C&amp;S – Scope &amp; Responsibility&lt;/title&gt;
-&lt;style&gt;
-  :root{
-    --navy:#07345f;
-    --navy2:#0b4a80;
-    --cyan:#45d6ef;
-    --ink:#12304f;
-    --muted:#5f7690;
-    --line:#d8e6f2;
-    --panel:#f7fbff;
-    --white:#fff;
-    --pink:#f7c7dc;
-    --lav:#d8cdf8;
-    --mint:#ccefe3;
-    --sky:#cce8fb;
-    --gold:#ffe4a8;
-    --orange:#ffd2ad;
-  }
-
-  *{box-sizing:border-box}
-  body{
-    margin:0;
-    width:100%;
-    height:100vh;
-    overflow:hidden;
-    background:#edf4fa;
-    color:var(--ink);
-    font-family:Inter,Segoe UI,Arial,sans-serif;
-  }
-  .page{
-    width:100%;
-    height:100vh;
-    margin:0;
-    background:white;
-    border-radius:0;
-    overflow:hidden;
-    box-shadow:none;
-    display:flex;
-    flex-direction:column;
-  }
-
-  /* Header */
-  .hero{
-    background:linear-gradient(135deg,#062e55,#0a477a);
-    color:white;
-    padding:28px 34px 24px;
-    display:flex;
-    align-items:center;
-    gap:28px;
-  }
-  .brand{
-    flex:1.1;
-    min-width:360px;
-  }
-  .eyebrow{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    font-size:15px;
-    font-weight:700;
-    letter-spacing:1.8px;
-    color:#9de9f6;
-    text-transform:uppercase;
-  }
-  .target{
-    width:46px;height:46px;
-    display:grid;place-items:center;
-    border:2px solid #9de9f6;
-    border-radius:50%;
-    font-size:25px;
-  }
-  h1{
-    margin:8px 0 4px;
-    font-size:42px;
-    line-height:1;
-    letter-spacing:-1px;
-  }
-  .subtitle{
-    color:#bfefff;
-    font-size:17px;
-    margin-top:10px;
-  }
-  .goal{
-    flex:1;
-    background:rgba(255,255,255,.96);
-    color:var(--ink);
-    border-radius:18px;
-    padding:19px 24px;
-    display:flex;
-    align-items:center;
-    gap:18px;
-    box-shadow:0 8px 22px rgba(0,0,0,.08);
-  }
-  .goal-icon{font-size:42px}
-  .goal strong{display:block;font-size:22px;color:#0a4d82;margin-bottom:4px}
-  .goal p{margin:0;font-size:14px;line-height:1.5}
-
-  /* Table */
-  .wrap{
-    flex:1 1 auto;
-    min-height:0;
-    min-width:0;
-    padding:0;
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-  }
-  .matrix{
-    display:grid;
-    grid-template-columns:380px repeat(10,minmax(70px,1fr));
-    border:0;
-    border-radius:0;
-    overflow:visible;
-    min-width:1600px;
-  }
-  .scroll{
-    flex:1 1 auto;
-    min-height:0;
-    min-width:0;
-    overflow:auto;
-    padding:0;
-    overscroll-behavior:contain;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:thin;
-  }
-  .head{
-    background:linear-gradient(180deg,#0b4d82,#0a416f);
-    color:white;
-    min-height:58px;
-    position:sticky;
-    top:0;
-    z-index:20;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:10px;
-    border-right:1px solid rgba(255,255,255,.22);
-    font-weight:700;
-    font-size:14px;
-  }
-  .head.scope{text-align:left;justify-content:flex-start;padding-left:18px}
-  .head.member{
-    flex-direction:column;
-    gap:5px;
-    padding:7px 3px;
-  }
-  .avatar{
-    width:28px;height:28px;
-    border-radius:50%;
-    display:grid;place-items:center;
-    color:white;font-size:12px;font-weight:800;
-    border:2px solid rgba(255,255,255,.8);
-  }
-  .member-name{font-size:12px}
-
-  .cell{
-    min-height:56px;
-    border-top:1px solid var(--line);
-    border-right:1px solid var(--line);
-    background:#fff;
-    display:flex;
-    align-items:center;
-    padding:9px 12px;
-    font-size:13px;
-  }
-  .group{
-    font-weight:700;
-    font-size:15px;
-    line-height:1.25;
-    align-items:flex-start;
-    padding-top:15px;
-    gap:10px;
-  }
-  .group-badge{
-    flex:0 0 34px;
-    width:34px;height:34px;
-    border-radius:12px;
-    color:white;
-    display:grid;place-items:center;
-    font-weight:800;
-    font-size:15px;
-  }
-  .task{color:#234463;line-height:1.25}
-  .member-cell{justify-content:center;padding:0}
-  .check{
-    width:27px;height:27px;border-radius:50%;
-    display:grid;place-items:center;
-    font-weight:900;
-    font-size:15px;
-  }
-
-  /* row colors */
-  .r1{background:#edf8ff}
-  .r2{background:#edf9f5}
-  .r3{background:#f1edff}
-  .r4{background:#fff0f0}
-  .r5{background:#eefbfc}
-  .r6{background:#f4efff}
-  .r7{background:#fff7e9}
-  .r8{background:#edf8ff}
-  .r9{background:#faefff}
-  .r10{background:#edf9f5}
-
-  .b1{background:#1795d1}.b2{background:#15a681}.b3{background:#6b45ca}
-  .b4{background:#d84d56}.b5{background:#0e9ab2}.b6{background:#6944c8}
-  .b7{background:#e49a10}.b8{background:#157cc2}.b9{background:#9d42b8}.b10{background:#168d78}
-
-  .x1{background:#ffd2e3;color:#be2464}.x2{background:#d0f1e5;color:#118367}
-  .x3{background:#ded5ff;color:#6944c8}.x4{background:#ffd8d8;color:#c83d47}
-  .x5{background:#cef0f6;color:#087d93}.x6{background:#ded5ff;color:#6944c8}
-  .x7{background:#ffe0aa;color:#bc7200}.x8{background:#cfe9ff;color:#1373b5}
-  .x9{background:#efcdf5;color:#8e329e}.x10{background:#d2f1e7;color:#13836f}
-
-  /* Scope matrix: tick colors follow each row&#x27;s scope color, with stronger contrast. */
-  .member-cell.r1 .check{background:#c6e7f7;color:#0877b0}
-  .member-cell.r2 .check{background:#bfe9d8;color:#08765b}
-  .member-cell.r3 .check{background:#d7ccfb;color:#5b38b7}
-  .member-cell.r4 .check{background:#ffd1d1;color:#b52e38}
-  .member-cell.r5 .check{background:#c6eef3;color:#087184}
-  .member-cell.r6 .check{background:#d8cdf8;color:#5a39b5}
-  .member-cell.r7 .check{background:#ffe0ad;color:#a96700}
-  .member-cell.r8 .check{background:#c7e5fb;color:#1168a2}
-  .member-cell.r9 .check{background:#e4c8ec;color:#7d2e8d}
-  .member-cell.r10 .check{background:#c7e8dd;color:#126b59}
-
-
-  /* Keep the Scope column visible while the member matrix scrolls horizontally. */
-  .matrix &gt; .head:first-child,.matrix &gt; .cell.group{
-    position:sticky;left:0;z-index:35;min-width:0;
-    box-shadow:2px 0 5px rgba(15,45,75,.08);
-  }
-  .matrix &gt; .head:first-child{z-index:60;background:#0b4d82}
-  .matrix &gt; .cell.group{background:inherit}
-  .matrix &gt; .cell.scope-subitem{
-    padding-left:54px;font-size:12px;font-weight:600;line-height:1.3;
-    position:sticky;left:0;z-index:34;
-  }
-  .scope-subnumber{font-size:10px;font-weight:800;color:#5b7894;min-width:28px;flex:none}
-
-  /* Footer */
-  .footer{
-    margin:0 22px 22px;
-    background:linear-gradient(135deg,#082f58,#0b4b7e);
-    color:white;
-    border-radius:18px;
-    padding:15px 22px;
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:0;
-  }
-  .foot-item{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    padding:3px 22px;
-    border-right:1px solid rgba(255,255,255,.25);
-  }
-  .foot-item:last-child{border:0}
-  .foot-icon{font-size:27px}
-  .foot-title{font-weight:800;color:#75e7f6;font-size:15px}
-  .foot-text{font-size:12px;line-height:1.35;color:#e5f2fa}
-
-  .legend{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin:10px 4px 0;
-    color:#6d8194;
-    font-size:12px;
-  }
-  .legend .mini{
-    width:17px;height:17px;border-radius:50%;background:#ffd2e3;display:inline-grid;place-items:center;
-    color:#be2464;font-weight:800;font-size:10px;
-  }
-
-  @media(max-width:900px){
-    .page{width:100%;margin:0;border-radius:0}
-    .hero{padding:22px;display:block}
-    .brand{min-width:0}
-    h1{font-size:32px}
-    .goal{margin-top:18px}
-    .wrap{padding:14px}
-    .footer{margin:0 14px 14px;grid-template-columns:1fr 1fr}
-    .foot-item{padding:10px 12px}
-  }
-
-  @media print{
-    body{background:white}
-    .page{width:100%;margin:0;box-shadow:none;border-radius:0}
-    .scroll{overflow:visible}
-    .matrix{min-width:0}
-    @page{size:A3 landscape;margin:8mm}
-  }
-
-  /* Scope-only layout: full-height table, fixed column headers, vertically scrollable scope/task rows. */
-  html,body{width:100%;height:100%;margin:0;overflow:hidden}
-  .page{width:100%;height:100vh;margin:0;border-radius:0;box-shadow:none;overflow:hidden;display:flex;flex-direction:column}
-  .wrap{flex:1 1 auto;min-height:0;min-width:0;padding:0;overflow:hidden;display:flex;flex-direction:column}
-  .scroll{flex:1 1 auto;min-height:0;min-width:0;overflow:auto;padding:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
-  .matrix{grid-template-columns:380px repeat(10,minmax(70px,1fr));min-width:1600px;border:0;border-radius:0;overflow:visible}
-  .head{position:sticky;top:0;z-index:50}
-
-&lt;/style&gt;
-&lt;/head&gt;
-&lt;body&gt;
-&lt;div class=&quot;page&quot;&gt;
-&lt;main class=&quot;wrap&quot;&gt;
-    &lt;div class=&quot;scroll&quot;&gt;
-            &lt;section class=&quot;matrix&quot;&gt;
-        &lt;div class=&quot;head&quot;&gt;SCOPE&lt;/div&gt;
-        
-        
-        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#e5a42a&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Anny&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#e44b87&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Rita&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#7b62d9&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Tonya&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#2da981&quot;&gt;M&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Muriel&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#2388c9&quot;&gt;W&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Windy&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#2c9ed4&quot;&gt;M&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Mia&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#e58a35&quot;&gt;M&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Mark&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#6177cf&quot;&gt;V&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Venti&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#35a68e&quot;&gt;K&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Kitsune&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;head member&quot;&gt;&lt;span class=&quot;avatar&quot; style=&quot;background:#55aee5&quot;&gt;S&lt;/span&gt;&lt;span class=&quot;member-name&quot;&gt;Snow&lt;/span&gt;&lt;/div&gt;
-
-        &lt;!-- 1 --&gt;
-        &lt;div class=&quot;cell group r1&quot;&gt;&lt;span class=&quot;group-badge b1&quot;&gt;1&lt;/span&gt;&lt;span&gt;Cut &amp;amp; Sew BOM Management – Wanek &amp;amp; Millennium&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 1.1 --&gt;
-        &lt;div class=&quot;cell group r1 scope-subitem&quot;&gt;&lt;span class=&quot;scope-subnumber&quot;&gt;1.1&lt;/span&gt;&lt;span&gt;BOM RP/Swatch Card&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;
-
-        &lt;!-- 1.2 --&gt;
-        &lt;div class=&quot;cell group r1 scope-subitem&quot;&gt;&lt;span class=&quot;scope-subnumber&quot;&gt;1.2&lt;/span&gt;&lt;span&gt;BOM new Go&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 1.3 --&gt;
-        &lt;div class=&quot;cell group r1 scope-subitem&quot;&gt;&lt;span class=&quot;scope-subnumber&quot;&gt;1.3&lt;/span&gt;&lt;span&gt;ECO changes&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 1.4 --&gt;
-        &lt;div class=&quot;cell group r1 scope-subitem&quot;&gt;&lt;span class=&quot;scope-subnumber&quot;&gt;1.4&lt;/span&gt;&lt;span&gt;BOM changes for other requires&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;
-
-        &lt;!-- 1.5 --&gt;
-        &lt;div class=&quot;cell group r1 scope-subitem&quot;&gt;&lt;span class=&quot;scope-subnumber&quot;&gt;1.5&lt;/span&gt;&lt;span&gt;Labels related to compliance management&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r1&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 2 --&gt;
-        &lt;div class=&quot;cell group r2&quot;&gt;&lt;span class=&quot;group-badge b2&quot;&gt;2&lt;/span&gt;&lt;span&gt;R&amp;amp;D BOM for Costing – C&amp;amp;S &amp;amp; Wanek 4&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r2&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 3 --&gt;
-        &lt;div class=&quot;cell group r3&quot;&gt;&lt;span class=&quot;group-badge b3&quot;&gt;3&lt;/span&gt;&lt;span&gt;R&amp;amp;D Material Purchasing&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r3&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 4 --&gt;
-        &lt;div class=&quot;cell group r4&quot;&gt;&lt;span class=&quot;group-badge b4&quot;&gt;4&lt;/span&gt;&lt;span&gt;Outsource Project Management&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r4&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 5 --&gt;
-        &lt;div class=&quot;cell group r5&quot;&gt;&lt;span class=&quot;group-badge b5&quot;&gt;5&lt;/span&gt;&lt;span&gt;New Material Development&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r5&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 6 --&gt;
-        &lt;div class=&quot;cell group r6&quot;&gt;&lt;span class=&quot;group-badge b6&quot;&gt;6&lt;/span&gt;&lt;span&gt;New Go Timeline &amp;amp; Speed-to-Market Management&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r6&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 7 --&gt;
-        &lt;div class=&quot;cell group r7&quot;&gt;&lt;span class=&quot;group-badge b7&quot;&gt;7&lt;/span&gt;&lt;span&gt;AI Applications, Data Analytics, Automation &amp;amp; Dashboard Development&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r7&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 8 --&gt;
-        &lt;div class=&quot;cell group r8&quot;&gt;&lt;span class=&quot;group-badge b8&quot;&gt;8&lt;/span&gt;&lt;span&gt;Project &amp;amp; Product Compliance – Wanek &amp;amp; Millennium&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r8&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 9 --&gt;
-        &lt;div class=&quot;cell group r9&quot;&gt;&lt;span class=&quot;group-badge b9&quot;&gt;9&lt;/span&gt;&lt;span&gt;Process Optimization &amp;amp; New Business Process Development&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r9&quot;&gt;&lt;/div&gt;
-
-        &lt;!-- 10 --&gt;
-        &lt;div class=&quot;cell group r10&quot;&gt;&lt;span class=&quot;group-badge b10&quot;&gt;10&lt;/span&gt;&lt;span&gt;Managing system project setup, Bill of Materials, and troubleshooting&lt;/span&gt;&lt;/div&gt;
-        &lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;span class=&quot;check x1&quot;&gt;✓&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;&lt;div class=&quot;cell member-cell r10&quot;&gt;&lt;/div&gt;
-      &lt;/section&gt;
-    &lt;/div&gt;
-    &lt;/main&gt;
-&lt;/div&gt;
-&lt;/body&gt;
-&lt;/html&gt;
-">
+                        loading="eager">
                     </iframe>
                 </div>
             </div>
@@ -3677,17 +3319,19 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                     <div class="bom-multi" data-filter-key="Status"><button type="button" class="bom-multi-btn" onclick="toggleBomFilter(this)">Status <i class="fa-solid fa-chevron-down text-[9px]"></i></button><div class="bom-multi-menu hidden"></div></div>
                     <button onclick="resetBomTopFilters()" class="bom-action-btn bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"><i class="fa-solid fa-rotate-left"></i> Reset</button>
                     <button onclick="openAddUserModal()" class="bom-action-btn bg-indigo-600 hover:bg-indigo-700 text-white"><i class="fa-solid fa-user-plus"></i> Add User</button>
+                    <button onclick="openTeamModal()" class="bom-action-btn bg-teal-600 hover:bg-teal-700 text-white"><i class="fa-solid fa-people-group"></i> Add Team</button>
                     <div class="ml-auto flex flex-wrap gap-1.5">
 <button onclick="exportCurrentPageData('tab-users')" class="bom-action-btn bg-emerald-600 hover:bg-emerald-700 text-white"><i class="fa-solid fa-file-export"></i> Export Data</button></div></div>
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto custom-scrollbar" style="max-height: calc(100vh - 220px);">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-100 font-bold uppercase border-b border-slate-200">
+                        <table class="w-full text-left text-xs" id="table-users">
+                            <thead class="bg-slate-100 font-bold uppercase border-b border-slate-200 sticky top-0">
                                 <tr>
-                                    <th class="py-3 px-4">Member Name</th>
-                                    <th class="py-3 px-3 text-center">Password</th>
-                                    <th class="py-3 px-3 text-center">Role</th>
-                                    <th class="py-3 px-3 text-center">Status</th>
+                                    <th class="py-3 px-4">Member Name <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-users', 0)"></i></th>
+                                    <th class="py-3 px-3 text-center">Password <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-users', 1)"></i></th>
+                                    <th class="py-3 px-3 text-center">Role <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-users', 2)"></i></th>
+                                    <th class="py-3 px-3 text-center">Status <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-users', 3)"></i></th>
+                                    <th class="py-3 px-3 text-center">Team <i class="fa-solid fa-filter text-slate-400 excel-filter-btn" onclick="openAdvancedFilter('table-users', 4)"></i></th>
                                     <th class="py-3 px-4 text-center">Action</th>
                                 </tr>
                             </thead>
@@ -3713,7 +3357,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
     <div id="capacityCategoryModal" class="modal opacity-0 pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity duration-200">
         <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-lg mx-4 overflow-hidden">
             <div class="bg-gradient-to-r from-slate-900 to-purple-900 text-white px-6 py-4 flex items-center justify-between">
-                <h3 class="font-bold text-base" id="capacityModalTitle">Add / Edit Capacity</h3>
+                <h3 class="font-bold text-base" id="capacityModalTitle">Add / Edit Category</h3>
                 <button type="button" onclick="closeCapacityCategoryModal()" class="text-slate-300 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <form id="capacityCategoryForm" onsubmit="saveCapacityCategory(event)" class="p-6 space-y-4">
@@ -3729,14 +3373,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Scope</label>
-                    <select id="capacityScope" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-purple-600">
-                        <option value="In BOM's scope">In BOM's scope</option>
-                        <option value="Out of BOM's scope">Out of BOM's scope</option>
-                        <option value="RND process">RND process</option>
-                        <option value="Compliance">Compliance</option>
-                        <option value="Projects">Projects</option>
-                        <option value="New Go Tracking">New Go Tracking</option>
-                    </select>
+                    <select id="capacityScope" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-purple-600"></select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Workload (Hour)</label>
@@ -3762,10 +3399,35 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
                 <div><label class="block text-xs font-semibold text-slate-700 mb-1">Member</label><input id="userName" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"></div>
                 <div><label class="block text-xs font-semibold text-slate-700 mb-1">Password</label><input id="userPassword" type="text" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"></div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-xs font-semibold text-slate-700 mb-1">Role</label><select id="userRole" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"><option>Member</option><option>Admin</option></select></div>
+                    <div><label class="block text-xs font-semibold text-slate-700 mb-1">Role</label><select id="userRole" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"><option>Member</option><option>Team Admin</option><option value="Admin">App Admin</option><option>Viewer</option></select></div>
                     <div><label class="block text-xs font-semibold text-slate-700 mb-1">Status</label><select id="userStatus" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"><option>Active</option><option>Inactive</option></select></div>
                 </div>
+                <div id="userTeamBox"><label class="block text-xs font-semibold text-slate-700 mb-1">Team</label><select id="userTeam" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"></select><p class="text-[10px] text-slate-400 mt-1">App Admin accounts can manage every team. Team Admin accounts are restricted to their assigned team.</p></div>
                 <div class="pt-3 border-t border-slate-100 flex justify-end gap-3"><button type="button" onclick="closeUserModal()" class="px-5 py-2.5 bg-slate-100 rounded-xl text-xs font-semibold">Cancel</button><button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold">Save</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: TEAM (Users page, Admin only) -->
+    <div id="teamModal" class="modal opacity-0 pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md mx-4 overflow-hidden">
+            <div class="bg-gradient-to-r from-slate-900 to-teal-900 text-white px-6 py-4 flex items-center justify-between">
+                <h3 class="font-bold text-base">Add Team</h3>
+                <button type="button" onclick="closeTeamModal()" class="text-slate-300 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="createTeam(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Team name</label>
+                    <input id="teamNewCode" required maxlength="60" placeholder="e.g. BOM C&amp;S" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none">
+                </div>
+                <div>
+                    <div class="text-xs font-semibold text-slate-700 mb-1.5">Existing teams</div>
+                    <div id="teamModalList" class="flex flex-wrap gap-1.5"></div>
+                </div>
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-3">
+                    <button type="button" onclick="closeTeamModal()" class="px-5 py-2.5 bg-slate-100 rounded-xl text-xs font-semibold">Close</button>
+                    <button type="submit" class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-semibold">Create team</button>
+                </div>
             </form>
         </div>
     </div>
@@ -3931,23 +3593,96 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
         let supabaseInitError = null;
 
         function initSupabaseClient(){
-            if(supabaseClient) return supabaseClient;
-            if(!window.supabase || typeof window.supabase.createClient !== 'function'){
-                supabaseInitError = new Error('Supabase JavaScript library could not be loaded. Check whether your company network blocks cdn.jsdelivr.net.');
-                return null;
-            }
-            try{
+            try {
+                if (supabaseClient && typeof supabaseClient.from === 'function' && supabaseClient.__isRealSupabase) {
+                    supabaseReady = true; supabaseInitError = null; return supabaseClient;
+                }
+                // Legacy window.markDbClient points to localhost:5055 - never use it.
+                if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+                    throw new Error('Supabase library was not loaded. Check internet or CDN access.');
+                }
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-                    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+                    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
                 });
-                supabaseReady = true;
+                supabaseClient.__isRealSupabase = true;
+                window.supabaseDbClient = supabaseClient;
+                supabaseReady = true; supabaseInitError = null;
                 return supabaseClient;
-            }catch(e){
-                supabaseInitError=e;
+            } catch (error) {
+                supabaseClient = null; supabaseReady = false; supabaseInitError = error;
+                console.error('Supabase initialization failed:', error);
                 return null;
             }
         }
         initSupabaseClient();
+
+        // ===== SERVER-SIDE FILTERED LOADING (team + selected years, paged by 1000) =====
+        const TEAM_FILTERED_TABLES = ['capacity','tasks','timeoff_ot','projects'];
+        function serverTeamFilter(table){
+            if (!currentUser || !TEAM_FILTERED_TABLES.includes(table)) return null;
+            const all = window.TEAM_ALL || '__ALL__';
+            const t = String(window.activeTeamView && window.activeTeamView !== all ? window.activeTeamView : (currentUser.team || '')).trim();
+            return t || null;
+        }
+        function getTaskLoadYears(){
+            let years = [];
+            try { if (typeof bomTopFilterState !== 'undefined') years = [...bomTopFilterState.Year].map(Number).filter(Boolean); } catch(_) {}
+            if (years.length) return years.sort((x,y)=>x-y);
+            if (window.__taskYearsExplicit) return null;
+            return [new Date().getFullYear()];
+        }
+        function getTaskLoadWindow(){
+            const years = getTaskLoadYears();
+            if (!years) return null;
+            return { start: `${years[0]-1}-12-01`, end: `${years[years.length-1]+1}-01-10`, key: years.join(',') };
+        }
+        window.getTaskLoadWindow = getTaskLoadWindow;
+        async function fetchAllRows(table, orderCol, pageSize = 1000){
+            const team = serverTeamFilter(table);
+            const win = table === SUPABASE_TABLES.Tasks && currentUser ? getTaskLoadWindow() : null;
+            if (table === SUPABASE_TABLES.Tasks) window.__loadedTaskKey = (team||'*') + '|' + (win ? win.key : 'ALL');
+            const all = [];
+            for (let from = 0; ; from += pageSize) {
+                let q = supabaseClient.from(table).select('*');
+                if (team) q = q.eq('team', team);
+                if (win) {
+                    const r = c => `and(${c}.gte.${win.start},${c}.lte.${win.end})`;
+                    q = q.or(`${r('start_date')},${r('plan_date')},${r('actual_date')},actual_date.is.null`);
+                }
+                const { data, error } = await q.order(orderCol, { ascending: true }).order('id', { ascending: true }).range(from, from + pageSize - 1);
+                if (error) return { data: null, error };
+                all.push(...(data || []));
+                if (!data || data.length < pageSize) break;
+            }
+            return { data: all, error: null };
+        }
+        window.fetchAllRows = fetchAllRows;
+        async function loadTaskYearUniverse(){
+            try{
+                const team = serverTeamFilter(SUPABASE_TABLES.Tasks);
+                let q = supabaseClient.from(SUPABASE_TABLES.Tasks).select('start_date').not('start_date','is',null);
+                if (team) q = q.eq('team', team);
+                const { data, error } = await q.order('start_date',{ascending:true}).limit(1);
+                if (error) throw error;
+                const now = new Date().getFullYear();
+                const min = data && data[0] ? Number(String(data[0].start_date).slice(0,4)) || now : now;
+                const list = []; for (let y = Math.min(min, now); y <= now + 1; y++) list.push(String(y));
+                window.__taskYearUniverse = list;
+            }catch(e){ console.warn('Year list load failed:', e); }
+        }
+        window.loadTaskYearUniverse = loadTaskYearUniverse;
+        let __taskReloadBusy = null;
+        async function ensureTaskYearsLoaded(){
+            const team = serverTeamFilter(SUPABASE_TABLES.Tasks);
+            const win = getTaskLoadWindow();
+            const key = (team||'*') + '|' + (win ? win.key : 'ALL');
+            if (key === window.__loadedTaskKey) return false;
+            if (__taskReloadBusy) return __taskReloadBusy;
+            __taskReloadBusy = (async()=>{ try{ await fetchAllDataFromSheet({background:false, forceRender:true}); } finally { __taskReloadBusy = null; } return true; })();
+            return __taskReloadBusy;
+        }
+        window.ensureTaskYearsLoaded = ensureTaskYearsLoaded;
+
 
         let users = [];
         let capacityData = [];
@@ -4142,17 +3877,17 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
         }
 
         function mapDbUserToApp(r){
-            return { id:r?.id, name:r?.name||'', password:r?.password??'', role:r?.role||'Member', status:r?.status||'Active', createdAt:r?.created_at||'', updatedAt:r?.updated_at||'' };
+            return { id:r?.id, team:r?.team||'', name:r?.name||'', password:r?.password??'', role:r?.role||'Member', status:r?.status||'Active', createdAt:r?.created_at||'', updatedAt:r?.updated_at||'' };
         }
         function mapDbCapacityToApp(r){
-            return { id:r?.id, category:r?.category||'', task:r?.task||'', scope:r?.scope||"In BOM's scope", workload:Number(r?.workload||0) };
+            return { id:r?.id, team:r?.team||'', category:r?.category||'', task:r?.task||'', scope:r?.scope||"In BOM's scope", workload:Number(r?.workload||0) };
         }
         function mapDbTaskToApp(r){
             const pics = String(r?.pic || '').split(',').map(x=>x.trim()).filter(Boolean);
             const creator = users.find(u=>String(u.id)===String(r?.created_by));
             const updater = users.find(u=>String(u.id)===String(r?.updated_by));
             return {
-                id: r?.id,
+                id: r?.id, team: r?.team || '',
                 category: r?.category || '', name: r?.name || '', items: r?.items || '', scope: r?.scope || '',
                 priority: r?.priority || 'Medium', pic: r?.pic || '', pics,
                 start: cleanDateStr(r?.start_date), plan: cleanDateStr(r?.plan_date), actual: cleanDateStr(r?.actual_date),
@@ -4165,7 +3900,7 @@ body.report-exporting #tab-dashboard > .grid.grid-cols-2.md\\:grid-cols-4.xl\\:g
             };
         }
         function mapDbTimeoffToApp(r){
-            return { id:r?.id, type:r?.type||'', pic:r?.pic||'', startDate:cleanDateStr(r?.start_date), endDate:cleanDateStr(r?.end_date), hours:Number(r?.hours||0), reason:r?.reason||'', createdAt:r?.created_at||'', updatedAt:r?.updated_at||'' };
+            return { id:r?.id, team:r?.team||'', type:r?.type||'', pic:r?.pic||'', startDate:cleanDateStr(r?.start_date), endDate:cleanDateStr(r?.end_date), hours:Number(r?.hours||0), reason:r?.reason||'', createdAt:r?.created_at||'', updatedAt:r?.updated_at||'' };
         }
         function getProjectMetaFromStorage(hoursUsed){
             const raw=(hoursUsed&&typeof hoursUsed==='object')?hoursUsed:{};
@@ -4255,24 +3990,9 @@ function normalizeProjectTasks(tasks,project){
             const owners=Array.isArray(r?.owners)?r.owners:(r?.owner?String(r.owner).split(',').map(x=>x.trim()).filter(Boolean):[]);
             const hoursUsed=(r?.hours_used&&typeof r.hours_used==='object')?r.hours_used:{};
             const meta=getProjectMetaFromStorage(hoursUsed);
-            const project={ id:r?.id, name:r?.name||'', owner:r?.owner||owners.join(', '), owners, scope:r?.scope||'Projects', detail:r?.detail||'', status:r?.status||'Working on it', progress:Number(r?.progress||0), startDate:cleanDateStr(r?.start_date), dueDate:cleanDateStr(r?.due_date), actualDate:cleanDateStr(r?.actual_date), priority:Number(r?.priority||3), gainDemand:r?.gain_demand??meta.gainDemand, detailedStatus:meta.detailedStatus||'', phases:meta.phases, tasks:meta.tasks, saving:r?.saving??0, actualSaving:r?.actual_saving??'', note:r?.note||'', hoursUsed, createdAt:r?.created_at||'', updatedAt:r?.updated_at||'' };
+            const project={ id:r?.id, team:r?.team||'', name:r?.name||'', owner:r?.owner||owners.join(', '), owners, scope:r?.scope||'Projects', detail:r?.detail||'', status:r?.status||'Working on it', progress:Number(r?.progress||0), startDate:cleanDateStr(r?.start_date), dueDate:cleanDateStr(r?.due_date), actualDate:cleanDateStr(r?.actual_date), priority:Number(r?.priority||3), gainDemand:r?.gain_demand??meta.gainDemand, detailedStatus:meta.detailedStatus||'', phases:meta.phases, tasks:meta.tasks, saving:r?.saving??0, actualSaving:r?.actual_saving??'', note:r?.note||'', hoursUsed, createdAt:r?.created_at||'', updatedAt:r?.updated_at||'' };
             project.phases=normalizeProjectPhases(project.phases,project);
             return project;
-        }
-
-        // Supabase REST commonly caps each response at 1,000 rows. Read every page
-        // explicitly so large tables are not silently truncated in the UI.
-        async function fetchAllSupabaseRows(buildQuery, pageSize = 1000) {
-            const allRows = [];
-            for (let from = 0; ; from += pageSize) {
-                const result = await buildQuery().range(from, from + pageSize - 1);
-                if (result.error) return { data: null, error: result.error, count: result.count };
-                const page = Array.isArray(result.data) ? result.data : [];
-                allRows.push(...page);
-                if (page.length < pageSize) {
-                    return { data: allRows, error: null, count: result.count ?? allRows.length };
-                }
-            }
         }
 
         async function fetchAllDataFromSheet({background = false, forceRender = false} = {}) {
@@ -4286,11 +4006,11 @@ function normalizeProjectTasks(tasks,project){
             if (!background && currentUser && syncLoader) syncLoader.classList.remove('opacity-0','pointer-events-none');
             try {
                 const [u,c,t,to,p] = await Promise.all([
-                        fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Users).select('*').order('id',{ascending:true})),
-                        fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Capacity).select('*').order('id',{ascending:true})),
-                        fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Tasks).select('*').order('updated_at',{ascending:true})),
-                        fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.TimeOff_OT).select('*').order('id',{ascending:true})),
-                        fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Projects).select('*').order('id',{ascending:true}))
+                        fetchAllRows(SUPABASE_TABLES.Users,'id'),
+                        fetchAllRows(SUPABASE_TABLES.Capacity,'id'),
+                        fetchAllRows(SUPABASE_TABLES.Tasks,'updated_at'),
+                        fetchAllRows(SUPABASE_TABLES.TimeOff_OT,'id'),
+                        fetchAllRows(SUPABASE_TABLES.Projects,'id')
                     ]);
                 for(const result of [u,c,t,to,p]) if(result.error) throw result.error;
                 const data={
@@ -4490,7 +4210,7 @@ function setupInlineRequiredValidation(){
         window.testTimeoffOtDatabase=async function(){
             if(!initSupabaseClient()) throw new Error('Supabase client is not initialized.');
             const table=SUPABASE_TABLES.TimeOff_OT;
-            const res=await fetchAllSupabaseRows(()=>supabaseClient.from(table).select('*')).limit(1);
+            const res=await supabaseClient.from(table).select('*').limit(1);
             console.log('TimeOff_OT database test:',{table,data:res.data,error:res.error});
             if(res.error) throw res.error;
             return res.data||[];
@@ -4527,6 +4247,17 @@ function setupInlineRequiredValidation(){
             if(sheetName==='Projects')return mapDbProjectToApp(r);
             return r;
         }
+        function getTaskWriteTeam(row){
+            // Member / Team Admin: own team. App Admin: team selected in the app.
+            const all = window.TEAM_ALL || '__ALL__';
+            const selected = String(window.activeTeamView || '').trim();
+            const ownTeam = String(currentUser?.team || '').trim();
+            const admin = typeof window.isAdminSession === 'function' && window.isAdminSession();
+            const team = admin ? (selected && selected !== all ? selected : ownTeam) : ownTeam;
+            if (!team) throw new Error('Cannot save task because no Team is selected/assigned.');
+            return team;
+        }
+
         function taskDbPayload(row){
             // Keep this payload aligned with public.tasks, including the user-selected Scope.
             // Run the SQL migration provided with this file to add public.tasks.scope.
@@ -4539,7 +4270,9 @@ function setupInlineRequiredValidation(){
             const planDate = cleanDateStr(row?.plan||row?.planDate);
             const actualDate = cleanDateStr(row?.actual||row?.actualDate);
             const usage = Number(row?.usageTime);
+            const taskTeam = getTaskWriteTeam(row);
             return {
+                team:taskTeam,
                 category:String(row?.category||'').trim(),
                 name:String(row?.name||'').trim(),
                 items:row?.items==null?'':String(row.items),
@@ -4571,6 +4304,7 @@ function setupInlineRequiredValidation(){
             for(const row of localRows){
                 const idKey=(row?.id!==undefined&&row?.id!==null&&String(row.id)!=='')?String(row.id):'';
                 const old=snapById.get(idKey);
+                row.team = getTaskWriteTeam(row);
                 const payload=taskDbPayload(row);
                 let result=null;
 
@@ -4598,7 +4332,7 @@ function setupInlineRequiredValidation(){
                 .filter(r=>r?.id!==undefined&&pending.has(stableRowKey('Tasks',r)))
                 .map(r=>Number(r.id)).filter(Number.isSafeInteger);
             if(idsToDelete.length){
-                const {error}=await supabaseClient.from(table).delete().in('id',idsToDelete);
+                const {error}=await teamGuard(supabaseClient.from(table).delete().in('id',idsToDelete));
                 if(error) throw error;
             }
 
@@ -4673,14 +4407,14 @@ function setupInlineRequiredValidation(){
                     .filter(r=>r?.id!==undefined&&pending.has(stableRowKey('TimeOff_OT',r)))
                     .map(r=>Number(r.id)).filter(Number.isSafeInteger);
                 if(idsToDelete.length){
-                    const {error}=await supabaseClient.from(table).delete().in('id',idsToDelete);
+                    const {error}=await teamGuard(supabaseClient.from(table).delete().in('id',idsToDelete));
                     if(error) throw error;
                 }
 
                 // Read the table again so the application state exactly matches Supabase.
-                const refreshed=await fetchAllSupabaseRows(()=>fetchAllSupabaseRows(()=>supabaseClient.from(table).select('*')).order('id',{ascending:true}));
+                const refreshed=await supabaseClient.from(table).select('*').order('id',{ascending:true});
                 if(refreshed.error) throw refreshed.error;
-                const authoritative=(refreshed.data||[]).map(mapDbTimeoffToApp);
+                const authoritative=scopeRowsToTeam((refreshed.data||[]).map(mapDbTimeoffToApp));
                 const requiredSavedIds=savedRows.map(r=>Number(r.id)).filter(Number.isSafeInteger);
                 const returnedIds=new Set(authoritative.map(r=>Number(r.id)));
                 const missingIds=requiredSavedIds.filter(id=>!returnedIds.has(id));
@@ -4706,7 +4440,7 @@ function setupInlineRequiredValidation(){
                 }else if(sheetName==='Users'){
                     result=await supabaseClient.from(table).upsert(payload,{onConflict:'name'}).select('*').single();
                 }else if(sheetName==='Capacity'){
-                    result=await supabaseClient.from(table).upsert(payload,{onConflict:'category,task'}).select('*').single();
+                    result=await supabaseClient.from(table).upsert(payload,{onConflict:'team,category,task'}).select('*').single();
                 }else{
                     result=await supabaseClient.from(table).insert(payload).select('*').single();
                 }
@@ -4720,7 +4454,7 @@ function setupInlineRequiredValidation(){
                 .filter(r=>r?.id!==undefined&&pending.has(stableRowKey(sheetName,r)))
                 .map(r=>Number(r.id)).filter(Number.isSafeInteger);
             if(idsToDelete.length){
-                const {error}=await supabaseClient.from(table).delete().in('id',idsToDelete);
+                const {error}=await teamGuard(supabaseClient.from(table).delete().in('id',idsToDelete));
                 if(error) throw error;
             }
             return savedRows;
@@ -4774,7 +4508,7 @@ function setupInlineRequiredValidation(){
 
         async function fetchSheetRowsForMerge(sheetName){
             const table=tableForSheet(sheetName);
-            const {data,error}=await fetchAllSupabaseRows(()=>supabaseClient.from(table).select('*'));
+            const {data,error}=await supabaseClient.from(table).select('*');
             if(error)throw error;
             return (data||[]).map(r=>mapSavedRow(sheetName,r));
         }
@@ -4796,7 +4530,8 @@ function setupInlineRequiredValidation(){
             creds.classList.toggle('viewer-hidden',loginMode==='viewer');
             user.disabled=pass.disabled=loginMode!=='member';
             user.required=pass.required=loginMode==='member';
-            hint.classList.toggle('hidden',loginMode==='member');
+            hint?.classList.toggle('hidden',loginMode==='member');
+            document.getElementById('viewerTeamBox')?.classList.toggle('hidden',loginMode==='member');
             submit.textContent=loginMode==='viewer'?'Continue as Viewer':'Log In';
             document.getElementById('loginError').classList.add('hidden');
         }
@@ -4817,19 +4552,27 @@ function setupInlineRequiredValidation(){
             try{
                 if(!initSupabaseClient()) throw supabaseInitError || new Error('Supabase client is not available.');
                 if(loginMode === 'viewer'){
-                    currentUser = {id:'readonly-viewer', name:'Viewer', username:'Viewer', role:'Viewer', status:'Active', isReadOnly:true};
+                    const viewerTeam=String(document.getElementById('loginTeam')?.value||'').trim();
+                    if(!viewerTeam) throw new Error('Please select the team you want to view.');
+                    window.activeTeamView=viewerTeam;
+                    currentUser = {id:'readonly-viewer', name:'Viewer', username:'Viewer', role:'Viewer', status:'Active', isReadOnly:true, team:viewerTeam};
                 } else {
                     const uName = document.getElementById('loginUsername').value.trim();
                     const pWord = document.getElementById('loginPassword').value.trim();
                     if(!uName || !pWord) throw new Error('Please enter both username and password.');
-                    const queryPromise = fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Users).select('*').order('id',{ascending:true}));
-                    const timeoutPromise = new Promise((_,reject)=>setTimeout(()=>reject(new Error('Supabase connection timed out after 10 seconds. Check your network/firewall access to mctutyvzloefyhpgokbe.supabase.co.')),10000));
+                    const queryPromise = fetchAllRows(SUPABASE_TABLES.Users,'id');
+                    const timeoutPromise = new Promise((_,reject)=>setTimeout(()=>reject(new Error('Supabase connection timed out after 10 seconds. Check network/firewall access to the configured Supabase project.')),10000));
                     const result = await Promise.race([queryPromise, timeoutPromise]);
                     if(result.error) throw result.error;
                     users = (result.data || []).map(mapDbUserToApp);
                     const found = users.find(u => String(u.name||'').toLowerCase() === uName.toLowerCase() && String(u.password??'') === pWord && String(u.status||'') === 'Active');
                     if(!found) throw new Error('Invalid username or password.');
+                    if(!String(found.team||'').trim()){
+                        if(found.role==='Admin') found.team='BOM C&S';
+                        else throw new Error('This account is not assigned to a team. Please contact Admin.');
+                    }
                     currentUser = found;
+                    window.activeTeamView=String(found.team||'').trim();
                 }
                 const loaded = await fetchAllDataFromSheet();
                 if(!loaded) throw new Error('Unable to load application data from Supabase.');
@@ -5304,7 +5047,7 @@ function setupInlineRequiredValidation(){
             const tbody = document.getElementById('capacityTableBody');
             if (!tbody) return;
             tbody.innerHTML = '';
-            if (!capacityData.length) { tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400 italic">No capacity data.</td></tr>`; return; }
+            if (!capacityData.length) { tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400 italic">No capacity data.</td></tr>`; return; }
             capacityData.forEach((item,index)=>{
                 const tr=document.createElement('tr');
                 tr.className='hover:bg-slate-50 transition border-b border-slate-100';
@@ -5314,7 +5057,7 @@ function setupInlineRequiredValidation(){
                     <td class="py-2.5 px-4 font-bold text-slate-800">${escapeHtml(item.category||'')}</td>
                     <td class="py-2.5 px-4 text-slate-700">${escapeHtml(item.task||'')}</td>
                     <td class="py-2.5 px-2 text-center"><select onchange="updateCapacityField(${item.id},'scope',this.value)" class="w-full max-w-[190px] px-2 py-1 bg-white border border-slate-300 rounded text-[11px]">${CAPACITY_SCOPES.map(x=>`<option value="${escapeHtml(x)}" ${x===scope?'selected':''}>${escapeHtml(x)}</option>`).join('')}</select></td>
-                    <td class="py-2.5 px-2 text-center"><input type="number" step="0.01" min="0" value="${Number(item.workload||0)}" readonly disabled title="Calculated automatically from Daily Tracking average Usage Time" class="w-24 px-2 py-1 bg-slate-100 border border-slate-300 rounded text-center text-xs font-bold text-indigo-600 cursor-not-allowed"></td>
+                    <td class="py-2.5 px-2 text-center text-[11px] font-semibold text-slate-600">${escapeHtml(item.team||"—")}</td>
                     <td class="py-2.5 px-2 text-center">
                         <button type="button" onclick="openCapacityCategoryModal(${item.id})" class="text-slate-400 hover:text-indigo-600 mr-2" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
                         <button type="button" onclick="deleteCapacityItem(${item.id})" class="text-slate-400 hover:text-red-600" title="Delete"><i class="fa-solid fa-trash"></i></button>
@@ -5380,11 +5123,16 @@ function setupInlineRequiredValidation(){
                         const task=String(normalized.taskname ?? normalized.task ?? '').trim();
                         const scope=String(normalized.scope ?? '').trim();
                         const workload=parseCapacityNumber(normalized.workloadhour ?? normalized.workload ?? normalized.hours);
-                        return { excelRow: rowIndex+2, category, task, scope, workload };
+                        return { excelRow: rowIndex+2, category, task, scope, workload, team:String(normalized.team ?? '').trim() };
                     });
 
                     const errors=[];
                     const seen=new Set();
+                    // MULTI-TEAM: an import may only ever touch ONE team: the team of the signed-in member
+                    // (or the team an Admin has selected in the sidebar).
+                    const importTeam=getWriteTeam();
+                    if(!importTeam) throw new Error('Select a specific Team in the sidebar before importing Category / Task Name. An import always belongs to exactly one team.');
+                    rows.forEach(r=>{ if(r.team && normTeam(r.team)!==normTeam(importTeam)) errors.push(`Row ${r.excelRow}: Team "${r.team}" is not your team ("${importTeam}"). You can only import data for your own team.`); });
                     rows.forEach(r=>{
                         if(!r.category) errors.push(`Row ${r.excelRow}: Category is required.`);
                         if(!r.task) errors.push(`Row ${r.excelRow}: Task Name is required.`);
@@ -5402,21 +5150,12 @@ function setupInlineRequiredValidation(){
                         throw new Error(shown.join('\n')+more);
                     }
 
-                    // Import is a full Capacity Setup replacement, matching the existing bulk-import behavior.
-                    const baseId=capacityData.reduce((mx,c)=>Math.max(mx,Number(c.id)||0),0);
-                    capacityData=rows.map((r,i)=>({
-                        id:baseId+i+1,
-                        category:r.category,
-                        task:r.task,
-                        scope:r.scope,
-                        workload:r.workload
-                    }));
-
-                    await saveSheetData('Capacity',capacityData);
+                    const importedCount=await importCapacityForTeam(importTeam, rows);
+                    if(importedCount===null) return;
                     renderCapacityTable();
                     populateFilterOptions();
                     restoreAdvancedTableFilters();
-                    showAppNotification(`${capacityData.length} capacity item(s) imported and synchronized.`);
+                    showAppNotification(`${importedCount} Category / Task Name item(s) imported for team "${importTeam}". Other teams were not changed.`);
                 } catch(err){
                     showAppNotification(err.message || 'Capacity import failed.','Import Error');
                 } finally{
@@ -5433,7 +5172,7 @@ function setupInlineRequiredValidation(){
             document.getElementById('capacityNewCategory').value='';
             if(editId!==null){ const item=capacityData.find(c=>String(c.id)===String(editId)); if(item){
                 if(!Array.from(select.options).some(o=>String(o.value)===String(item.category||''))){ select.insertBefore(new Option(String(item.category||''),String(item.category||'')),select.querySelector('option[value="__NEW__"]')); }
-                select.value=item.category; document.getElementById('capacityTaskName').value=item.task||''; document.getElementById('capacityScope').value=CAPACITY_SCOPES.includes(item.scope)?item.scope:CAPACITY_SCOPES[0]; document.getElementById('capacityWorkload').value=item.workload||0; document.getElementById('capacityModalTitle').innerText='Edit Capacity';} }
+                select.value=item.category; document.getElementById('capacityTaskName').value=item.task||''; document.getElementById('capacityScope').value=CAPACITY_SCOPES.includes(item.scope)?item.scope:CAPACITY_SCOPES[0];  document.getElementById('capacityModalTitle').innerText='Edit Category';} }
             else {document.getElementById('capacityTaskName').value=''; document.getElementById('capacityScope').value=CAPACITY_SCOPES[0]; document.getElementById('capacityWorkload').value='0'; document.getElementById('capacityModalTitle').innerText='Add Capacity';}
             onCapacityCategoryModeChange(); modal.classList.remove('opacity-0','pointer-events-none'); document.body.classList.add('modal-active');
         }
@@ -5639,6 +5378,7 @@ function setupInlineRequiredValidation(){
         function getBomFilterUniverse(key) {
             if (key === 'Status') dailyTasks.forEach(t=>calculateTaskMetadata(t));
             if (key === 'Month') return Array.from({length:12}, (_,i)=>String(i+1));
+            if (key === 'Year' && Array.isArray(window.__taskYearUniverse) && window.__taskYearUniverse.length) return window.__taskYearUniverse.slice();
             const values = new Set();
             if (key === 'Week') {
                 const selectedMonths = bomTopFilterState.Month;
@@ -5705,6 +5445,7 @@ function setupInlineRequiredValidation(){
                 document.querySelectorAll('[data-filter-key="Week"]').forEach(bar => bomFilterBarOptions(bar,'Week'));
             }
             updateBomFilterButtons();
+            if (key === 'Year') { window.__taskYearsExplicit = true; ensureTaskYearsLoaded().then(()=>applyBomUnifiedFilters()); return; }
             applyBomUnifiedFilters();
         }
         function selectAllBomFilter(key, all){
@@ -5717,7 +5458,9 @@ function setupInlineRequiredValidation(){
                 document.querySelectorAll('[data-filter-key="Week"]').forEach(bar=>bomFilterBarOptions(bar,'Week'));
             }
             document.querySelectorAll(`[data-filter-key="${key}"]`).forEach(bar=>bomFilterBarOptions(bar,key));
-            updateBomFilterButtons(); applyBomUnifiedFilters();
+            updateBomFilterButtons();
+            if (key === 'Year') { window.__taskYearsExplicit = true; ensureTaskYearsLoaded().then(()=>applyBomUnifiedFilters()); return; }
+            applyBomUnifiedFilters();
         }
         function updateBomFilterButtons(){
             document.querySelectorAll('[data-bom-filter-bar="1"] .bom-multi').forEach(bar=>{
@@ -5738,8 +5481,10 @@ function setupInlineRequiredValidation(){
             // Project Management intentionally does not use these filters.
             const now=new Date();
             const currentYear=String(now.getFullYear());
-            const currentMonth=String(now.getMonth()+1);
-            const currentWeek=String(getIsoWeekNumber(formatDateLocal(now)));
+            const currentWeekNo=getIsoWeekNumber(formatDateLocal(now));
+            const currentWeek=String(currentWeekNo);
+            const weekRange=getIsoWeekRange(now.getFullYear(), currentWeekNo);
+            const currentMonth=String(weekRange ? Number(weekRange.end.slice(5,7)) : now.getMonth()+1);
             bomTopFilterState.Year.clear();
             bomTopFilterState.Month.clear();
             bomTopFilterState.Week.clear();
@@ -5954,7 +5699,7 @@ function setupInlineRequiredValidation(){
                 pdfHeader.style.cssText='display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:10px 18px 12px;margin:0;background:#f8fafc;border-bottom:1px solid #cbd5e1;box-sizing:border-box;width:100%;';
                 const now=new Date(),pad=n=>String(n).padStart(2,'0');
                 const exportDate=`${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-                pdfHeader.innerHTML=`<div style="font-size:20px;font-weight:800;color:#0f172a;letter-spacing:.2px;">BOM Team Workload Report</div><div style="font-size:10px;font-weight:600;color:#475569;white-space:nowrap;">Exported: ${exportDate}</div>`;
+                pdfHeader.innerHTML=`<div style="font-size:20px;font-weight:800;color:#0f172a;letter-spacing:.2px;">${escapeHtml(String(window.activeTeamView||'IE Team'))} Workload Report</div><div style="font-size:10px;font-weight:600;color:#475569;white-space:nowrap;">Exported: ${exportDate}</div>`;
 
                 const originalHeader=report.querySelector('.report-page-header');
                 if(originalHeader) originalHeader.style.display='none';
@@ -6379,6 +6124,7 @@ function setupInlineRequiredValidation(){
         }
 
         function onTaskCategoryChange() {
+            taskScopeUserChanged = false;
             const cat = document.getElementById('taskCategory').value;
             updateTaskScopeField();
             const taskNameSelect = document.getElementById('taskNameSelect');
@@ -6417,6 +6163,7 @@ function setupInlineRequiredValidation(){
         }
 
         function onTaskNameChange() {
+            taskScopeUserChanged = false;
             const cat = document.getElementById('taskCategory').value;
             const taskNameSelect = document.getElementById('taskNameSelect');
             const taskNameSearch = document.getElementById('taskNameSearch');
@@ -6460,34 +6207,32 @@ function setupInlineRequiredValidation(){
             if(!wrap||!select)return;
             const category=String(document.getElementById('taskCategory')?.value||'').trim();
             const taskName=getSelectedTaskName();
-            // Declare before the Other branch (avoid a temporal-dead-zone ReferenceError).
+            const teamRows=(Array.isArray(capacityData)?capacityData:[]).filter(c=>teamMatch(c,{}));
             const scopeOptions=document.getElementById('taskScopeOptions');
-            // "Other" has no predefined scope. Clear it when the category is selected,
-            // but preserve the user's chosen scope when saveTask calls this with true.
-            if(category.toLowerCase()==='other'){
-                select.required=true;
-                wrap.classList.remove('hidden');
-                if(scopeOptions) scopeOptions.innerHTML=[...new Set(["In BOM's scope","Out of BOM's scope","RND process","Compliance","Projects","New Go Tracking"])].map(v=>`<option value="${escapeHtml(v)}"></option>`).join('');
-                if(preserveExplicit && String(select.value||'').trim()) return;
-                select.value='';
-                taskScopeUserChanged=false;
-                return;
-            }
-            // Keep standard and Category Setup scopes available as suggestions, while
-            // allowing any custom scope to be typed into the field.
             if(scopeOptions){
-                const known=["In BOM's scope","Out of BOM's scope","RND process","Compliance","Projects","New Go Tracking",...capacityData.map(c=>String(c.scope||'').trim())];
+                const known=[...CAPACITY_SCOPES,...teamRows.map(c=>String(c.scope||'').trim())];
                 const current=String(select.value||'').trim();
                 if(current) known.push(current);
                 scopeOptions.innerHTML=[...new Set(known.filter(Boolean))].map(v=>`<option value="${escapeHtml(v)}"></option>`).join('');
             }
             wrap.classList.remove('hidden');
             select.required=true;
-            // Preserve a deliberate user choice, including when it differs from
-            // the Category Setup mapping. Existing task values are preserved too.
-            if(taskScopeUserChanged || (preserveExplicit && String(select.value||'').trim())) return;
-            const match=capacityData.find(c=>normalizeWorkloadKey(c.category)===normalizeWorkloadKey(category)&&normalizeWorkloadKey(c.task)===normalizeWorkloadKey(taskName));
-            const suggested=String(match?.scope||'').trim();
+            // Edit mode keeps the saved Scope; a manual Scope choice is kept until
+            // Category or Task Name is changed again.
+            if(preserveExplicit && String(select.value||'').trim()) return;
+            if(taskScopeUserChanged) return;
+            // Category "Other": the user chooses the Scope.
+            if(category.toLowerCase()==='other'){ select.value=''; return; }
+            const ck=normalizeWorkloadKey(category), tk=normalizeWorkloadKey(taskName);
+            const inCat=teamRows.filter(c=>normalizeWorkloadKey(c.category)===ck);
+            let suggested='';
+            const match=tk ? inCat.find(c=>normalizeWorkloadKey(c.task)===tk) : null;
+            if(match) suggested=String(match.scope||'').trim();
+            else {
+                // No Task Name yet: if every task of this Category has the same Scope, use it.
+                const scopes=[...new Set(inCat.map(c=>String(c.scope||'').trim()).filter(Boolean))];
+                if(scopes.length===1) suggested=scopes[0];
+            }
             select.value=suggested;
         }
         function updateTaskScopeField(){ updateTaskScopeSuggestion(false); }
@@ -6532,12 +6277,12 @@ function setupInlineRequiredValidation(){
                 const task=String(t?.name||'').trim();
                 const hours=Number(t?.usageTime);
                 if(!category||!task||!Number.isFinite(hours)||hours<=0)return;
-                const key=`${normalizeWorkloadKey(category)}|||${normalizeWorkloadKey(task)}`;
+                const key=`${teamKeyOf(t)}###${normalizeWorkloadKey(category)}|||${normalizeWorkloadKey(task)}`;
                 const b=buckets.get(key)||{sum:0,count:0};
                 b.sum+=hours; b.count+=1; buckets.set(key,b);
             });
             capacityData.forEach(c=>{
-                const key=`${normalizeWorkloadKey(c?.category)}|||${normalizeWorkloadKey(c?.task)}`;
+                const key=`${teamKeyOf(c)}###${normalizeWorkloadKey(c?.category)}|||${normalizeWorkloadKey(c?.task)}`;
                 const b=buckets.get(key);
                 c.workload=b ? +(b.sum/b.count).toFixed(2) : 0;
             });
@@ -6789,7 +6534,7 @@ function setupInlineRequiredValidation(){
                         const actual=parseImportDate(find(r,'actual','Actual','actual date','Actual Date'));
                         const usageRaw=find(r,'usageTime','UsageTime','usage time','Usage Time','total usage time','Total Usage Time','hours','Hour');
                         const importedScope=String(find(r,'scope','Scope')).trim();
-                        const cap=capacityData.find(c=>String(c.category||'').trim().toLowerCase()===category.toLowerCase()&&String(c.task||'').trim().toLowerCase()===name.toLowerCase());
+                        const cap=capacityData.find(c=>String(c.category||'').trim().toLowerCase()===category.toLowerCase()&&String(c.task||'').trim().toLowerCase()===name.toLowerCase()&&teamMatch(c,{}));
                         const suggestedScope=String(cap?.scope||'').trim();
                         const scope=category.toLowerCase()==='other' ? importedScope : (importedScope || suggestedScope);
                         const usage=usageRaw==='' ? Number(cap?.workload) : Number(usageRaw);
@@ -6906,6 +6651,7 @@ function setupInlineRequiredValidation(){
             if(!initSupabaseClient()) throw (supabaseInitError || new Error('Supabase client is not available.'));
             const localId = task?.id;
             const recordId=await findTaskRecordId(task);
+            task.team = getTaskWriteTeam(task);
             const payload=taskDbPayload(task);
             let result;
             if(recordId) {
@@ -6928,7 +6674,7 @@ function setupInlineRequiredValidation(){
             if(!initSupabaseClient()) throw (supabaseInitError || new Error('Supabase client is not available.'));
             const recordId=await findTaskRecordId(task);
             if(!recordId) throw new Error('Task ID is not a valid database ID.');
-            const {data,error}=await supabaseClient.from(SUPABASE_TASK_TABLE).delete().eq('id',recordId).select('id');
+            const {data,error}=await teamGuard(supabaseClient.from(SUPABASE_TASK_TABLE).delete().eq('id',recordId)).select('id');
             if(error) throw error;
             if(!data?.length) throw new Error(`Supabase DELETE matched 0 rows for Tasks/${recordId}. Check RLS DELETE policy.`);
             sheetSyncSnapshots.Tasks=(sheetSyncSnapshots.Tasks||[]).filter(r=>String(r.id)!==String(recordId));
@@ -7510,23 +7256,6 @@ function setupInlineRequiredValidation(){
                 tr.innerHTML = rowHtml;
                 tbody.appendChild(tr);
             });
-
-            // Final row: headcount expected to work on each Saturday = active members
-            // minus members registered for Saturday Off on that date.
-            const totalRow=document.createElement('tr');
-            totalRow.className='bg-indigo-50 border-t-2 border-indigo-200 font-extrabold text-indigo-900';
-            let totalHtml='<td class="py-3 px-4">Working Headcount</td>';
-            saturdays.forEach(sDate=>{
-                const offCount=activeUsers.filter(u=>timeoffOtList.some(item=>{
-                    const type=String(item.type||'').trim().toLowerCase();
-                    const itemPic=String(item.pic||'').trim().toLowerCase();
-                    const start=cleanDateStr(item.startDate), end=cleanDateStr(item.endDate||item.startDate);
-                    return type==='saturday off' && itemPic===String(u.name||'').trim().toLowerCase() && start && end && start<=sDate && sDate<=end;
-                })).length;
-                totalHtml+=`<td class="py-3 px-2 text-center">${Math.max(0,activeUsers.length-offCount)}</td>`;
-            });
-            totalRow.innerHTML=totalHtml;
-            tbody.appendChild(totalRow);
         }
 
         async function toggleSaturdayMatrix(pic, sDate, isChecked) {
@@ -9700,6 +9429,7 @@ function setCalendarView(view) {
                 <td class="py-3 px-4 font-bold">${escapeHtml(u.name||'')}</td><td class="py-3 px-3 text-center font-mono">${escapeHtml(String(u.password||''))}</td>
                 <td class="py-3 px-3 text-center"><span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold">${escapeHtml(u.role||'Member')}</span></td>
                 <td class="py-3 px-3 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.status==='Active'?'bg-emerald-100 text-emerald-800':'bg-red-100 text-red-800'}">${escapeHtml(u.status||'Inactive')}</span></td>
+                <td class="py-3 px-3 text-center">${u.role==='Admin'?`<span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold">${escapeHtml(u.team||'All teams')}</span>`:`<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-bold">${escapeHtml(u.team||'—')}</span>`}</td>
                 <td class="py-3 px-4 text-center"><button onclick="openEditUserModal(${idx})" class="text-slate-400 hover:text-indigo-600 mr-3"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteUser(${idx})" class="text-slate-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button></td>`;tbody.appendChild(tr);});
         }
         function openAddUserModal(){
@@ -9716,8 +9446,14 @@ function setCalendarView(view) {
             e.preventDefault(); if(currentUser?.role!=='Admin'){showAppNotification('Only Admin can manage users.','Permission denied');return;}
             const idx=document.getElementById('userEditIndex').value;const name=document.getElementById('userName').value.trim();const password=document.getElementById('userPassword').value;const role=document.getElementById('userRole').value;const status=document.getElementById('userStatus').value;
             if(!name||!password)return;
+            let team=role==='Admin'?'':String(document.getElementById('userTeam')?.value||'').trim();
+            if(isTeamAdminSession()){
+                team=String(currentUser.team||'').trim();
+                if(!['Member','Viewer'].includes(role)) throw new Error('Team Admin can create or update only Member and Viewer accounts in their own team.');
+            }
+            if(role!=='Admin'&&!team){showAppNotification('Please select a Team for this member.','Validation');return;}
             const duplicate=users.some((u,i)=>i!==Number(idx)&&String(u.name||'').toLowerCase()===name.toLowerCase());if(duplicate){showAppNotification('Member name already exists.','Validation');return;}
-            if(idx==='') users.push({name,password,role,status}); else { const editedIndex=Number(idx); users[editedIndex]={...users[editedIndex],name,password,role,status}; if(currentUser && editedIndex===users.findIndex(u=>String(u.name).toLowerCase()===String(currentUser.name).toLowerCase())) currentUser=users[editedIndex]; }
+            if(idx==='') users.push({name,password,role,status,team}); else { const editedIndex=Number(idx); users[editedIndex]={...users[editedIndex],name,password,role,status,team}; if(currentUser && editedIndex===users.findIndex(u=>String(u.name).toLowerCase()===String(currentUser.name).toLowerCase())) currentUser=users[editedIndex]; }
             await saveSheetData('Users',users); if(currentUser) initUserSession();
             renderUserManagementTable();populateFilterOptions();closeUserModal();showAppNotification('User saved successfully.');
         }
@@ -10399,7 +10135,7 @@ function setCalendarView(view) {
             const cat=normalizeWorkloadKey(task?.category);
             const name=normalizeWorkloadKey(task?.name ?? task?.taskName ?? task?.task);
             if(!cat||!name)return null;
-            return capacityData.find(c=>normalizeWorkloadKey(c.category)===cat&&normalizeWorkloadKey(c.task)===name)||null;
+            return capacityData.find(c=>normalizeWorkloadKey(c.category)===cat&&normalizeWorkloadKey(c.task)===name&&teamMatch(c,task))||null;
         }
         function getDailyTaskScope(task){
             const explicit=String(task?.scope||'').trim();
@@ -10762,7 +10498,7 @@ function buildRelationalProjects(projectRows,phaseRows,taskRows){
   const owners=Array.isArray(r?.owners)?r.owners:(r?.owner?String(r.owner).split(',').map(x=>x.trim()).filter(Boolean):[]);
   const hoursUsed=(r.hours_used&&typeof r.hours_used==='object')?r.hours_used:{};
   const projectMeta=hoursUsed.__projectMeta&&typeof hoursUsed.__projectMeta==='object'?hoursUsed.__projectMeta:{};
-  const p={id:r.id,name:r.name||'',owner:r.owner||owners.join(', '),owners,scope:r.scope||'Projects',detail:r.detail||'',status:r.status||'Not Started',progress:Number(r.progress||0),startDate:dateOrNull(r.start_date),dueDate:dateOrNull(r.due_date),actualDate:dateOrNull(r.actual_date),priority:Number(r.priority||3),gainDemand:r.gain_demand??projectMeta.gainDemand??'',detailedStatus:String(projectMeta.detailedStatus??''),phases:[],tasks:(direct.get(String(r.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder),saving:r.saving??0,actualSaving:r.actual_saving??'',note:r.note||'',hoursUsed,createdAt:r.created_at||'',updatedAt:r.updated_at||''};
+  const p={id:r.id,team:r.team||'',name:r.name||'',owner:r.owner||owners.join(', '),owners,scope:r.scope||'Projects',detail:r.detail||'',status:r.status||'Not Started',progress:Number(r.progress||0),startDate:dateOrNull(r.start_date),dueDate:dateOrNull(r.due_date),actualDate:dateOrNull(r.actual_date),priority:Number(r.priority||3),gainDemand:r.gain_demand??projectMeta.gainDemand??'',detailedStatus:String(projectMeta.detailedStatus??''),phases:[],tasks:(direct.get(String(r.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder),saving:r.saving??0,actualSaving:r.actual_saving??'',note:r.note||'',hoursUsed,createdAt:r.created_at||'',updatedAt:r.updated_at||''};
   p.phases=(phasesByProject.get(String(r.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder);
   p.phases.forEach(ph=>{ph.tasks=(tasksByPhase.get(String(r.id)+'::'+String(ph.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder);const d=phaseDates(ph);ph.startDate=d.startDate;ph.dueDate=d.dueDate;ph.actualDate=d.actualDate;});
   syncProjectOverallStatus(p);return p;
@@ -10771,8 +10507,8 @@ function buildRelationalProjects(projectRows,phaseRows,taskRows){
 
 async function loadRelationalChildren(){
  const [ph,ta]=await Promise.all([
-  fetchAllSupabaseRows(()=>supabaseClient.from(REL_PHASE_TABLE).select('*').order('project_id',{ascending:true}).order('sort_order',{ascending:true})),
-  fetchAllSupabaseRows(()=>supabaseClient.from(REL_TASK_TABLE).select('*').order('project_id',{ascending:true}).order('sort_order',{ascending:true}))
+  supabaseClient.from(REL_PHASE_TABLE).select('*').order('project_id',{ascending:true}).order('sort_order',{ascending:true}),
+  supabaseClient.from(REL_TASK_TABLE).select('*').order('project_id',{ascending:true}).order('sort_order',{ascending:true})
  ]);
  if(ph.error)throw ph.error;if(ta.error)throw ta.error;
  relationalPhaseSnapshot=ph.data||[];relationalTaskSnapshot=ta.data||[];
@@ -10817,15 +10553,17 @@ fetchAllDataFromSheet=async function({background=false}={}){
  const overlay=document.getElementById('loadingOverlay');if(!background&&currentUser&&overlay)overlay.classList.remove('opacity-0','pointer-events-none');
  try{
   const [u,c,t,to,p,ch]=await Promise.all([
-   fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Users).select('*').order('id',{ascending:true})),
-   fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Capacity).select('*').order('id',{ascending:true})),
-   fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Tasks).select('*').order('updated_at',{ascending:true})),
-   fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.TimeOff_OT).select('*').order('id',{ascending:true})),
-   fetchAllSupabaseRows(()=>supabaseClient.from(SUPABASE_TABLES.Projects).select('*').order('id',{ascending:true})),
+   fetchAllRows(SUPABASE_TABLES.Users,'id'),
+   fetchAllRows(SUPABASE_TABLES.Capacity,'id'),
+   fetchAllRows(SUPABASE_TABLES.Tasks,'updated_at'),
+   fetchAllRows(SUPABASE_TABLES.TimeOff_OT,'id'),
+   fetchAllRows(SUPABASE_TABLES.Projects,'id'),
    loadRelationalChildren()
   ]);
   for(const r of [u,c,t,to,p])if(r.error)throw r.error;
   users=(u.data||[]).map(mapDbUserToApp);capacityData=(c.data||[]).map(mapDbCapacityToApp);dailyTasks=(t.data||[]).map(mapDbTaskToApp);timeoffOtList=(to.data||[]).map(mapDbTimeoffToApp);projectsList=buildRelationalProjects(p.data||[],ch.phases,ch.tasks);
+  if (typeof window.applyTeamScopeToState === 'function') window.applyTeamScopeToState();
+  try{ await loadTaskYearUniverse(); }catch(_){}
   dailyTasks.forEach(x=>{x.start=cleanDateStr(x.start);x.plan=cleanDateStr(x.plan);x.actual=cleanDateStr(x.actual);if(!x.pics)x.pics=[];});ensureTaskIds(dailyTasks);dailyTasks=dedupeTasks(dailyTasks);
   timeoffOtList.forEach(x=>{x.startDate=cleanDateStr(x.startDate);x.endDate=cleanDateStr(x.endDate);});
   const state={Users:users,Capacity:capacityData,Tasks:dailyTasks,TimeOff_OT:timeoffOtList,Projects:projectsList};Object.keys(state).forEach(k=>sheetSyncSnapshots[k]=JSON.parse(JSON.stringify(state[k])));
@@ -10876,7 +10614,7 @@ runSheetSave=async function(sheetName){
    if(res.error)throw res.error;const mapped=mapDbProjectToApp(res.data);mapped.phases=row.phases||[];mapped.tasks=row.tasks||[];saved.push(mapped);row.id=res.data.id;
   }
   const pending=pendingRowDeletions.Projects||new Set();const del=snap.filter(x=>dbId(x?.id)&&pending.has(stableRowKey('Projects',x))).map(x=>Number(x.id));
-  if(del.length){const {error}=await supabaseClient.from(SUPABASE_TABLES.Projects).delete().in('id',del);if(error)throw error;}
+  if(del.length){const {error}=await teamGuard(supabaseClient.from(SUPABASE_TABLES.Projects).delete().in('id',del));if(error)throw error;}
   projectsList=saved;await syncRelationalChildren(projectsList);sheetSyncSnapshots.Projects=JSON.parse(JSON.stringify(projectsList));lastLocalSaveAt.Projects=Date.now();return true;
  }catch(e){console.error('Relational project save error:',e);showAppNotification(`Unable to save Projects / Phases / Tasks. ${e.message||e}`,'Database Error');throw e;}finally{sheetSyncInFlight.Projects=false;}
 };
@@ -11836,6 +11574,1457 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',observe,{once:true});
   else observe();
+})();
+</script>
+
+<script type="text/plain" id="scopeFrameCss">
+  :root{
+    --navy:#07345f;
+    --navy2:#0b4a80;
+    --cyan:#45d6ef;
+    --ink:#12304f;
+    --muted:#5f7690;
+    --line:#d8e6f2;
+    --panel:#f7fbff;
+    --white:#fff;
+    --pink:#f7c7dc;
+    --lav:#d8cdf8;
+    --mint:#ccefe3;
+    --sky:#cce8fb;
+    --gold:#ffe4a8;
+    --orange:#ffd2ad;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    width:100%;
+    height:100vh;
+    overflow:hidden;
+    background:#edf4fa;
+    color:var(--ink);
+    font-family:Inter,Segoe UI,Arial,sans-serif;
+  }
+  .page{
+    width:100%;
+    height:100vh;
+    margin:0;
+    background:white;
+    border-radius:0;
+    overflow:hidden;
+    box-shadow:none;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* Header */
+  .hero{
+    background:linear-gradient(135deg,#062e55,#0a477a);
+    color:white;
+    padding:28px 34px 24px;
+    display:flex;
+    align-items:center;
+    gap:28px;
+  }
+  .brand{
+    flex:1.1;
+    min-width:360px;
+  }
+  .eyebrow{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:1.8px;
+    color:#9de9f6;
+    text-transform:uppercase;
+  }
+  .target{
+    width:46px;height:46px;
+    display:grid;place-items:center;
+    border:2px solid #9de9f6;
+    border-radius:50%;
+    font-size:25px;
+  }
+  h1{
+    margin:8px 0 4px;
+    font-size:42px;
+    line-height:1;
+    letter-spacing:-1px;
+  }
+  .subtitle{
+    color:#bfefff;
+    font-size:17px;
+    margin-top:10px;
+  }
+  .goal{
+    flex:1;
+    background:rgba(255,255,255,.96);
+    color:var(--ink);
+    border-radius:18px;
+    padding:19px 24px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    box-shadow:0 8px 22px rgba(0,0,0,.08);
+  }
+  .goal-icon{font-size:42px}
+  .goal strong{display:block;font-size:22px;color:#0a4d82;margin-bottom:4px}
+  .goal p{margin:0;font-size:14px;line-height:1.5}
+
+  /* Table */
+  .wrap{
+    flex:1 1 auto;
+    min-height:0;
+    min-width:0;
+    padding:0;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  .matrix{
+    display:grid;
+    grid-template-columns:380px repeat(10,minmax(70px,1fr));
+    border:0;
+    border-radius:0;
+    overflow:visible;
+    min-width:1600px;
+  }
+  .scroll{
+    flex:1 1 auto;
+    min-height:0;
+    min-width:0;
+    overflow:auto;
+    padding:0;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+  }
+  .head{
+    background:linear-gradient(180deg,#0b4d82,#0a416f);
+    color:white;
+    min-height:58px;
+    position:sticky;
+    top:0;
+    z-index:20;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px;
+    border-right:1px solid rgba(255,255,255,.22);
+    font-weight:700;
+    font-size:14px;
+  }
+  .head.scope{text-align:left;justify-content:flex-start;padding-left:18px}
+  .head.member{
+    flex-direction:column;
+    gap:5px;
+    padding:7px 3px;
+  }
+  .avatar{
+    width:28px;height:28px;
+    border-radius:50%;
+    display:grid;place-items:center;
+    color:white;font-size:12px;font-weight:800;
+    border:2px solid rgba(255,255,255,.8);
+  }
+  .member-name{font-size:12px}
+
+  .cell{
+    min-height:56px;
+    border-top:1px solid var(--line);
+    border-right:1px solid var(--line);
+    background:#fff;
+    display:flex;
+    align-items:center;
+    padding:9px 12px;
+    font-size:13px;
+  }
+  .group{
+    font-weight:700;
+    font-size:15px;
+    line-height:1.25;
+    align-items:flex-start;
+    padding-top:15px;
+    gap:10px;
+  }
+  .group-badge{
+    flex:0 0 34px;
+    width:34px;height:34px;
+    border-radius:12px;
+    color:white;
+    display:grid;place-items:center;
+    font-weight:800;
+    font-size:15px;
+  }
+  .task{color:#234463;line-height:1.25}
+  .member-cell{justify-content:center;padding:0}
+  .check{
+    width:27px;height:27px;border-radius:50%;
+    display:grid;place-items:center;
+    font-weight:900;
+    font-size:15px;
+  }
+
+  /* row colors */
+  .r1{background:#edf8ff}
+  .r2{background:#edf9f5}
+  .r3{background:#f1edff}
+  .r4{background:#fff0f0}
+  .r5{background:#eefbfc}
+  .r6{background:#f4efff}
+  .r7{background:#fff7e9}
+  .r8{background:#edf8ff}
+  .r9{background:#faefff}
+  .r10{background:#edf9f5}
+
+  .b1{background:#1795d1}.b2{background:#15a681}.b3{background:#6b45ca}
+  .b4{background:#d84d56}.b5{background:#0e9ab2}.b6{background:#6944c8}
+  .b7{background:#e49a10}.b8{background:#157cc2}.b9{background:#9d42b8}.b10{background:#168d78}
+
+  .x1{background:#ffd2e3;color:#be2464}.x2{background:#d0f1e5;color:#118367}
+  .x3{background:#ded5ff;color:#6944c8}.x4{background:#ffd8d8;color:#c83d47}
+  .x5{background:#cef0f6;color:#087d93}.x6{background:#ded5ff;color:#6944c8}
+  .x7{background:#ffe0aa;color:#bc7200}.x8{background:#cfe9ff;color:#1373b5}
+  .x9{background:#efcdf5;color:#8e329e}.x10{background:#d2f1e7;color:#13836f}
+
+  /* Scope matrix: tick colors follow each row's scope color, with stronger contrast. */
+  .member-cell.r1 .check{background:#c6e7f7;color:#0877b0}
+  .member-cell.r2 .check{background:#bfe9d8;color:#08765b}
+  .member-cell.r3 .check{background:#d7ccfb;color:#5b38b7}
+  .member-cell.r4 .check{background:#ffd1d1;color:#b52e38}
+  .member-cell.r5 .check{background:#c6eef3;color:#087184}
+  .member-cell.r6 .check{background:#d8cdf8;color:#5a39b5}
+  .member-cell.r7 .check{background:#ffe0ad;color:#a96700}
+  .member-cell.r8 .check{background:#c7e5fb;color:#1168a2}
+  .member-cell.r9 .check{background:#e4c8ec;color:#7d2e8d}
+  .member-cell.r10 .check{background:#c7e8dd;color:#126b59}
+
+
+  /* Keep the Scope column visible while the member matrix scrolls horizontally. */
+  .matrix > .head:first-child,.matrix > .cell.group{
+    position:sticky;left:0;z-index:35;min-width:0;
+    box-shadow:2px 0 5px rgba(15,45,75,.08);
+  }
+  .matrix > .head:first-child{z-index:60;background:#0b4d82}
+  .matrix > .cell.group{background:inherit}
+  .matrix > .cell.scope-subitem{
+    padding-left:54px;font-size:12px;font-weight:600;line-height:1.3;
+    position:sticky;left:0;z-index:34;
+  }
+  .scope-subnumber{font-size:10px;font-weight:800;color:#5b7894;min-width:28px;flex:none}
+
+  /* Footer */
+  .footer{
+    margin:0 22px 22px;
+    background:linear-gradient(135deg,#082f58,#0b4b7e);
+    color:white;
+    border-radius:18px;
+    padding:15px 22px;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:0;
+  }
+  .foot-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:3px 22px;
+    border-right:1px solid rgba(255,255,255,.25);
+  }
+  .foot-item:last-child{border:0}
+  .foot-icon{font-size:27px}
+  .foot-title{font-weight:800;color:#75e7f6;font-size:15px}
+  .foot-text{font-size:12px;line-height:1.35;color:#e5f2fa}
+
+  .legend{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:10px 4px 0;
+    color:#6d8194;
+    font-size:12px;
+  }
+  .legend .mini{
+    width:17px;height:17px;border-radius:50%;background:#ffd2e3;display:inline-grid;place-items:center;
+    color:#be2464;font-weight:800;font-size:10px;
+  }
+
+  @media(max-width:900px){
+    .page{width:100%;margin:0;border-radius:0}
+    .hero{padding:22px;display:block}
+    .brand{min-width:0}
+    h1{font-size:32px}
+    .goal{margin-top:18px}
+    .wrap{padding:14px}
+    .footer{margin:0 14px 14px;grid-template-columns:1fr 1fr}
+    .foot-item{padding:10px 12px}
+  }
+
+  @media print{
+    body{background:white}
+    .page{width:100%;margin:0;box-shadow:none;border-radius:0}
+    .scroll{overflow:visible}
+    .matrix{min-width:0}
+    @page{size:A3 landscape;margin:8mm}
+  }
+
+  /* Scope-only layout: full-height table, fixed column headers, vertically scrollable scope/task rows. */
+  html,body{width:100%;height:100%;margin:0;overflow:hidden}
+  .page{width:100%;height:100vh;margin:0;border-radius:0;box-shadow:none;overflow:hidden;display:flex;flex-direction:column}
+  .wrap{flex:1 1 auto;min-height:0;min-width:0;padding:0;overflow:hidden;display:flex;flex-direction:column}
+  .scroll{flex:1 1 auto;min-height:0;min-width:0;overflow:auto;padding:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .matrix{grid-template-columns:380px repeat(10,minmax(70px,1fr));min-width:1600px;border:0;border-radius:0;overflow:visible}
+  .head{position:sticky;top:0;z-index:50}
+
+</script>
+<script id="multiTeamRuntime">
+/* =====================================================================
+   MULTI-TEAM RUNTIME
+   ---------------------------------------------------------------------
+   Model
+   - Every business row (users, capacity, tasks, timeoff_ot, projects) has a `team` column.
+   - Member / Viewer : locked to ONE team. Only that team's rows are ever loaded.
+   - Admin           : Users.role = 'Admin' (team = NULL). Sidebar switch -> "All teams" or one team.
+   - The rest of the app keeps using the same global arrays (users, capacityData, dailyTasks,
+     timeoffOtList, projectsList). They simply hold the rows of the ACTIVE scope, so Dashboard,
+     Reports, charts and exports automatically show "this team" or "all teams".
+   ===================================================================== */
+const TEAM_ALL = '__ALL__';
+window.TEAM_ALL = TEAM_ALL;
+window.activeTeamView = TEAM_ALL;
+window.teamsTableRows = [];
+window.__seenTeams = [];
+
+const normTeam = s => String(s ?? '').trim().toLowerCase();
+window.normTeam = normTeam;
+
+function isAdminSession() {
+  return !!currentUser && currentUser.role === 'Admin' && !currentUser.isReadOnly;
+}
+function isTeamAdminSession(){
+  return !!currentUser && currentUser.role === 'Team Admin' && !currentUser.isReadOnly && !!String(currentUser.team||'').trim();
+}
+function canManageUsers(){ return isAdminSession() || isTeamAdminSession(); }
+function canManageTeams(){ return isAdminSession(); }
+function canEditTeamData(team){
+  if(isAdminSession()) return true;
+  if(!currentUser || currentUser.isReadOnly) return false;
+  return normTeam(team) === normTeam(currentUser.team);
+}
+window.isTeamAdminSession=isTeamAdminSession; window.canManageUsers=canManageUsers; window.canManageTeams=canManageTeams; window.canEditTeamData=canEditTeamData;
+
+window.isAdminSession = isAdminSession;
+
+/* Team whose data is currently displayed ('__ALL__' only possible for Admin). */
+function getViewTeam() {
+  if (!currentUser) return TEAM_ALL;
+  if (isAdminSession()) return window.activeTeamView || TEAM_ALL;
+  return String(currentUser.team || '').trim();
+}
+window.getViewTeam = getViewTeam;
+
+/* Team that NEW rows / imports belong to. null = Admin is in "All teams" view. */
+function getWriteTeam() {
+  const v = getViewTeam();
+  return (v && v !== TEAM_ALL) ? v : null;
+}
+window.getWriteTeam = getWriteTeam;
+
+/* Team to stamp on a row being written. Non-admins can ONLY write to their own team. */
+function resolveTeamOrThrow(row) {
+  let t;
+  if (!isAdminSession()) t = String(currentUser?.team || '').trim();
+  else t = String(row?.team || '').trim() || getWriteTeam() || '';
+  if (!t) throw new Error('Please select a specific Team in the sidebar before adding new data.');
+  return t;
+}
+window.resolveTeamOrThrow = resolveTeamOrThrow;
+
+/* Appended to every DELETE: a non-admin can never delete a row of another team,
+   even if a stale/forged id slips into the delete list. Fails closed. */
+function teamGuard(query) {
+  if (currentUser && !isAdminSession()) {
+    const t = String(currentUser.team || '').trim();
+    return query.eq('team', t || '__no_team__');
+  }
+  return query;
+}
+window.teamGuard = teamGuard;
+
+function scopeRowsToTeam(rows) {
+  const v = getViewTeam();
+  const list = Array.isArray(rows) ? rows : [];
+  if (v === TEAM_ALL) return list;
+  return list.filter(r => normTeam(r?.team) === normTeam(v));
+}
+window.scopeRowsToTeam = scopeRowsToTeam;
+
+/* Team key used to match tasks <-> Category/Task Name rows. Falls back to the view team. */
+function teamKeyOf(x) {
+  return normTeam(String(x?.team || '').trim() || getWriteTeam() || '');
+}
+function teamMatch(a, b) {
+  const ka = teamKeyOf(a), kb = teamKeyOf(b);
+  return !ka || !kb || ka === kb;
+}
+window.teamKeyOf = teamKeyOf;
+window.teamMatch = teamMatch;
+
+/* ---------- Team list ---------- */
+function computeKnownTeams() {
+  const map = new Map();
+  const add = t => { t = String(t || '').trim(); if (t && !map.has(normTeam(t))) map.set(normTeam(t), t); };
+  (window.__seenTeams || []).forEach(add);
+  (window.teamsTableRows || []).forEach(r => add(r.code));
+  return [...map.values()].sort((a, b) => a.localeCompare(b));
+}
+window.computeKnownTeams = computeKnownTeams;
+
+/* Called from fetchAllDataFromSheet right after the rows are mapped (still UNSCOPED).
+   1) remembers which teams exist, 2) cuts every array down to the active team. */
+function applyTeamScopeToState() {
+  const seen = new Set();
+  (users || []).forEach(u => { if (u.role !== 'Admin') seen.add(String(u.team || '').trim()); });
+  [capacityData, dailyTasks, projectsList, timeoffOtList].forEach(list => (list || []).forEach(r => seen.add(String(r.team || '').trim())));
+  window.__seenTeams = [...seen].filter(Boolean);
+
+  const v = getViewTeam();
+  if (v !== TEAM_ALL) {
+    users = (users || []).filter(u => normTeam(u.team) === normTeam(v));
+    capacityData = scopeRowsToTeam(capacityData);
+    dailyTasks = scopeRowsToTeam(dailyTasks);
+    timeoffOtList = scopeRowsToTeam(timeoffOtList);
+    projectsList = scopeRowsToTeam(projectsList);
+  }
+  renderTeamSwitcher();
+}
+window.applyTeamScopeToState = applyTeamScopeToState;
+
+/* ---------- Sidebar team switcher ---------- */
+function renderTeamSwitcher() {
+  const label = document.getElementById('teamStaticLabel');
+  const adminBox = document.getElementById('teamAdminControls');
+  const sel = document.getElementById('teamSwitcher');
+  const hint = document.getElementById('teamHint');
+  const greet = document.getElementById('teamGreeting');
+  if (!label || !currentUser) return;
+  const v = getViewTeam();
+  if (isAdminSession()) {
+    label.classList.add('hidden');
+    adminBox.classList.remove('hidden');
+    const teams = computeKnownTeams();
+    if (v !== TEAM_ALL && !teams.some(t => normTeam(t) === normTeam(v))) teams.push(v);
+    sel.innerHTML = teams.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+    sel.value = v;
+    hint.classList.add('hidden');
+    if (greet) greet.textContent = v || '';
+  } else {
+    adminBox.classList.add('hidden');
+    hint.classList.add('hidden');
+    label.classList.remove('hidden');
+    label.textContent = v || '—';
+    if (greet) greet.textContent = v || '';
+  }
+}
+window.renderTeamSwitcher = renderTeamSwitcher;
+
+/* Admin picks another team (or All teams): reload + re-render everything for that scope. */
+window.switchTeamView = async function (value) {
+  if (!isAdminSession()) return;
+  window.activeTeamView = value || TEAM_ALL;
+  // Category / Member filters hold names that belong to the previous team.
+  try { bomTopFilterState.Category.clear(); bomTopFilterState.Member.clear(); } catch (_) {}
+  const ok = await fetchAllDataFromSheet({ background: false, forceRender: true });
+  if (ok) { try { updateDashboardCharts(); } catch (_) {} }
+  renderTeamSwitcher();
+};
+
+window.loadTeamsTable = async function () {
+  try {
+    const r = await supabaseClient.from('teams').select('*').order('code', { ascending: true });
+    if (!r.error) window.teamsTableRows = r.data || [];
+  } catch (_) { /* table is optional until the SQL migration is run */ }
+};
+
+/* ---------- Team management (lives on the Users page, Admin only) ---------- */
+function renderTeamModalList() {
+  const box = document.getElementById('teamModalList');
+  if (!box) return;
+  const teams = computeKnownTeams();
+  box.innerHTML = teams.length
+    ? teams.map(t => `<span class="inline-block px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-semibold">${escapeHtml(t)}</span>`).join(' ')
+    : '<span class="text-xs text-slate-400 italic">No team yet.</span>';
+}
+window.openTeamModal = function () {
+  if (!isAdminSession()) { showAppNotification('Only Admin can manage teams.', 'Permission denied'); return; }
+  const input = document.getElementById('teamNewCode');
+  if (input) input.value = '';
+  renderTeamModalList();
+  document.getElementById('teamModal').classList.remove('opacity-0', 'pointer-events-none');
+  document.body.classList.add('modal-active');
+};
+window.closeTeamModal = function () {
+  document.getElementById('teamModal').classList.add('opacity-0', 'pointer-events-none');
+  document.body.classList.remove('modal-active');
+};
+window.createTeam = async function (e) {
+  e?.preventDefault?.();
+  if (!isAdminSession()) return;
+  const input = document.getElementById('teamNewCode');
+  const code = String(input?.value || '').trim();
+  if (!code) return;
+  if (computeKnownTeams().some(t => normTeam(t) === normTeam(code))) {
+    showAppNotification('This team already exists.', 'Validation');
+    return;
+  }
+  try {
+    const { error } = await supabaseClient.from('teams').insert({ code, name: code });
+    if (error) throw error;
+  } catch (err) {
+    showAppNotification(`Unable to create the team. Make sure the SQL migration (public.teams) has been run. ${err.message || ''}`, 'Database Error');
+    return;
+  }
+  input.value = '';
+  await loadTeamsTable();
+  renderTeamSwitcher();
+  renderTeamModalList();
+  showAppNotification(`Team "${code}" created. Use "Add User" to add its members, then import its Category / Task Name.`);
+};
+
+/* ---------- Login screen: team list for Viewer ---------- */
+async function loadLoginTeams() {
+  const sel = document.getElementById('loginTeam');
+  if (!sel) return;
+  sel.disabled = true;
+  sel.innerHTML = '<option value="">Loading teams...</option>';
+  const client = initSupabaseClient();
+  const showErr = msg => { const err = document.getElementById('loginError'); if (err) { err.textContent = msg; err.classList.toggle('hidden', !msg); } };
+  if (!client) { sel.innerHTML = '<option value="">Unable to connect database</option>'; showErr(supabaseInitError?.message || 'Unable to initialize Supabase.'); return; }
+  const teams = new Map(), failures = [];
+  const add = (code, name) => { const c = String(code || name || '').trim(); const n = String(name || code || '').trim() || c; if (c && !teams.has(c.toLowerCase())) teams.set(c.toLowerCase(), { code: c, name: n }); };
+  async function read(table, columns, consume) {
+    try { const r = await client.from(table).select(columns); if (r.error) throw r.error; (r.data || []).forEach(consume); }
+    catch (e) { console.error(`Unable to read public.${table}:`, e); failures.push(`${table}: ${e?.message || 'query failed'}`); }
+  }
+  await read('teams', 'code,name,status', r => { if (!r.status || String(r.status).trim().toLowerCase() === 'active') add(r.code, r.name); });
+  if (!teams.size) await read('users', 'team,status', r => { if (!r.status || String(r.status).trim().toLowerCase() === 'active') add(r.team, r.team); });
+  const list = [...teams.values()].sort((a, b) => a.name.localeCompare(b.name));
+  if (list.length) {
+    sel.innerHTML = '<option value="">-- Select team --</option>' + list.map(t => `<option value="${escapeHtml(t.code)}">${escapeHtml(t.name)}</option>`).join('');
+    sel.disabled = false; showErr('');
+  } else {
+    sel.innerHTML = '<option value="">Unable to load teams</option>';
+    showErr(failures.length ? `Unable to load teams. ${failures.join(' | ')}` : 'No active team was found in Supabase.');
+  }
+}
+window.loadLoginTeams = loadLoginTeams;
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadLoginTeams, { once: true });
+else loadLoginTeams();
+
+/* ---------- Users modal ---------- */
+function syncUserTeamState() {
+  const role = document.getElementById('userRole')?.value;
+  const sel = document.getElementById('userTeam');
+  if (!sel) return;
+  sel.disabled = role === 'Admin';
+  if (role === 'Admin') sel.value = '';
+}
+window.prepareUserTeamField = function (team) {
+  const sel = document.getElementById('userTeam');
+  if (!sel) return;
+  const teams = computeKnownTeams();
+  const wanted = String(team || '').trim() || getWriteTeam() || '';
+  if (wanted && !teams.some(t => normTeam(t) === normTeam(wanted))) teams.push(wanted);
+  sel.innerHTML = '<option value="">-- Select team --</option>' +
+    teams.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  sel.value = teams.find(t => normTeam(t) === normTeam(wanted)) || '';
+  syncUserTeamState();
+};
+document.getElementById('userRole')?.addEventListener('change', syncUserTeamState);
+
+const _openAddUserModal = openAddUserModal;
+openAddUserModal = function () {
+  _openAddUserModal.apply(this, arguments);
+  if (currentUser?.role === 'Admin') prepareUserTeamField('');
+};
+const _openEditUserModal = openEditUserModal;
+openEditUserModal = function (idx) {
+  _openEditUserModal.apply(this, arguments);
+  const u = users[idx];
+  if (u && currentUser?.role === 'Admin') prepareUserTeamField(u.team || '');
+};
+
+/* ---------- Session hooks ---------- */
+const _initUserSession = initUserSession;
+initUserSession = function () {
+  _initUserSession.apply(this, arguments);
+  renderTeamSwitcher();
+  loadTeamsTable().then(renderTeamSwitcher);
+};
+const _logout = logout;
+logout = function () {
+  window.activeTeamView = TEAM_ALL;
+  _logout.apply(this, arguments);
+  loadLoginTeams();
+};
+
+/* ---------- Writes: always stamp the right team ---------- */
+const _dbPayloadForSheet = dbPayloadForSheet;
+dbPayloadForSheet = function (sheetName, row) {
+  const p = _dbPayloadForSheet.call(this, sheetName, row);
+  if (!p) return p;
+  if (sheetName === 'Users') {
+    p.team = ((isAdminSession() ? String(row?.team || '').trim() || getWriteTeam() : String(currentUser?.team || '').trim()) || null);
+  } else {
+    p.team = resolveTeamOrThrow(row);
+  }
+  return p;
+};
+
+const _taskDbPayload = taskDbPayload;
+taskDbPayload = function (row) {
+  const p = _taskDbPayload.call(this, row);
+  p.team = resolveTeamOrThrow(row);
+  return p;
+};
+
+/* New rows get the current team. In "All teams" view a NEW row has no team -> refuse the save. */
+const _saveSheetData = saveSheetData;
+saveSheetData = function (sheetName, rowsData) {
+  if (Array.isArray(rowsData) && sheetName !== 'Users') {
+    const wt = isAdminSession() ? getWriteTeam() : String(currentUser?.team || '').trim();
+    rowsData.forEach(r => { if (r && typeof r === 'object' && !String(r.team || '').trim() && wt) r.team = wt; });
+    if (rowsData.some(r => r && typeof r === 'object' && !String(r.team || '').trim())) {
+      const msg = 'You are viewing All teams. Select a specific Team in the sidebar before adding new data.';
+      if (typeof showAppNotification === 'function') showAppNotification(msg, 'Select a team');
+      return Promise.reject(new Error(msg));
+    }
+  }
+  return _saveSheetData.apply(this, arguments);
+};
+
+/* ---------- Category / Task Name import: replaces ONE team only ---------- */
+window.importCapacityForTeam = async function (team, rows) {
+  const t = String(team || '').trim();
+  if (!t) throw new Error('Team is required for an import.');
+  if (!isAdminSession() && normTeam(currentUser?.team) !== normTeam(t)) {
+    throw new Error('You can only import Category / Task Name for your own team.');
+  }
+  const current = capacityData.filter(c => normTeam(c.team) === normTeam(t)).length;
+  const ok = await showAppConfirm(
+    `This import REPLACES the Category / Task Name list of team "${t}" (${current} current -> ${rows.length} in file). Data of other teams is NOT touched.`,
+    `Import for team ${t}`);
+  if (!ok) return null;
+
+  const payload = rows.map(r => ({
+    team: t,
+    category: r.category,
+    task: r.task,
+    scope: r.scope,
+    workload: Math.max(0, Number(r.workload) || 0)
+  }));
+
+  // 1) upsert the file rows into this team (conflict key = team + category + task)
+  const up = await supabaseClient.from(SUPABASE_TABLES.Capacity)
+    .upsert(payload, { onConflict: 'team,category,task' }).select('id');
+  if (up.error) throw up.error;
+  const keep = new Set((up.data || []).map(x => Number(x.id)));
+
+  // 2) remove ONLY this team's rows that are not in the file (every query is pinned to team = t)
+  const cur = await supabaseClient.from(SUPABASE_TABLES.Capacity).select('id').eq('team', t);
+  if (cur.error) throw cur.error;
+  const stale = (cur.data || []).map(x => Number(x.id)).filter(id => !keep.has(id));
+  if (stale.length) {
+    const del = await supabaseClient.from(SUPABASE_TABLES.Capacity).delete().eq('team', t).in('id', stale);
+    if (del.error) throw del.error;
+  }
+
+  await fetchAllDataFromSheet({ background: false });
+  return payload.length;
+};
+
+
+/* =====================================================================
+   SCOPE DATA FROM THE DATABASE  (nothing is hardcoded any more)
+   - scope_options     : values of the "Scope" dropdown (Category Setup / Task), per team
+   - scope_items       : rows of the "BOM C&S Scope" matrix (groups 1,2.. and sub-items 1.1..)
+   - scope_members     : matrix columns (member, order, avatar colour), per team
+   - scope_assignments : which member owns which item (the ticks)
+   The hardcoded array in CAPACITY_SCOPES is only a bootstrap fallback used when
+   the tables are missing / empty for the active team.
+   ===================================================================== */
+const DEFAULT_SCOPES = [...CAPACITY_SCOPES];
+
+function syncScopeSelects() {
+  const sel = document.getElementById('capacityScope');
+  if (!sel) return;
+  const keep = sel.value;
+  sel.innerHTML = CAPACITY_SCOPES.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if (keep && CAPACITY_SCOPES.includes(keep)) sel.value = keep;
+}
+syncScopeSelects();
+
+window.loadScopeOptions = async function (force) {
+  const v = getViewTeam();
+  if (!force && window.__scopeOptKey === v) return;
+  try {
+    let q = supabaseClient.from('scope_options').select('team,name,sort_order').order('sort_order', { ascending: true });
+    if (v !== TEAM_ALL) q = q.eq('team', v);
+    const r = await q;
+    if (r.error) throw r.error;
+    const names = [];
+    (r.data || []).forEach(x => { const n = String(x.name || '').trim(); if (n && !names.includes(n)) names.push(n); });
+    CAPACITY_SCOPES.splice(0, CAPACITY_SCOPES.length, ...(names.length ? names : DEFAULT_SCOPES));
+    window.__scopeOptKey = v;
+  } catch (e) {
+    console.warn('scope_options not available, using built-in defaults:', e?.message || e);
+    CAPACITY_SCOPES.splice(0, CAPACITY_SCOPES.length, ...DEFAULT_SCOPES);
+  }
+  syncScopeSelects();
+};
+
+const SCOPE_AVATAR_PALETTE = ['#e5a42a', '#e44b87', '#7b62d9', '#2da981', '#2388c9', '#2c9ed4', '#e58a35', '#6177cf', '#35a68e', '#55aee5'];
+const scopeEsc = s => escapeHtml(String(s ?? ''));
+
+function scopeMessageHtml(msg) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;height:100vh;display:grid;place-items:center;background:#edf4fa;color:#5f7690;font-family:Inter,Segoe UI,Arial,sans-serif;text-align:center;padding:24px"><p style="max-width:520px;line-height:1.5;font-size:15px">${scopeEsc(msg)}</p></body></html>`;
+}
+
+function buildScopeFrameHtml(data) {
+  const items = [...(data.items || [])].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  const members = [...(data.members || [])].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  const assigned = new Set((data.assignments || []).map(a => `${a.item_code}\u0000${a.member_name}`));
+  const colorOf = new Map();
+  let top = 0;
+  items.forEach(it => { if (!it.parent_code) { top++; colorOf.set(it.code, Number(it.color_index) || top); } });
+  const rowClass = it => {
+    const idx = colorOf.get(it.parent_code || it.code) || 1;
+    return ((idx - 1) % 10) + 1;
+  };
+  const avatar = (m, i) => /^#[0-9a-f]{3,8}$/i.test(String(m.avatar_color || '')) ? m.avatar_color : SCOPE_AVATAR_PALETTE[i % SCOPE_AVATAR_PALETTE.length];
+
+  const head = '<div class="head">SCOPE</div>' + members.map((m, i) =>
+    `<div class="head member"><span class="avatar" style="background:${avatar(m, i)}">${scopeEsc(String(m.member_name || '?').trim().charAt(0).toUpperCase())}</span><span class="member-name">${scopeEsc(m.member_name)}</span></div>`).join('');
+
+  const rows = items.map(it => {
+    const r = rowClass(it);
+    const isSub = !!it.parent_code;
+    const label = isSub
+      ? `<div class="cell group r${r} scope-subitem"><span class="scope-subnumber">${scopeEsc(it.code)}</span><span>${scopeEsc(it.title)}</span></div>`
+      : `<div class="cell group r${r}"><span class="group-badge b${r}">${scopeEsc(it.code)}</span><span>${scopeEsc(it.title)}</span></div>`;
+    const cells = members.map(m =>
+      `<div class="cell member-cell r${r}">${assigned.has(`${it.code}\u0000${m.member_name}`) ? '<span class="check x1">✓</span>' : ''}</div>`).join('');
+    return label + cells;
+  }).join('\n');
+
+  const css = document.getElementById('scopeFrameCss')?.textContent || '';
+  const override = `.matrix{grid-template-columns:380px repeat(${Math.max(1, members.length)},minmax(70px,1fr)) !important;min-width:${380 + Math.max(1, members.length) * 122}px !important}`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${css}\n${override}</style></head><body><div class="page"><main class="wrap"><div class="scroll"><section class="matrix">${head}\n${rows}</section></div></main></div></body></html>`;
+}
+
+window.renderScopeFromDb = async function () {
+  const frame = document.getElementById('bomCsScopeFrame');
+  if (!frame || !currentUser) return;
+  const team = getViewTeam();
+  if (team === TEAM_ALL) {
+    frame.srcdoc = scopeMessageHtml('Select a team in the sidebar to view its scope.');
+    return;
+  }
+  try {
+    const [it, me, as] = await Promise.all([
+      supabaseClient.from('scope_items').select('*').eq('team', team).order('sort_order', { ascending: true }),
+      supabaseClient.from('scope_members').select('*').eq('team', team).order('sort_order', { ascending: true }),
+      supabaseClient.from('scope_assignments').select('*').eq('team', team)
+    ]);
+    for (const r of [it, me, as]) if (r.error) throw r.error;
+    if (!(it.data || []).length) {
+      frame.srcdoc = scopeMessageHtml(`No scope has been defined for team "${team}" yet. Add rows to the scope_items / scope_members / scope_assignments tables.`);
+      return;
+    }
+    frame.srcdoc = buildScopeFrameHtml({ items: it.data, members: me.data, assignments: as.data });
+  } catch (e) {
+    console.error('Scope load error:', e);
+    frame.srcdoc = scopeMessageHtml('Unable to load scope data. Run the SQL file "supabase_02_bom_cs_data_and_scope.sql" to create the scope tables. ' + (e.message || ''));
+  }
+};
+
+const scopeTabVisible = () => !document.getElementById('tab-bom-cs-scope')?.classList.contains('hidden');
+
+const _fetchAllDataFromSheet = fetchAllDataFromSheet;
+fetchAllDataFromSheet = async function (opts) {
+  // Scope list must be ready BEFORE the tables are rendered.
+  if (currentUser) await loadScopeOptions(!(opts && opts.background));
+  const result = await _fetchAllDataFromSheet.apply(this, arguments);
+  if (currentUser && scopeTabVisible()) renderScopeFromDb();
+  return result;
+};
+
+const _switchTab = switchTab;
+switchTab = function (tabId) {
+  const r = _switchTab.apply(this, arguments);
+  if (tabId === 'bom-cs-scope') renderScopeFromDb();
+  return r;
+};
+
+</script>
+
+<!-- SCOPE EDIT UI V1 -->
+<style id="scopeEditUiV1">
+#tab-bom-cs-scope{position:relative!important}
+#scopeEditToolbar{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:1px solid #dbe6ef;border-radius:10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+#scopeEditToolbar .scope-edit-title{font-size:12px;font-weight:800;color:#244b67;margin-right:auto}
+#scopeEditToolbar button{height:32px;padding:0 10px;border-radius:7px;border:1px solid #cbd9e5;background:#fff;color:#42617a;font-size:10px;font-weight:800;cursor:pointer}
+#scopeEditToolbar button.primary{background:#1678d2;border-color:#1678d2;color:#fff}
+#scopeEditToolbar button.danger{color:#b64747;border-color:#efcaca;background:#fff8f8}
+#scopeEditToolbar button:disabled{opacity:.45;cursor:not-allowed}
+#tab-bom-cs-scope .scope-frame-host{height:calc(100% - 50px)!important}
+</style>
+<script id="scopeEditUiV1Script">
+(function(){
+'use strict';
+let selectedScopeItemCode='';
+function scopeTeam(){ const t=typeof getViewTeam==='function'?getViewTeam():''; return t===window.TEAM_ALL?'':String(t||'').trim(); }
+function canEditScope(){ const t=scopeTeam(); return !!t && (isAdminSession() || (isTeamAdminSession() && normTeam(t)===normTeam(currentUser.team))); }
+async function scopeAsk(title, def=''){
+  const v=prompt(title,def); return v===null?null:String(v).trim();
+}
+async function scopeReload(){ if(typeof renderScopeFromDb==='function') await renderScopeFromDb(); }
+async function scopeNextOrder(table,team){
+ const r=await supabaseClient.from(table).select('sort_order').eq('team',team).order('sort_order',{ascending:false}).limit(1);
+ if(r.error) throw r.error; return Number(r.data?.[0]?.sort_order||0)+10;
+}
+window.scopeAddGroup=async function(){
+ if(!canEditScope()) return showAppNotification('Select a specific team and sign in as Member/Admin to edit Scope.','Scope');
+ const team=scopeTeam(), code=await scopeAsk('Group code (example: 11)'); if(!code)return;
+ const title=await scopeAsk('Group title'); if(!title)return;
+ const sort_order=await scopeNextOrder('scope_items',team);
+ const {error}=await supabaseClient.from('scope_items').insert({team,code,title,parent_code:null,sort_order});
+ if(error)return showAppNotification(error.message,'Scope save error'); selectedScopeItemCode=code; await scopeReload();
+};
+window.scopeAddSubItem=async function(){
+ if(!canEditScope()) return showAppNotification('Select a specific team and sign in as Member/Admin to edit Scope.','Scope');
+ const team=scopeTeam(); let parent=selectedScopeItemCode;
+ if(parent && parent.includes('.')) parent=parent.split('.')[0];
+ parent=await scopeAsk('Parent group code',parent||''); if(!parent)return;
+ const code=await scopeAsk('Sub-item code (example: 11.1)',parent+'.1'); if(!code)return;
+ const title=await scopeAsk('Sub-item title'); if(!title)return;
+ const sort_order=await scopeNextOrder('scope_items',team);
+ const {error}=await supabaseClient.from('scope_items').insert({team,code,title,parent_code:parent,sort_order});
+ if(error)return showAppNotification(error.message,'Scope save error'); selectedScopeItemCode=code; await scopeReload();
+};
+window.scopeRenameItem=async function(){
+ if(!canEditScope())return; const team=scopeTeam();
+ const code=await scopeAsk('Scope code to rename',selectedScopeItemCode||''); if(!code)return;
+ const q=await supabaseClient.from('scope_items').select('title').eq('team',team).eq('code',code).single(); if(q.error)return showAppNotification(q.error.message,'Scope');
+ const title=await scopeAsk('New title',q.data?.title||''); if(!title)return;
+ const {error}=await supabaseClient.from('scope_items').update({title}).eq('team',team).eq('code',code); if(error)return showAppNotification(error.message,'Scope save error'); selectedScopeItemCode=code; await scopeReload();
+};
+window.scopeDeleteItem=async function(){
+ if(!canEditScope())return; const team=scopeTeam(); const code=await scopeAsk('Scope code to delete',selectedScopeItemCode||'');if(!code)return;
+ if(!(await showAppConfirm('Delete scope '+code+' and its assignments?','Delete Scope')))return;
+ let r=await supabaseClient.from('scope_assignments').delete().eq('team',team).eq('item_code',code); if(r.error)return showAppNotification(r.error.message,'Scope delete error');
+ r=await supabaseClient.from('scope_items').delete().eq('team',team).eq('code',code); if(r.error)return showAppNotification(r.error.message,'Scope delete error'); selectedScopeItemCode=''; await scopeReload();
+};
+window.scopeAddMember=async function(){
+ if(!canEditScope())return; const team=scopeTeam(); const name=await scopeAsk('Member name');if(!name)return;
+ const sort_order=await scopeNextOrder('scope_members',team); const {error}=await supabaseClient.from('scope_members').insert({team,member_name:name,sort_order}); if(error)return showAppNotification(error.message,'Scope save error'); await scopeReload();
+};
+window.scopeDeleteMember=async function(){
+ if(!canEditScope())return; const team=scopeTeam(); const name=await scopeAsk('Member name to remove');if(!name)return;
+ if(!(await showAppConfirm('Remove '+name+' from Scope matrix?','Remove Member')))return;
+ let r=await supabaseClient.from('scope_assignments').delete().eq('team',team).eq('member_name',name);if(r.error)return showAppNotification(r.error.message,'Scope delete error');
+ r=await supabaseClient.from('scope_members').delete().eq('team',team).eq('member_name',name);if(r.error)return showAppNotification(r.error.message,'Scope delete error'); await scopeReload();
+};
+window.scopeToggleAssignment=async function(){
+ if(!canEditScope())return; const team=scopeTeam();
+ const code=await scopeAsk('Scope item code',selectedScopeItemCode||'');if(!code)return;
+ const name=await scopeAsk('Member name');if(!name)return;
+ const q=await supabaseClient.from('scope_assignments').select('*').eq('team',team).eq('item_code',code).eq('member_name',name);
+ if(q.error)return showAppNotification(q.error.message,'Scope');
+ let error;
+ if((q.data||[]).length) ({error}=await supabaseClient.from('scope_assignments').delete().eq('team',team).eq('item_code',code).eq('member_name',name));
+ else ({error}=await supabaseClient.from('scope_assignments').insert({team,item_code:code,member_name:name}));
+ if(error)return showAppNotification(error.message,'Scope save error'); selectedScopeItemCode=code; await scopeReload();
+};
+function installToolbar(){
+ const tab=document.getElementById('tab-bom-cs-scope');if(!tab||document.getElementById('scopeEditToolbar'))return;
+ const frame=tab.querySelector('iframe'); const host=frame?.parentElement;if(host)host.classList.add('scope-frame-host');
+ const bar=document.createElement('div');bar.id='scopeEditToolbar';bar.innerHTML='<span class="scope-edit-title"><i class="fa-solid fa-pen-ruler"></i> Scope Editor</span><button class="primary" onclick="scopeAddGroup()">+ Group</button><button onclick="scopeAddSubItem()">+ Sub-item</button><button onclick="scopeRenameItem()">Rename</button><button onclick="scopeToggleAssignment()">Assign / Unassign</button><button onclick="scopeAddMember()">+ Member</button><button onclick="scopeDeleteMember()">Remove Member</button><button class="danger" onclick="scopeDeleteItem()">Delete Scope</button>';
+ tab.insertBefore(bar,tab.firstChild);
+ }
+ const oldSwitch=window.switchTab;
+ if(typeof oldSwitch==='function') window.switchTab=function(id){const r=oldSwitch.apply(this,arguments);if(id==='bom-cs-scope'){installToolbar();document.querySelectorAll('#scopeEditToolbar button').forEach(b=>b.disabled=!canEditScope());}return r;};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installToolbar,{once:true});else installToolbar();
+})();
+</script>
+
+<script id="team-admin-permission-patch">
+document.addEventListener('DOMContentLoaded',()=>{
+  const apply=()=>{
+    const admin=isAdminSession(), ta=isTeamAdminSession(), canUsers=admin||ta;
+    document.querySelectorAll('[onclick*="openTeamModal"]').forEach(x=>x.classList.toggle('hidden',!admin));
+    document.querySelectorAll('[onclick*="openAddUserModal"]').forEach(x=>x.classList.toggle('hidden',!canUsers));
+    const teamSel=document.getElementById('userTeam');
+    if(ta && teamSel){teamSel.value=currentUser.team||'';teamSel.disabled=true;}
+    const roleSel=document.getElementById('userRole');
+    if(ta && roleSel){[...roleSel.options].forEach(o=>o.disabled=!['Member','Viewer'].includes(o.value));}
+  };
+  const oldSwitch=window.switchTab;
+  if(typeof oldSwitch==='function')window.switchTab=function(){const r=oldSwitch.apply(this,arguments);apply();return r;};
+  setInterval(()=>{if(currentUser)apply();},1500);
+});
+</script>
+
+<script id="capacity-import-team-security-v2">
+/* Category import rules:
+   - Workload (Hour) is optional; blank defaults to 0.
+   - Member / Team Admin uploads are always pinned to the signed-in user's team.
+   - If a Team column exists for a non-Admin, every nonblank value must match the user's team.
+   - Admin does not need a sidebar team selection; Team is read from each uploaded row.
+   - Admin can import one or multiple teams in one file; each team is processed separately.
+*/
+window.handleCapacityImport = function (e) {
+  const input = e?.target;
+  const file = input?.files?.[0];
+  if (!file) return;
+
+  if (!currentUser) {
+    showAppNotification('Please sign in before importing Category / Task Name.', 'Import Error');
+    input.value = '';
+    return;
+  }
+  if (currentUser.isReadOnly || currentUser.role === 'Viewer') {
+    showAppNotification('Viewer access is read-only and cannot import data.', 'Import Error');
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async evt => {
+    try {
+      const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      if (!sheet) throw new Error('The selected file does not contain a worksheet.');
+
+      const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
+      if (!rawRows.length) throw new Error('The selected file is empty.');
+
+      const admin = typeof isAdminSession === 'function'
+        ? isAdminSession()
+        : currentUser.role === 'Admin';
+      const signedInTeam = String(currentUser.team || '').trim();
+
+      if (!admin && !signedInTeam) {
+        throw new Error('Your account is not assigned to a team. Contact an Admin before importing.');
+      }
+
+      const rows = rawRows.map((row, rowIndex) => {
+        const normalized = {};
+        Object.keys(row).forEach(k => {
+          normalized[normalizeCapacityImportHeader(k)] = row[k];
+        });
+
+        const workloadRaw = normalized.workloadhour ?? normalized.workload ?? normalized.hours ?? '';
+        const workloadText = String(workloadRaw ?? '').trim();
+        const workload = workloadText === '' ? 0 : parseCapacityNumber(workloadRaw);
+        const fileTeam = String(normalized.team ?? normalized.teamname ?? normalized.teamcode ?? '').trim();
+
+        return {
+          excelRow: rowIndex + 2,
+          category: String(normalized.category ?? '').trim(),
+          task: String(normalized.taskname ?? normalized.task ?? '').trim(),
+          scope: String(normalized.scope ?? '').trim(),
+          workload,
+          workloadProvided: workloadText !== '',
+          fileTeam,
+          team: admin ? fileTeam : signedInTeam
+        };
+      });
+
+      const errors = [];
+      const seen = new Set();
+
+      rows.forEach(r => {
+        if (!r.category) errors.push(`Row ${r.excelRow}: Category is required.`);
+        if (!r.task) errors.push(`Row ${r.excelRow}: Task Name is required.`);
+        if (!CAPACITY_SCOPES.includes(r.scope)) {
+          errors.push(`Row ${r.excelRow}: Scope must be one of: ${CAPACITY_SCOPES.join(', ')}.`);
+        }
+
+        // Workload is optional. Only validate it when a value was supplied.
+        if (r.workloadProvided && (!Number.isFinite(r.workload) || r.workload < 0)) {
+          errors.push(`Row ${r.excelRow}: Workload (Hour), when provided, must be a number >= 0.`);
+        }
+
+        if (admin) {
+          if (!r.team) {
+            errors.push(`Row ${r.excelRow}: Team is required for Admin imports because no sidebar team selection is used.`);
+          }
+        } else if (r.fileTeam && normTeam(r.fileTeam) !== normTeam(signedInTeam)) {
+          errors.push(`Row ${r.excelRow}: Team "${r.fileTeam}" does not match your signed-in team "${signedInTeam}".`);
+        }
+
+        const key = `${normTeam(r.team)}|||${r.category.toLowerCase()}|||${r.task.toLowerCase()}`;
+        if (r.team && r.category && r.task) {
+          if (seen.has(key)) errors.push(`Row ${r.excelRow}: Duplicate Team + Category + Task Name in the import file.`);
+          seen.add(key);
+        }
+      });
+
+      if (errors.length) {
+        const shown = errors.slice(0, 15);
+        const more = errors.length > 15 ? `\n...and ${errors.length - 15} more error(s).` : '';
+        throw new Error(shown.join('\n') + more);
+      }
+
+      const groups = new Map();
+      rows.forEach(r => {
+        const team = admin ? r.team : signedInTeam;
+        const key = normTeam(team);
+        if (!groups.has(key)) groups.set(key, { team, rows: [] });
+        groups.get(key).rows.push({
+          category: r.category,
+          task: r.task,
+          scope: r.scope,
+          workload: Number.isFinite(r.workload) ? r.workload : 0,
+          team
+        });
+      });
+
+      let totalImported = 0;
+      const completedTeams = [];
+      for (const group of groups.values()) {
+        const count = await importCapacityForTeam(group.team, group.rows);
+        if (count === null) continue;
+        totalImported += Number(count) || 0;
+        completedTeams.push(group.team);
+      }
+
+      if (!completedTeams.length) return;
+      renderCapacityTable();
+      populateFilterOptions();
+      restoreAdvancedTableFilters();
+      showAppNotification(
+        `${totalImported} Category / Task Name item(s) imported for: ${completedTeams.join(', ')}. Blank Workload values were saved as 0.`
+      );
+    } catch (err) {
+      showAppNotification(err?.message || 'Capacity import failed.', 'Import Error');
+    } finally {
+      if (input) input.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+};
+</script>
+<script id="multiTeamSecurityV5">
+(() => {
+  const APP_ADMIN_NAMES = new Set(['mark','anny','rita']);
+  const key = value => String(value || '').trim().toLowerCase().replace(/\s+/g,' ');
+  const first = value => key(value).split(/[ ,._-]+/)[0];
+  const isNamedAppAdmin = user => [user?.name,user?.username,user?.displayName,user?.email].some(v=>APP_ADMIN_NAMES.has(first(v)));
+  window.APP_ADMIN_NAMES=[...APP_ADMIN_NAMES];
+  const originalIsAdmin=window.isAdminSession;
+  window.isAdminSession=function(){
+    return !!currentUser && !currentUser.isReadOnly && (currentUser.role==='Admin' || isNamedAppAdmin(currentUser) || originalIsAdmin?.());
+  };
+  window.isAppAdminSession=window.isAdminSession;
+  window.canManageTeams=()=>window.isAdminSession();
+  window.canManageUsers=()=>window.isAdminSession() || window.isTeamAdminSession?.();
+  window.canEditTeamData=function(team){
+    if(window.isAdminSession()) return true;
+    if(!currentUser || currentUser.isReadOnly || currentUser.role==='Viewer') return false;
+    return key(team)===key(currentUser.team);
+  };
+  const oldInit=window.initUserSession;
+  if(typeof oldInit==='function'){
+    window.initUserSession=function(){
+      if(currentUser && isNamedAppAdmin(currentUser)) currentUser.role='Admin';
+      const result=oldInit.apply(this,arguments);
+      const badge=document.getElementById('currentUserRoleBadge');
+      if(badge && window.isAdminSession()) badge.textContent='App Admin';
+      return result;
+    };
+  }
+  const lockTeamContext=()=>{
+    if(!currentUser || window.isAdminSession() || !currentUser.team) return;
+    window.activeTeamView=currentUser.team;
+    document.querySelectorAll('[id*="team" i] select, select[id*="team" i]').forEach(sel=>{
+      const opt=[...sel.options].find(o=>key(o.value)===key(currentUser.team));
+      if(opt){ sel.value=opt.value; sel.disabled=true; }
+    });
+  };
+  document.addEventListener('DOMContentLoaded',lockTeamContext);
+  new MutationObserver(lockTeamContext).observe(document.documentElement,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',()=>document.querySelectorAll('option[value="Admin"]').forEach(o=>o.textContent='App Admin'));
+})();
+</script>
+
+<script id="strictTeamContextV6">
+(() => {
+  const n=v=>String(v??'').trim().toLowerCase();
+  const active=()=>String(window.activeTeamView||currentUser?.team||'').trim();
+  const same=(row,team=active())=>!!team && n(row?.team)===n(team);
+  window.getViewTeam=()=>active();
+  window.getWriteTeam=()=>active()||null;
+  window.scopeRowsToTeam=rows=>(Array.isArray(rows)?rows:[]).filter(r=>same(r));
+  window.resolveTeamOrThrow=row=>{
+    const team=window.isAdminSession?.() ? (String(row?.team||'').trim()||active()) : String(currentUser?.team||'').trim();
+    if(!team) throw new Error('User does not have an assigned team. Assign a team in User Management first.');
+    if(!window.isAdminSession?.() && n(team)!==n(currentUser?.team)) throw new Error('You can only update data of your own team.');
+    return team;
+  };
+  function teamMembers(){ const t=active(); return (Array.isArray(users)?users:[]).filter(u=>u.role!=='Admin' && n(u.team)===n(t) && String(u.status||'Active')!=='Inactive'); }
+  function teamCategories(){ return (Array.isArray(capacityData)?capacityData:[]).filter(r=>same(r)); }
+  window.getCurrentTeamMembers=teamMembers;
+  window.getCurrentTeamCategories=teamCategories;
+  function cleanSelect(select, allowed){
+    if(!select) return;
+    const current=select.value;
+    [...select.options].forEach(o=>{ if(o.value && !allowed.has(n(o.value))) o.remove(); });
+    if([...select.options].some(o=>o.value===current)) select.value=current;
+  }
+  function enforceAllDropdowns(){
+    if(!currentUser) return;
+    const memberSet=new Set(teamMembers().map(u=>n(u.name||u.username||u.displayName)));
+    const categorySet=new Set(teamCategories().map(x=>n(x.category)).filter(Boolean));
+    // Only team-data dropdowns, by exact id. Never Priority/Status/Type/Role/Team.
+    ['timeoffPIC','timeoffEditPIC'].forEach(id=>cleanSelect(document.getElementById(id),memberSet));
+    const cat=document.getElementById('taskCategory');
+    if(cat){ categorySet.add('other'); cleanSelect(cat,categorySet); }
+  }
+  window.enforceAllTeamDropdowns=enforceAllDropdowns;
+  window.renderTeamSwitcher=function(){
+    const label=document.getElementById('teamStaticLabel'), box=document.getElementById('teamAdminControls');
+    const sel=document.getElementById('teamSwitcher'), hint=document.getElementById('teamHint'), greet=document.getElementById('teamGreeting');
+    if(!label||!currentUser) return;
+    const t=active();
+    if(window.isAdminSession?.()){
+      label.classList.add('hidden'); box?.classList.remove('hidden'); hint?.classList.add('hidden');
+      const teams=window.computeKnownTeams?.()||[];
+      if(t && !teams.some(x=>n(x)===n(t))) teams.push(t);
+      sel.innerHTML=teams.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
+      if(!sel.getAttribute('onchange')) sel.setAttribute('onchange','switchTeamView(this.value)');
+      if(t) sel.value=teams.find(x=>n(x)===n(t))||t;
+      if(greet) greet.textContent=sel.value||t||'';
+    }else{
+      box?.classList.add('hidden'); hint?.classList.add('hidden'); label.classList.remove('hidden');
+      label.textContent=t||'\u2014'; if(greet) greet.textContent=t||'';
+    }
+  };
+  window.switchTeamView=async function(value){
+    if(!window.isAdminSession?.()) return;
+    const team=String(value||'').trim();
+    if(!team || team===window.TEAM_ALL) return showAppNotification?.('Please select a specific team.','Team required');
+    window.activeTeamView=team; window.__loadedTaskKey=null;
+    try{ bomTopFilterState.Category.clear(); bomTopFilterState.Member.clear(); }catch(_){ }
+    const ok=await fetchAllDataFromSheet({background:false,forceRender:true});
+    if(ok){ try{populateFilterOptions();}catch(_){} try{updateDashboardCharts();}catch(_){} }
+    window.renderTeamSwitcher(); enforceAllDropdowns();
+    try{ window.scopeReload?.(); }catch(_){}
+  };
+  const oldFetch=window.fetchAllDataFromSheet;
+  if(typeof oldFetch==='function' && !oldFetch.__strictTeamV6){
+    const wrapped=async function(){
+      if(currentUser && !window.activeTeamView) window.activeTeamView=String(currentUser.team||'').trim();
+      const result=await oldFetch.apply(this,arguments);
+      window.renderTeamSwitcher();
+      try{populateFilterOptions();}catch(_){}
+      enforceAllDropdowns();
+      return result;
+    };
+    wrapped.__strictTeamV6=true; window.fetchAllDataFromSheet=wrapped;
+  }
+  document.addEventListener('click',()=>setTimeout(enforceAllDropdowns,0),true);
+})();
+</script>
+
+<style id="teamScopeV2Css">
+#tab-bom-cs-scope.ts2-on > div:not(#ts2Root),#tab-bom-cs-scope.ts2-on #scopeEditToolbar{display:none!important}
+#ts2Root{display:flex;flex-direction:column;gap:10px;height:100%;min-height:0}
+#ts2Root .ts2-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;background:#fff;border:1px solid #dbe6ef;border-radius:12px;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+#ts2Root .ts2-title{font-size:13px;font-weight:800;color:#173e6b;display:flex;align-items:center;gap:8px}
+#ts2Root .ts2-team{font-size:10px;font-weight:800;color:#0f766e;background:#ccfbf1;border-radius:999px;padding:3px 9px}
+#ts2Root .ts2-stats{font-size:11px;color:#64748b;margin-right:auto}
+#ts2Root .ts2-btn{height:32px;padding:0 12px;border-radius:8px;border:1px solid #cbd9e5;background:#fff;color:#334e68;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+#ts2Root .ts2-btn:hover{background:#f1f5f9}
+#ts2Root .ts2-btn.primary{background:#1678d2;border-color:#1678d2;color:#fff}
+#ts2Root .ts2-btn.green{background:#059669;border-color:#059669;color:#fff}
+#ts2Root .ts2-btn:focus-visible,#ts2Root .ts2-cell:focus-visible{outline:2px solid #1678d2;outline-offset:1px}
+#ts2Root .ts2-wrap{flex:1;min-height:0;overflow:auto;background:#fff;border:1px solid #dbe6ef;border-radius:12px}
+#ts2Root table{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%}
+#ts2Root thead th{position:sticky;top:0;z-index:3;background:#0b4f82;color:#fff;font-weight:700;padding:10px 8px;border-right:1px solid #2b6a98;white-space:nowrap}
+#ts2Root thead th.ts2-scope{left:0;z-index:4;min-width:340px;text-align:left;padding-left:14px}
+#ts2Root .ts2-mhead{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:74px}
+#ts2Root .ts2-av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff}
+#ts2Root .ts2-mname{font-size:10.5px;max-width:96px;overflow:hidden;text-overflow:ellipsis}
+#ts2Root .ts2-mcount{font-size:9px;opacity:.8}
+#ts2Root tbody td{border-bottom:1px solid #edf2f7;border-right:1px solid #f1f5f9;padding:0}
+#ts2Root td.ts2-label{position:sticky;left:0;z-index:2;background:inherit;padding:8px 10px}
+#ts2Root tr.ts2-group{background:#eef6fd}
+#ts2Root tr.ts2-group td.ts2-label{font-weight:800;color:#0f2f4f}
+#ts2Root tr.ts2-sub{background:#fff}
+#ts2Root .ts2-lab{display:flex;align-items:center;gap:8px}
+#ts2Root .ts2-badge{min-width:24px;height:24px;border-radius:7px;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:800;padding:0 5px}
+#ts2Root .ts2-subno{min-width:34px;font-size:10px;font-weight:700;color:#64748b;padding-left:30px;box-sizing:content-box}
+#ts2Root .ts2-text{flex:1}
+#ts2Root .ts2-acts{display:flex;gap:2px;opacity:0;transition:opacity .15s}
+#ts2Root tr:hover .ts2-acts,#ts2Root .ts2-acts:focus-within{opacity:1}
+#ts2Root .ts2-acts button{width:24px;height:24px;border:0;border-radius:6px;background:transparent;color:#64748b;cursor:pointer;font-size:11px}
+#ts2Root .ts2-acts button:hover{background:#e2e8f0;color:#1678d2}
+#ts2Root .ts2-acts button.del:hover{background:#fee2e2;color:#dc2626}
+#ts2Root .ts2-cell{width:100%;height:36px;display:grid;place-items:center;border:0;background:transparent;cursor:pointer}
+#ts2Root .ts2-cell[disabled]{cursor:default}
+#ts2Root .ts2-cell:not([disabled]):hover{background:#e0f2fe}
+#ts2Root .ts2-check{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:12px;font-weight:900}
+#ts2Root .ts2-check.on{background:#16a34a;color:#fff}
+#ts2Root .ts2-check.off{border:1.5px solid #cbd5e1}
+#ts2Root .ts2-cell[disabled] .ts2-check.off{border-color:transparent}
+#ts2Root .ts2-empty{padding:40px;text-align:center;color:#64748b;font-size:13px;line-height:1.6}
+#ts2Root .ts2-hint{font-size:10.5px;color:#64748b;padding:0 4px}
+</style>
+<script id="teamScopeV2">
+(function(){
+'use strict';
+const PALETTE=['#e5a42a','#e44b87','#7b62d9','#2da981','#2388c9','#2c9ed4','#e58a35','#6177cf','#35a68e','#55aee5'];
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ');
+const S={team:'',items:[],assign:new Set(),busy:false};
+const key=(code,name)=>code+'\u0000'+name;
+function team(){const t=typeof getViewTeam==='function'?getViewTeam():'';return t===window.TEAM_ALL?'':String(t||'').trim();}
+function canEdit(){
+  const t=team(); if(!t||!currentUser||currentUser.isReadOnly) return false;
+  if(window.isAdminSession?.()) return true;
+  return currentUser.role==='Team Admin' && norm(currentUser.team)===norm(t);
+}
+function members(){
+  const t=team();
+  return (Array.isArray(users)?users:[])
+    .filter(u=>norm(u.team)===norm(t) && String(u.status||'Active')!=='Inactive' && u.role!=='Viewer')
+    .map(u=>String(u.name||'').trim()).filter(Boolean)
+    .filter((n,i,a)=>a.findIndex(x=>norm(x)===norm(n))===i)
+    .sort((a,b)=>a.localeCompare(b));
+}
+// Excel column -> member: exact name, or any word of the name ("Anny" = "Le, Anny").
+function matchMember(col,ms){
+  const c=norm(col); if(!c) return null;
+  const exact=ms.find(m=>norm(m)===c); if(exact) return exact;
+  const hits=ms.filter(m=>norm(m).split(/[\s,._-]+/).includes(c));
+  return hits.length===1?hits[0]:null;
+}
+function ordered(){
+  const groups=S.items.filter(i=>!i.parent_code).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const out=[];
+  groups.forEach((g,gi)=>{
+    out.push({...g,_gi:gi});
+    S.items.filter(i=>String(i.parent_code)===String(g.code)).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)).forEach(s=>out.push({...s,_gi:gi}));
+  });
+  return out;
+}
+function ensureRoot(){
+  const tab=document.getElementById('tab-bom-cs-scope'); if(!tab) return null;
+  tab.classList.add('ts2-on');
+  let root=document.getElementById('ts2Root');
+  if(!root){root=document.createElement('div');root.id='ts2Root';tab.appendChild(root);}
+  return root;
+}
+async function load(){
+  const t=team(); S.team=t; S.items=[]; S.assign=new Set();
+  if(!t) return;
+  const [it,as]=await Promise.all([
+    supabaseClient.from('scope_items').select('*').eq('team',t),
+    supabaseClient.from('scope_assignments').select('item_code,member_name').eq('team',t)
+  ]);
+  if(it.error) throw it.error; if(as.error) throw as.error;
+  S.items=it.data||[];
+  (as.data||[]).forEach(a=>S.assign.add(key(String(a.item_code),norm(a.member_name))));
+}
+function render(){
+  const root=ensureRoot(); if(!root) return;
+  const t=team(), edit=canEdit(), ms=members(), rows=ordered();
+  const nGroups=rows.filter(r=>!r.parent_code).length, nSubs=rows.length-nGroups;
+  const counts=ms.map(m=>rows.filter(r=>S.assign.has(key(String(r.code),norm(m)))).length);
+  const bar=`<div class="ts2-bar">
+    <span class="ts2-title"><i class="fa-solid fa-sitemap"></i> Team Scope ${t?`<span class="ts2-team">${esc(t)}</span>`:''}</span>
+    <span class="ts2-stats">${nGroups} group · ${nSubs} sub-item · ${ms.length} member</span>
+    ${edit?`<button type="button" class="ts2-btn primary" data-act="add-group"><i class="fa-solid fa-plus"></i> Group</button>
+    <button type="button" class="ts2-btn" data-act="template"><i class="fa-solid fa-file-arrow-down"></i> Template</button>
+    <button type="button" class="ts2-btn green" data-act="import"><i class="fa-solid fa-file-import"></i> Import Excel</button>`:''}
+    <button type="button" class="ts2-btn" data-act="export"><i class="fa-solid fa-file-export"></i> Export</button>
+    <input type="file" id="ts2File" accept=".xlsx,.xls,.csv" hidden>
+  </div>
+  ${edit?'<div class="ts2-hint">Click a cell to assign / unassign a member. Hover a row to add a sub-item, rename or delete.</div>':''}`;
+  let body;
+  if(!t) body='<div class="ts2-empty">Select a team to view its scope.</div>';
+  else if(!rows.length) body=`<div class="ts2-empty">No scope has been set up for team <b>${esc(t)}</b> yet.${edit?'<br>Click <b>+ Group</b> or <b>Import Excel</b> to start.':''}</div>`;
+  else {
+    const head=`<tr><th class="ts2-scope">SCOPE</th>${ms.map((m,i)=>`<th><div class="ts2-mhead"><span class="ts2-av" style="background:${PALETTE[i%PALETTE.length]}">${esc(m.charAt(0).toUpperCase())}</span><span class="ts2-mname" title="${esc(m)}">${esc(m)}</span><span class="ts2-mcount">${counts[i]} item</span></div></th>`).join('')}</tr>`;
+    const tr=rows.map(r=>{
+      const sub=!!r.parent_code, color=PALETTE[r._gi%PALETTE.length];
+      const label=sub
+        ?`<span class="ts2-subno">${esc(r.code)}</span><span class="ts2-text">${esc(r.title)}</span>`
+        :`<span class="ts2-badge" style="background:${color}">${esc(r.code)}</span><span class="ts2-text">${esc(r.title)}</span>`;
+      const acts=edit?`<span class="ts2-acts">${sub?'':`<button type="button" title="Add sub-item" aria-label="Add sub-item" data-act="add-sub" data-code="${esc(r.code)}"><i class="fa-solid fa-plus"></i></button>`}<button type="button" title="Rename" aria-label="Rename" data-act="rename" data-code="${esc(r.code)}"><i class="fa-solid fa-pen"></i></button><button type="button" class="del" title="Delete" aria-label="Delete" data-act="delete" data-code="${esc(r.code)}"><i class="fa-solid fa-trash"></i></button></span>`:'';
+      const cells=ms.map(m=>{const on=S.assign.has(key(String(r.code),norm(m)));
+        return `<td><button type="button" class="ts2-cell" ${edit?'':'disabled'} data-act="toggle" data-code="${esc(r.code)}" data-member="${esc(m)}" aria-pressed="${on}" aria-label="${esc(m)} - ${esc(r.title)}"><span class="ts2-check ${on?'on':'off'}">${on?'✓':''}</span></button></td>`;}).join('');
+      return `<tr class="${sub?'ts2-sub':'ts2-group'}"><td class="ts2-label"><div class="ts2-lab">${label}${acts}</div></td>${cells}</tr>`;
+    }).join('');
+    body=`<div class="ts2-wrap"><table><thead>${head}</thead><tbody>${tr}</tbody></table></div>`;
+  }
+  root.innerHTML=bar+body;
+}
+async function reload(){
+  const root=ensureRoot(); if(!root||!currentUser) return;
+  try{ await load(); render(); }
+  catch(e){ console.error('Team scope load error:',e); render(); root.insertAdjacentHTML('beforeend',`<div class="ts2-empty">Unable to load scope: ${esc(e.message||e)}</div>`); }
+}
+window.renderScopeFromDb=reload;
+window.scopeReload=reload;
+function nextOrder(){ return S.items.reduce((m,i)=>Math.max(m,Number(i.sort_order)||0),0)+10; }
+function nextGroupCode(){ return String(S.items.filter(i=>!i.parent_code).reduce((m,i)=>Math.max(m,parseInt(i.code,10)||0),0)+1); }
+function nextSubCode(parent){
+  const n=S.items.filter(i=>String(i.parent_code)===String(parent)).reduce((m,i)=>Math.max(m,parseInt(String(i.code).split('.').pop(),10)||0),0)+1;
+  return parent+'.'+n;
+}
+async function insertItem(title,parent){
+  const t=team(), code=parent?nextSubCode(parent):nextGroupCode(), sort_order=nextOrder();
+  const {data,error}=await supabaseClient.from('scope_items').insert({team:t,code,title,parent_code:parent||null,sort_order}).select('*').single();
+  if(error) throw error; S.items.push(data); return data;
+}
+async function addGroup(){
+  const title=prompt('Group name (Main Scope)'); if(!title||!title.trim()) return;
+  try{ await insertItem(title.trim(),null); render(); }catch(e){ showAppNotification(e.message,'Scope save error'); }
+}
+async function addSub(parent){
+  const title=prompt('Sub-item name (Sub Scope)'); if(!title||!title.trim()) return;
+  try{ await insertItem(title.trim(),parent); render(); }catch(e){ showAppNotification(e.message,'Scope save error'); }
+}
+async function rename(code){
+  const it=S.items.find(i=>String(i.code)===String(code)); if(!it) return;
+  const title=prompt('New name',it.title||''); if(!title||!title.trim()||title.trim()===it.title) return;
+  const {error}=await supabaseClient.from('scope_items').update({title:title.trim()}).eq('team',team()).eq('code',code);
+  if(error) return showAppNotification(error.message,'Scope save error');
+  it.title=title.trim(); render();
+}
+async function del(code){
+  const it=S.items.find(i=>String(i.code)===String(code)); if(!it) return;
+  const codes=[String(code),...S.items.filter(i=>String(i.parent_code)===String(code)).map(i=>String(i.code))];
+  const msg=it.parent_code?`Delete sub-item "${it.title}"?`:`Delete group "${it.title}" and its ${codes.length-1} sub-item(s)?`;
+  if(!(await showAppConfirm(msg,'Delete Scope'))) return;
+  const t=team();
+  let r=await supabaseClient.from('scope_assignments').delete().eq('team',t).in('item_code',codes); if(r.error) return showAppNotification(r.error.message,'Scope delete error');
+  r=await supabaseClient.from('scope_items').delete().eq('team',t).in('code',codes); if(r.error) return showAppNotification(r.error.message,'Scope delete error');
+  S.items=S.items.filter(i=>!codes.includes(String(i.code)));
+  [...S.assign].forEach(k=>{ if(codes.includes(k.split('\u0000')[0])) S.assign.delete(k); });
+  render();
+}
+async function toggle(btn){
+  if(S.busy) return; S.busy=true;
+  const code=btn.dataset.code, member=btn.dataset.member, k=key(code,norm(member)), t=team(), on=S.assign.has(k);
+  if(on) S.assign.delete(k); else S.assign.add(k); render();
+  try{
+    const r=on
+      ? await supabaseClient.from('scope_assignments').delete().eq('team',t).eq('item_code',code).eq('member_name',member)
+      : await supabaseClient.from('scope_assignments').insert({team:t,item_code:code,member_name:member});
+    if(r.error) throw r.error;
+  }catch(e){ if(on) S.assign.add(k); else S.assign.delete(k); render(); showAppNotification(e.message,'Scope save error'); }
+  finally{ S.busy=false; }
+}
+function sheetRows(){
+  const ms=members(), out=[];
+  ordered().forEach(r=>{
+    const parent=r.parent_code?S.items.find(i=>String(i.code)===String(r.parent_code)):null;
+    const row={'Main Scope':parent?parent.title:r.title,'Sub Scope':parent?r.title:''};
+    ms.forEach(m=>row[m]=S.assign.has(key(String(r.code),norm(m)))?'x':'');
+    out.push(row);
+  });
+  return out;
+}
+function download(rows,name){
+  const header=['Main Scope','Sub Scope',...members()];
+  const ws=XLSX.utils.json_to_sheet(rows.length?rows:[Object.fromEntries(header.map(h=>[h,'']))],{header});
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Scope'); XLSX.writeFile(wb,name);
+}
+function template(){
+  const ms=members(), row=(main,sub,tick)=>({'Main Scope':main,'Sub Scope':sub,...Object.fromEntries(ms.map((m,i)=>[m,tick&&i===0?'x':'']))});
+  download([row('Example group','',true),row('Example group','Example sub-item 1',true),row('Example group','Example sub-item 2',false)],`Team_Scope_Template_${team().replace(/[^\w-]+/g,'_')}.xlsx`);
+}
+const isMark=v=>{const s=norm(v);return !!s && !['0','no','n','false','-'].includes(s);};
+async function importFile(file){
+  const t=team(); if(!t) return;
+  let rows;
+  try{
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+    rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:false});
+  }catch(e){ return showAppNotification('Cannot read file: '+e.message,'Import error'); }
+  if(!rows.length) return showAppNotification('The file has no data rows.','Import');
+  const cols=Object.keys(rows[0]);
+  const mainCol=cols.find(c=>norm(c)==='main scope'), subCol=cols.find(c=>norm(c)==='sub scope');
+  if(!mainCol) return showAppNotification('Column "Main Scope" was not found. Required columns: Main Scope, Sub Scope, then one column per member.','Import error');
+  const ms=members(), memberCols=[], unknown=[];
+  cols.filter(c=>c!==mainCol&&c!==subCol&&!/^__EMPTY/.test(c)).forEach(c=>{ const m=matchMember(c,ms); if(m) memberCols.push({col:c,name:m}); else unknown.push(c); });
+  const plan=[]; let lastMain='';
+  rows.forEach(r=>{
+    const main=String(r[mainCol]||'').trim()||lastMain, sub=subCol?String(r[subCol]||'').trim():'';
+    if(!main) return; lastMain=main;
+    plan.push({main,sub,members:memberCols.filter(mc=>isMark(r[mc.col])).map(mc=>mc.name)});
+  });
+  if(!plan.length) return showAppNotification('No valid scope rows were found.','Import');
+  const groupsN=new Set(plan.map(p=>norm(p.main))).size, subsN=plan.filter(p=>p.sub).length;
+  let msg=`Import into team "${t}": ${groupsN} group(s), ${subsN} sub-item(s), ${memberCols.length} member column(s).\nExisting groups/sub-items with the same name are reused; their ticks are replaced by the file. Other scope rows are not changed.`;
+  if(unknown.length) msg+=`\n\nIgnored columns (not a member of this team): ${unknown.join(', ')}`;
+  if(!(await showAppConfirm(msg,'Import Team Scope'))) return;
+  try{
+    await load();
+    const touched=new Set(), wanted=[];
+    for(const p of plan){
+      let g=S.items.find(i=>!i.parent_code && norm(i.title)===norm(p.main));
+      if(!g) g=await insertItem(p.main,null);
+      let target=g;
+      if(p.sub){
+        let s=S.items.find(i=>String(i.parent_code)===String(g.code) && norm(i.title)===norm(p.sub));
+        if(!s) s=await insertItem(p.sub,g.code);
+        target=s;
+      }
+      const code=String(target.code);
+      touched.add(code); p.members.forEach(m=>wanted.push({team:t,item_code:code,member_name:m}));
+    }
+    const codes=[...touched];
+    if(codes.length){ const d=await supabaseClient.from('scope_assignments').delete().eq('team',t).in('item_code',codes); if(d.error) throw d.error; }
+    const uniq=[...new Map(wanted.map(w=>[w.item_code+'|'+norm(w.member_name),w])).values()];
+    for(let i=0;i<uniq.length;i+=500){ const r=await supabaseClient.from('scope_assignments').insert(uniq.slice(i,i+500)); if(r.error) throw r.error; }
+    await reload();
+    showAppNotification(`Imported ${plan.length} row(s) and ${uniq.length} tick(s) for team "${t}".`+(unknown.length?` Ignored columns: ${unknown.join(', ')}.`:''),'Import complete');
+  }catch(e){ console.error(e); await reload(); showAppNotification(e.message||String(e),'Import error'); }
+}
+document.addEventListener('click',e=>{
+  const root=document.getElementById('ts2Root'); if(!root) return;
+  const b=e.target.closest('[data-act]'); if(!b||!root.contains(b)) return;
+  const a=b.dataset.act;
+  if(a==='export') return download(sheetRows(),`Team_Scope_${team().replace(/[^\w-]+/g,'_')}.xlsx`);
+  if(!canEdit()) return;
+  if(a==='add-group') addGroup();
+  else if(a==='add-sub') addSub(b.dataset.code);
+  else if(a==='rename') rename(b.dataset.code);
+  else if(a==='delete') del(b.dataset.code);
+  else if(a==='toggle') toggle(b);
+  else if(a==='template') template();
+  else if(a==='import') root.querySelector('#ts2File')?.click();
+});
+document.addEventListener('change',e=>{
+  if(e.target?.id!=='ts2File') return;
+  const f=e.target.files?.[0]; e.target.value=''; if(f) importFile(f);
+});
+})();
+</script>
+<script id="uiFixesV12">
+(function(){
+const old=window.renderUserManagementTable;
+if(typeof old==='function'){
+  const w=function(){ const r=old.apply(this,arguments); try{ recomputeAdvancedTableFilter('table-users'); decorateAdvancedFilterControls(); }catch(_){} return r; };
+  window.renderUserManagementTable=w; try{ renderUserManagementTable=w; }catch(_){}
+}
 })();
 </script>
 
@@ -13238,7 +14427,10 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
         : (existing?.status||'Not Started');
     }
 
+    let __projectTeam; try{ __projectTeam=resolveTeamOrThrow(project); }catch(e){ showAppNotification(e.message,'Select a team'); return; }
+
     const payload={
+      team:__projectTeam,
       name:String(project.name||'').trim(),
       owner:Array.isArray(project.owners)?project.owners.join(', '):(project.owner||null),
       owners:Array.isArray(project.owners)?project.owners:[],
