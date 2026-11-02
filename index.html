@@ -9442,24 +9442,140 @@ function setCalendarView(view) {
             const u=users[idx];if(!u)return;document.getElementById('userEditIndex').value=idx;document.getElementById('userModalTitle').innerText='Edit User';document.getElementById('userName').value=u.name||'';document.getElementById('userPassword').value=u.password||'';document.getElementById('userRole').value=u.role||'Member';document.getElementById('userStatus').value=u.status||'Active';document.getElementById('userModal').classList.remove('opacity-0','pointer-events-none');document.body.classList.add('modal-active');
         }
         function closeUserModal(){document.getElementById('userModal').classList.add('opacity-0','pointer-events-none');document.body.classList.remove('modal-active');}
+        async function saveUserRecordToSupabase(userData, existingUser = null) {
+            if (!initSupabaseClient()) {
+                throw new Error('Supabase client is not initialized.');
+            }
+
+            // Never include the identity primary key in INSERT/UPDATE payloads.
+            // PostgreSQL generates public.users.id automatically for new users.
+            const payload = {
+                name: String(userData?.name || '').trim(),
+                password: String(userData?.password || ''),
+                role: String(userData?.role || 'Member').trim(),
+                status: String(userData?.status || 'Active').trim(),
+                team: String(userData?.role || '') === 'Admin'
+                    ? null
+                    : (String(userData?.team || '').trim() || null)
+            };
+
+            let result;
+            const existingId = Number(existingUser?.id);
+            if (Number.isSafeInteger(existingId) && existingId > 0) {
+                result = await supabaseClient
+                    .from('users')
+                    .update(payload)
+                    .eq('id', existingId)
+                    .select('*')
+                    .single();
+            } else {
+                result = await supabaseClient
+                    .from('users')
+                    .insert(payload)
+                    .select('*')
+                    .single();
+            }
+
+            if (result.error) throw result.error;
+            return mapDbUserToApp(result.data);
+        }
+
         async function saveUser(e){
-            e.preventDefault(); if(currentUser?.role!=='Admin'){showAppNotification('Only Admin can manage users.','Permission denied');return;}
-            const idx=document.getElementById('userEditIndex').value;const name=document.getElementById('userName').value.trim();const password=document.getElementById('userPassword').value;const role=document.getElementById('userRole').value;const status=document.getElementById('userStatus').value;
-            if(!name||!password)return;
+            e.preventDefault();
+            if(currentUser?.role!=='Admin'){
+                showAppNotification('Only Admin can manage users.','Permission denied');
+                return;
+            }
+
+            const idxValue=document.getElementById('userEditIndex').value;
+            const editingIndex=idxValue==='' ? -1 : Number(idxValue);
+            const existingUser=editingIndex>=0 ? users[editingIndex] : null;
+            const name=document.getElementById('userName').value.trim();
+            const password=document.getElementById('userPassword').value;
+            const role=document.getElementById('userRole').value;
+            const status=document.getElementById('userStatus').value;
+
+            if(!name||!password){
+                showAppNotification('Member name and password are required.','Validation');
+                return;
+            }
+
             let team=role==='Admin'?'':String(document.getElementById('userTeam')?.value||'').trim();
             if(isTeamAdminSession()){
                 team=String(currentUser.team||'').trim();
-                if(!['Member','Viewer'].includes(role)) throw new Error('Team Admin can create or update only Member and Viewer accounts in their own team.');
+                if(!['Member','Viewer'].includes(role)){
+                    showAppNotification('Team Admin can create or update only Member and Viewer accounts in their own team.','Permission denied');
+                    return;
+                }
             }
-            if(role!=='Admin'&&!team){showAppNotification('Please select a Team for this member.','Validation');return;}
-            const duplicate=users.some((u,i)=>i!==Number(idx)&&String(u.name||'').toLowerCase()===name.toLowerCase());if(duplicate){showAppNotification('Member name already exists.','Validation');return;}
-            if(idx==='') users.push({name,password,role,status,team}); else { const editedIndex=Number(idx); users[editedIndex]={...users[editedIndex],name,password,role,status,team}; if(currentUser && editedIndex===users.findIndex(u=>String(u.name).toLowerCase()===String(currentUser.name).toLowerCase())) currentUser=users[editedIndex]; }
-            await saveSheetData('Users',users); if(currentUser) initUserSession();
-            renderUserManagementTable();populateFilterOptions();closeUserModal();showAppNotification('User saved successfully.');
+            if(role!=='Admin'&&!team){
+                showAppNotification('Please select a Team for this member.','Validation');
+                return;
+            }
+
+            const duplicate=users.some((u,i)=>
+                i!==editingIndex &&
+                String(u.name||'').trim().toLowerCase()===name.toLowerCase()
+            );
+            if(duplicate){
+                showAppNotification('Member name already exists.','Validation');
+                return;
+            }
+
+            try{
+                const savedUser=await saveUserRecordToSupabase(
+                    {name,password,role,status,team},
+                    existingUser
+                );
+
+                if(editingIndex<0){
+                    users.push(savedUser);
+                }else{
+                    users[editingIndex]=savedUser;
+                    if(currentUser && String(currentUser.id)===String(savedUser.id)){
+                        currentUser=savedUser;
+                    }
+                }
+
+                sheetSyncSnapshots.Users=JSON.parse(JSON.stringify(users));
+                lastLocalSaveAt.Users=Date.now();
+                if(currentUser) initUserSession();
+                renderUserManagementTable();
+                populateFilterOptions();
+                closeUserModal();
+                showAppNotification(editingIndex<0?'User created successfully.':'User updated successfully.');
+            }catch(err){
+                console.error('Supabase Save Error [Users]:',err);
+                showAppNotification(`Unable to save Users to Supabase. ${err.message||''}`,'Database Error');
+            }
         }
+
         async function deleteUser(idx){
-            if(currentUser?.role!=='Admin'){showAppNotification('Only Admin can manage users.','Permission denied');return;}
-            const ok=await showAppConfirm('Delete this user?');if(!ok)return;users.splice(idx,1);await saveSheetData('Users',users);renderUserManagementTable();populateFilterOptions();
+            if(currentUser?.role!=='Admin'){
+                showAppNotification('Only Admin can manage users.','Permission denied');
+                return;
+            }
+            const user=users[idx];
+            if(!user)return;
+            const ok=await showAppConfirm('Delete this user?');
+            if(!ok)return;
+
+            try{
+                const userId=Number(user.id);
+                if(Number.isSafeInteger(userId)&&userId>0){
+                    const {error}=await supabaseClient.from('users').delete().eq('id',userId);
+                    if(error)throw error;
+                }
+                users.splice(idx,1);
+                sheetSyncSnapshots.Users=JSON.parse(JSON.stringify(users));
+                lastLocalSaveAt.Users=Date.now();
+                renderUserManagementTable();
+                populateFilterOptions();
+                showAppNotification('User deleted successfully.');
+            }catch(err){
+                console.error('Supabase Delete Error [Users]:',err);
+                showAppNotification(`Unable to delete User from Supabase. ${err.message||''}`,'Database Error');
+            }
         }
 
         // NEW Dashboard chart init/update
