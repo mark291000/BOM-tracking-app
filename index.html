@@ -4726,8 +4726,8 @@ function setupInlineRequiredValidation(){
         function populateFilterOptions() {
             const picFilter = document.getElementById('globalPICFilter');
             const catFilter = document.getElementById('globalCategoryFilter');
-            const activeUsers = users.filter(u => u.status === 'Active' && String(u.name).trim().toLowerCase() !== 'anny');
-            const pics = activeUsers.map(u => u.name);
+            const activeUsers = (Array.isArray(users) ? users : []).filter(u => String(u?.status || '').trim().toLowerCase() === 'active');
+            const pics = [...new Set(activeUsers.map(u => String(u?.name || '').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
             
             if (picFilter) picFilter.innerHTML = '<option value="ALL">-- All PICs --</option>' + pics.map(p => `<option value="${p}">${p}</option>`).join('');
             const categories = [...new Set(capacityData.map(c => c.category))].sort();
@@ -7137,7 +7137,7 @@ function setupInlineRequiredValidation(){
         function populateTimeoffEditOptions(){
             const typeEl=document.getElementById('timeoffEditType'), picEl=document.getElementById('timeoffEditPIC'); if(!typeEl||!picEl)return;
             typeEl.innerHTML=['Day Off','Saturday Off','Over Time','Time Off'].map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
-            const names=[...new Set(users.map(u=>String(u.name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+            const names=[...new Set((Array.isArray(users)?users:[]).filter(u=>String(u?.status||'').trim().toLowerCase()==='active').map(u=>String(u.name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
             picEl.innerHTML=names.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
         }
         function onTimeoffEditTypeChange(){
@@ -12690,7 +12690,8 @@ window.handleCapacityImport = function (e) {
     const memberSet=new Set(teamMembers().map(u=>n(u.name||u.username||u.displayName)));
     const categorySet=new Set(teamCategories().map(x=>n(x.category)).filter(Boolean));
     // Only team-data dropdowns, by exact id. Never Priority/Status/Type/Role/Team.
-    ['timeoffPIC','timeoffEditPIC'].forEach(id=>cleanSelect(document.getElementById(id),memberSet));
+    // Time Off & Overtime is employee-wide: all Active users are valid choices.
+    // Do not apply current-team scoping to timeoffPIC / timeoffEditPIC.
     const cat=document.getElementById('taskCategory');
     if(cat){ categorySet.add('other'); cleanSelect(cat,categorySet); }
   }
