@@ -4201,7 +4201,7 @@ function normalizeProjectTasks(tasks,project){
             const owners=Array.isArray(r?.owners)?r.owners:(r?.owner?String(r.owner).split(',').map(x=>x.trim()).filter(Boolean):[]);
             const hoursUsed=(r?.hours_used&&typeof r.hours_used==='object')?r.hours_used:{};
             const meta=getProjectMetaFromStorage(hoursUsed);
-            const project={ id:r?.id, team:r?.team||'', name:r?.name||'', owner:r?.owner||owners.join(', '), owners, scope:r?.scope||'Projects', detail:r?.detail||'', status:r?.status||'Working on it', progress:Number(r?.progress||0), startDate:cleanDateStr(r?.start_date), dueDate:cleanDateStr(r?.due_date), actualDate:cleanDateStr(r?.actual_date), priority:Number(r?.priority||3), gainDemand:r?.gain_demand??meta.gainDemand, detailedStatus:meta.detailedStatus||'', phases:meta.phases, tasks:meta.tasks, saving:r?.saving??0, actualSaving:r?.actual_saving??'', note:r?.note||'', hoursUsed, createdAt:r?.created_at||'', updatedAt:r?.updated_at||'' };
+            const project={ id:r?.id, team:r?.team||'', name:r?.name||'', owner:r?.owner||owners.join(', '), owners, scope:r?.scope||'Projects', detail:r?.detail||'', status:r?.status||'Working on it', progress:Number(r?.progress||0), startDate:cleanDateStr(r?.start_date), dueDate:cleanDateStr(r?.due_date), actualDate:cleanDateStr(r?.actual_date), priority:Number(r?.priority||3), gainDemand:r?.gain_demand??meta.gainDemand, currentStage:String(r?.current_stage??meta.currentStage??meta.stage??''), archivedGoal:String(r?.archived_goal??meta.archivedGoal??meta.detailedStatus??''), keyProject:(r?.key_project===undefined||r?.key_project===null)?(meta.keyProject===undefined?true:!(/^(false|0|no|n|off)$/i.test(String(meta.keyProject).trim()))):!(/^(false|0|no|n|off)$/i.test(String(r.key_project).trim())), detailedStatus:String(r?.archived_goal??meta.archivedGoal??meta.detailedStatus??''), phases:meta.phases, tasks:meta.tasks, saving:r?.saving??0, actualSaving:r?.actual_saving??'', note:r?.note||'', hoursUsed, createdAt:r?.created_at||'', updatedAt:r?.updated_at||'' };
             project.phases=normalizeProjectPhases(project.phases,project);
             return project;
         }
@@ -4448,7 +4448,7 @@ function setupInlineRequiredValidation(){
                     reason:reason||null
                 };
             }
-            if(sheetName==='Projects') return {name:String(row.name||'').trim(),owner:Array.isArray(row.owners)?row.owners.join(', '):(row.owner||null),owners:Array.isArray(row.owners)?row.owners:[],scope:row.scope||'Projects',detail:row.detail||'',status:row.status||'Not Started',progress:Math.max(0,Math.min(100,Number(row.progress)||0)),start_date:cleanDateStr(row.startDate)||null,due_date:cleanDateStr(row.dueDate)||null,actual_date:cleanDateStr(row.actualDate)||null,priority:Number(row.priority)||3,gain_demand:row.gainDemand??'',saving:row.saving===''?0:(Number.isFinite(Number(row.saving))?Number(row.saving):0),actual_saving:row.actualSaving===''?null:(Number.isFinite(Number(row.actualSaving))?Number(row.actualSaving):0),note:row.note||null,hours_used:buildProjectStorageHours(row)};
+            if(sheetName==='Projects') return {name:String(row.name||'').trim(),owner:Array.isArray(row.owners)?row.owners.join(', '):(row.owner||null),owners:Array.isArray(row.owners)?row.owners:[],scope:row.scope||'Projects',detail:row.detail||'',status:row.status||'Not Started',progress:Math.max(0,Math.min(100,Number(row.progress)||0)),start_date:cleanDateStr(row.startDate)||null,due_date:cleanDateStr(row.dueDate)||null,actual_date:cleanDateStr(row.actualDate)||null,priority:Number(row.priority)||3,gain_demand:row.gainDemand??'',saving:row.saving===''?0:(Number.isFinite(Number(row.saving))?Number(row.saving):0),actual_saving:row.actualSaving===''?null:(Number.isFinite(Number(row.actualSaving))?Number(row.actualSaving):0),note:row.note||null,current_stage:String(row.currentStage??'').trim(),archived_goal:String(row.archivedGoal??row.detailedStatus??'').trim(),key_project:row.keyProject===undefined||row.keyProject===null||row.keyProject===''?true:!(/^(false|0|no|n|off)$/i.test(String(row.keyProject).trim())),hours_used:buildProjectStorageHours(row)};
             return null;
         }
         function mapSavedRow(sheetName,r){
@@ -10725,7 +10725,7 @@ function buildRelationalProjects(projectRows,phaseRows,taskRows){
   const owners=Array.isArray(r?.owners)?r.owners:(r?.owner?String(r.owner).split(',').map(x=>x.trim()).filter(Boolean):[]);
   const hoursUsed=(r.hours_used&&typeof r.hours_used==='object')?r.hours_used:{};
   const projectMeta=hoursUsed.__projectMeta&&typeof hoursUsed.__projectMeta==='object'?hoursUsed.__projectMeta:{};
-  const p={id:r.id,team:r.team||'',name:r.name||'',owner:r.owner||owners.join(', '),owners,scope:r.scope||'Projects',detail:r.detail||'',status:r.status||'Not Started',progress:Number(r.progress||0),startDate:dateOrNull(r.start_date),dueDate:dateOrNull(r.due_date),actualDate:dateOrNull(r.actual_date),priority:Number(r.priority||3),gainDemand:r.gain_demand??projectMeta.gainDemand??'',detailedStatus:String(projectMeta.detailedStatus??''),phases:[],tasks:(direct.get(String(r.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder),saving:r.saving??0,actualSaving:r.actual_saving??'',note:r.note||'',hoursUsed,createdAt:r.created_at||'',updatedAt:r.updated_at||''};
+  const p={id:r.id,team:r.team||'',name:r.name||'',owner:r.owner||owners.join(', '),owners,scope:r.scope||'Projects',detail:r.detail||'',status:r.status||'Not Started',progress:Number(r.progress||0),startDate:dateOrNull(r.start_date),dueDate:dateOrNull(r.due_date),actualDate:dateOrNull(r.actual_date),priority:Number(r.priority||3),gainDemand:r.gain_demand??projectMeta.gainDemand??'',currentStage:String(r.current_stage??projectMeta.currentStage??projectMeta.stage??''),archivedGoal:String(r.archived_goal??projectMeta.archivedGoal??projectMeta.detailedStatus??''),keyProject:(r.key_project===undefined||r.key_project===null)?(projectMeta.keyProject===undefined?true:!(/^(false|0|no|n|off)$/i.test(String(projectMeta.keyProject).trim()))):!(/^(false|0|no|n|off)$/i.test(String(r.key_project).trim())),detailedStatus:String(r.archived_goal??projectMeta.archivedGoal??projectMeta.detailedStatus??''),phases:[],tasks:(direct.get(String(r.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder),saving:r.saving??0,actualSaving:r.actual_saving??'',note:r.note||'',hoursUsed,createdAt:r.created_at||'',updatedAt:r.updated_at||''};
   p.phases=(phasesByProject.get(String(r.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder);
   p.phases.forEach(ph=>{ph.tasks=(tasksByPhase.get(String(r.id)+'::'+String(ph.id))||[]).sort((a,b)=>a.sortOrder-b.sortOrder);const d=phaseDates(ph);ph.startDate=d.startDate;ph.dueDate=d.dueDate;ph.actualDate=d.actualDate;});
   syncProjectOverallStatus(p);return p;
@@ -10825,7 +10825,7 @@ fetchAllDataFromSheet=async function({background=false}={}){
    to be reported as incomplete. */
 const _baseDbPayloadForSheet = dbPayloadForSheet;
 dbPayloadForSheet=function(sheetName,row){
- if(sheetName==='Projects')return {name:String(row.name||'').trim(),owner:Array.isArray(row.owners)?row.owners.join(', '):(row.owner||null),owners:Array.isArray(row.owners)?row.owners:[],scope:row.scope||'Projects',detail:row.detail||'',status:row.status||'Not Started',progress:Math.max(0,Math.min(100,Number(row.progress)||0)),start_date:dateOrNull(row.startDate),due_date:dateOrNull(row.dueDate),actual_date:dateOrNull(row.actualDate),priority:Number(row.priority)||3,gain_demand:numOrNull(row.gainDemand),saving:numOrNull(row.saving)??0,actual_saving:numOrNull(row.actualSaving),note:row.note||null,hours_used:buildProjectStorageHours(row)};
+ if(sheetName==='Projects')return {name:String(row.name||'').trim(),owner:Array.isArray(row.owners)?row.owners.join(', '):(row.owner||null),owners:Array.isArray(row.owners)?row.owners:[],scope:row.scope||'Projects',detail:row.detail||'',status:row.status||'Not Started',progress:Math.max(0,Math.min(100,Number(row.progress)||0)),start_date:dateOrNull(row.startDate),due_date:dateOrNull(row.dueDate),actual_date:dateOrNull(row.actualDate),priority:Number(row.priority)||3,gain_demand:numOrNull(row.gainDemand),saving:numOrNull(row.saving)??0,actual_saving:numOrNull(row.actualSaving),note:row.note||null,current_stage:String(row.currentStage??'').trim(),archived_goal:String(row.archivedGoal??row.detailedStatus??'').trim(),key_project:row.keyProject===undefined||row.keyProject===null||row.keyProject===''?true:!(/^(false|0|no|n|off)$/i.test(String(row.keyProject).trim())),hours_used:buildProjectStorageHours(row)};
  return _baseDbPayloadForSheet(sheetName,row);
 };
 
@@ -17570,6 +17570,164 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',connectProjectScrollers,{once:true});
   else connectProjectScrollers();
+})();
+</script>
+<!-- ================= IE TEAM APP V18: DATABASE + SCROLL + SATURDAY MATRIX ================= -->
+<style id="ieTeamV18Fixes">
+/* Keep the Project Management horizontal scrollbar inside the visible viewport. */
+#tab-projects #projectTableView{min-width:0!important;max-width:calc(100% - 28px)!important}
+#tab-projects #projectsTableBody{min-width:0!important;max-width:100%!important}
+#tab-projects .v13-project-scroll{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  max-height:calc(100vh - 235px)!important;
+  max-height:min(var(--v16-project-viewport,760px),calc(100vh - 235px))!important;
+  overflow-x:scroll!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable both-edges;
+  scrollbar-width:auto!important;
+  scrollbar-color:#7395b4 #e8f0f7;
+  -webkit-overflow-scrolling:touch;
+}
+#tab-projects .v13-project-scroll::-webkit-scrollbar{width:12px!important;height:12px!important}
+#tab-projects .v13-project-scroll::-webkit-scrollbar-track{background:#e8f0f7!important;border-radius:999px}
+#tab-projects .v13-project-scroll::-webkit-scrollbar-thumb{background:#7395b4!important;border:2px solid #e8f0f7!important;border-radius:999px}
+#tab-projects .v13-project-scroll::-webkit-scrollbar-thumb:hover{background:#527998!important}
+#tab-projects .v13-project-table{min-width:1425px!important;width:max(100%,1425px)!important}
+@media(max-width:900px){#tab-projects .v13-project-scroll{max-height:calc(100vh - 270px)!important}}
+</style>
+<script id="ieTeamV18Fixes">
+(function(){
+  'use strict';
+  const W=window;
+  const own=(obj,key)=>Object.prototype.hasOwnProperty.call(obj||{},key);
+  const asBool=(value,fallback=true)=>{
+    if(value===undefined||value===null||value==='')return fallback;
+    if(typeof value==='boolean')return value;
+    return !/^(false|0|no|n|off)$/i.test(String(value).trim());
+  };
+  const metaOf=row=>{
+    const hours=row?.hours_used&&typeof row.hours_used==='object'?row.hours_used:(row?.hoursUsed&&typeof row.hoursUsed==='object'?row.hoursUsed:{});
+    return hours.__projectMeta&&typeof hours.__projectMeta==='object'?hours.__projectMeta:{};
+  };
+  const applyDedicatedProjectColumns=(project,row)=>{
+    if(!project||!row)return project;
+    const meta=metaOf(row);
+    const current=own(row,'current_stage')&&row.current_stage!==null?row.current_stage:(row.currentStage??meta.currentStage??meta.stage??project.currentStage??'');
+    const archived=own(row,'archived_goal')&&row.archived_goal!==null?row.archived_goal:(row.archivedGoal??meta.archivedGoal??meta.detailedStatus??project.archivedGoal??project.detailedStatus??'');
+    const key=own(row,'key_project')&&row.key_project!==null?asBool(row.key_project,true):asBool(row.keyProject??meta.keyProject??project.keyProject,true);
+    project.currentStage=String(current??'');
+    project.archivedGoal=String(archived??'');
+    project.detailedStatus=project.archivedGoal;
+    project.keyProject=key;
+    return project;
+  };
+
+  /* Final read guards: both flat and relational project loaders use the dedicated columns. */
+  try{
+    const inheritedMap=W.mapDbProjectToApp||mapDbProjectToApp;
+    const guardedMap=row=>applyDedicatedProjectColumns(inheritedMap(row),row);
+    W.mapDbProjectToApp=guardedMap;
+    mapDbProjectToApp=guardedMap;
+  }catch(error){console.error('V18 project mapper setup failed',error);}
+  try{
+    const inheritedBuild=W.buildRelationalProjects||buildRelationalProjects;
+    const guardedBuild=(projectRows,phaseRows,taskRows)=>{
+      const result=inheritedBuild(projectRows,phaseRows,taskRows)||[];
+      const rowsById=new Map((projectRows||[]).map(row=>[String(row?.id),row]));
+      return result.map(project=>applyDedicatedProjectColumns(project,rowsById.get(String(project?.id))));
+    };
+    W.buildRelationalProjects=guardedBuild;
+    buildRelationalProjects=guardedBuild;
+  }catch(error){console.error('V18 relational project mapper setup failed',error);}
+
+  /* Final write guard: every Projects insert/update includes all three public.projects columns. */
+  try{
+    const inheritedPayload=W.dbPayloadForSheet||dbPayloadForSheet;
+    const guardedPayload=(sheet,row)=>{
+      const payload=inheritedPayload(sheet,row);
+      if(sheet!=='Projects'||!payload)return payload;
+      return {
+        ...payload,
+        current_stage:String(row?.currentStage??'').trim(),
+        archived_goal:String(row?.archivedGoal??row?.detailedStatus??'').trim(),
+        key_project:asBool(row?.keyProject,true),
+        hours_used:typeof buildProjectStorageHours==='function'?buildProjectStorageHours(row):payload.hours_used
+      };
+    };
+    W.dbPayloadForSheet=guardedPayload;
+    dbPayloadForSheet=guardedPayload;
+  }catch(error){console.error('V18 project payload setup failed',error);}
+
+  const esc=v=>typeof escapeHtml==='function'?escapeHtml(String(v??'')):String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const personKey=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ');
+  const monthSaturdays=monthValue=>{
+    let value=String(monthValue||'');
+    if(!/^\d{4}-\d{2}$/.test(value)){
+      const now=new Date();
+      value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    }
+    const year=Number(value.slice(0,4)),month=Number(value.slice(5,7));
+    const dates=[];
+    for(let date=new Date(year,month-1,1);date.getMonth()===month-1;date.setDate(date.getDate()+1)){
+      if(date.getDay()===6)dates.push(formatDateLocal(date));
+    }
+    return {value,dates};
+  };
+
+  /* Registration choices stay independent from report filters as well. */
+  const nextMonthSaturdays=()=>{
+    const next=new Date();
+    next.setDate(1);
+    next.setMonth(next.getMonth()+1);
+    return monthSaturdays(`${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}`).dates;
+  };
+  W.getNextMonthSaturdays=nextMonthSaturdays;
+  try{getNextMonthSaturdays=nextMonthSaturdays;}catch(_){ }
+
+  /* The Saturday Off Matrix uses only its own Month control for dates; Week never narrows or changes it. */
+  const renderMatrix=()=>{
+    const head=document.getElementById('saturdayMatrixHeader');
+    const body=document.getElementById('saturdayMatrixBody');
+    const monthInput=document.getElementById('saturdayMatrixMonth');
+    if(!head||!body||!monthInput)return;
+    const period=monthSaturdays(monthInput.value);
+    if(monthInput.value!==period.value)monthInput.value=period.value;
+    const sats=period.dates;
+    head.innerHTML='<th class="py-2.5 px-4">Member Name</th>'+sats.map(date=>`<th class="py-2.5 px-2 text-center">Sat (${esc(typeof formatDateMMDDYYYY==='function'?formatDateMMDDYYYY(date):date)})</th>`).join('');
+
+    /* Member/Category selections remain supported; Year/Month/Week are deliberately ignored here. */
+    const state=typeof bomTopFilterState!=='undefined'?bomTopFilterState:null;
+    const selectedMembers=state?.Member instanceof Set?state.Member:new Set();
+    const categoryOk=!(state?.Category instanceof Set)||!state.Category.size||[...state.Category].some(value=>personKey(value)==='saturday off');
+    const sourceUsers=Array.isArray(W.users)?W.users:(typeof users!=='undefined'?users:[]);
+    const sourceRequests=Array.isArray(W.timeoffOtList)?W.timeoffOtList:(typeof timeoffOtList!=='undefined'?timeoffOtList:[]);
+    const visibleUsers=sourceUsers
+      .filter(user=>personKey(user?.status||'Active')==='active')
+      .filter(user=>typeof isHiddenMember!=='function'||!isHiddenMember(user?.name))
+      .filter(user=>!selectedMembers.size||[...selectedMembers].some(value=>personKey(value)===personKey(user?.name)));
+
+    if(!categoryOk||!visibleUsers.length){
+      body.innerHTML=`<tr><td colspan="${Math.max(1,sats.length+1)}" class="py-8 text-center text-slate-400">No members match the shared member/category filters.</td></tr>`;
+      return;
+    }
+    body.innerHTML=visibleUsers.map(user=>{
+      const safeName=String(user?.name??'');
+      const jsName=safeName.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const cells=sats.map(date=>{
+        const checked=sourceRequests.some(item=>personKey(item?.type)==='saturday off'&&personKey(item?.pic)===personKey(safeName)&&cleanDateStr(item?.startDate)<=date&&date<=cleanDateStr(item?.endDate||item?.startDate));
+        return `<td class="py-2.5 px-2 text-center"><input type="checkbox" ${checked?'checked':''} onchange="toggleSaturdayMatrix('${jsName}','${date}',this.checked)" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"></td>`;
+      }).join('');
+      return `<tr class="hover:bg-slate-50 border-b"><td class="py-2.5 px-4 font-bold text-slate-800">${esc(safeName)}</td>${cells}</tr>`;
+    }).join('');
+  };
+  W.renderSaturdayMatrixTable=renderMatrix;
+  try{renderSaturdayMatrixTable=renderMatrix;}catch(_){ }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',renderMatrix,{once:true});
+  else requestAnimationFrame(renderMatrix);
 })();
 </script>
 </body>
