@@ -3876,12 +3876,26 @@ button.mtr-show{cursor:pointer} button.mtr-show:hover{filter:brightness(.96)} bu
         function hiddenMemberSet(){
             const list=(typeof users!=='undefined'&&Array.isArray(users))?users:[];
             if(__hiddenCache.ref!==list||__hiddenCache.len!==list.length){
-                __hiddenCache={ref:list,len:list.length,set:new Set(list.filter(u=>u&&u.show===false).map(u=>String(u.name||u.username||'').trim().toLowerCase()).filter(Boolean))};
+                __hiddenCache={ref:list,len:list.length,set:new Set(list.filter(u=>u&&u.show===false).map(u=>normalizePersonKey(u.name||u.username||u.displayName||'')).filter(Boolean))};
             }
             return __hiddenCache.set;
         }
-        function isHiddenMember(name){ const k=String(name||'').trim().toLowerCase(); return !!k&&hiddenMemberSet().has(k); }
-        window.isHiddenMember=isHiddenMember; window.invalidateHiddenMembers=()=>{__hiddenCache.ref=null;};
+        function isHiddenMember(name){ const k=normalizePersonKey(name); return !!k&&hiddenMemberSet().has(k); }
+        function isReportableActiveUser(user){
+            return !!user && String(user.status||'').trim().toLowerCase()==='active' && !isHiddenMember(user.name||user.username||user.displayName||'');
+        }
+        function reportableTaskPICs(task){
+            return taskPICs(task).filter(name=>!isHiddenMember(name));
+        }
+        function taskIncludedInStatistics(task){
+            const assigned=taskPICs(task);
+            return !assigned.length || assigned.some(name=>!isHiddenMember(name));
+        }
+        window.isHiddenMember=isHiddenMember;
+        window.isReportableActiveUser=isReportableActiveUser;
+        window.reportableTaskPICs=reportableTaskPICs;
+        window.taskIncludedInStatistics=taskIncludedInStatistics;
+        window.invalidateHiddenMembers=()=>{__hiddenCache.ref=null;};
         let capacityData = [];
         let dailyTasks = [];
         let timeoffOtList = [];
@@ -4901,22 +4915,27 @@ function setupInlineRequiredValidation(){
         }
 
         function renderPICCheckboxLists() {
-            const allUsers = canonicalPersonList(users.map(u=>u?.name||u?.username||'')).map(name=>({name}));
+            const activeUsers=(Array.isArray(users)?users:[]).filter(u=>String(u?.status||'').trim().toLowerCase()==='active');
+            // Show = No users are deliberately unavailable only in the Task PIC picker.
+            // Existing Project owner behavior remains unchanged.
+            const activeNames=canonicalPersonList(activeUsers.map(u=>u?.name||u?.username||''));
+            const taskUsers=activeNames.filter(name=>!isHiddenMember(name));
+            const projectUsers=activeNames;
             const taskWrapper = document.getElementById('taskPICsWrapper');
             const projectWrapper = document.getElementById('projectPICsWrapper');
             if (taskWrapper) {
-                taskWrapper.innerHTML = allUsers.map(u => `
+                taskWrapper.innerHTML = taskUsers.map(name => `
                     <label class="pic-choice">
-                        <input type="checkbox" class="task-pic-checkbox" value="${escapeHtml(u.name)}">
-                        <span class="truncate" title="${escapeHtml(u.name)}">${escapeHtml(u.name)}</span>
+                        <input type="checkbox" class="task-pic-checkbox" value="${escapeHtml(name)}">
+                        <span class="truncate" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
                     </label>
                 `).join('');
             }
             if (projectWrapper) {
-                projectWrapper.innerHTML = allUsers.map(u => `
+                projectWrapper.innerHTML = projectUsers.map(name => `
                     <label class="pic-choice">
-                        <input type="checkbox" class="project-pic-checkbox" value="${escapeHtml(u.name)}">
-                        <span class="truncate" title="${escapeHtml(u.name)}">${escapeHtml(u.name)}</span>
+                        <input type="checkbox" class="project-pic-checkbox" value="${escapeHtml(name)}">
+                        <span class="truncate" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
                     </label>
                 `).join('');
             }
@@ -4926,7 +4945,7 @@ function setupInlineRequiredValidation(){
             const picFilter = document.getElementById('globalPICFilter');
             const catFilter = document.getElementById('globalCategoryFilter');
             const activeUsers = (Array.isArray(users) ? users : []).filter(u => String(u?.status || '').trim().toLowerCase() === 'active');
-            const pics = canonicalPersonList(activeUsers.map(u=>u?.name||u?.username||'')).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+            const pics = canonicalPersonList(activeUsers.map(u=>u?.name||u?.username||'')).filter(name=>!isHiddenMember(name)).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
             
             if (picFilter) picFilter.innerHTML = '<option value="ALL">-- All PICs --</option>' + pics.map(p => `<option value="${p}">${p}</option>`).join('');
             const categories = [...new Set(capacityData.map(c => c.category))].sort();
@@ -4941,9 +4960,10 @@ function setupInlineRequiredValidation(){
             
             const timeoffPICSelect = document.getElementById('timeoffPIC');
             if (timeoffPICSelect) {
-                const memberOptions = pics.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+                const timeoffPics=canonicalPersonList(activeUsers.map(u=>u?.name||u?.username||'')).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+                const memberOptions = timeoffPics.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
                 timeoffPICSelect.innerHTML = memberOptions;
-                if(currentUser && pics.some(p=>String(p).toLowerCase()===String(currentUser.name).toLowerCase())) {
+                if(currentUser && timeoffPics.some(p=>normalizePersonKey(p)===normalizePersonKey(currentUser.name))) {
                     timeoffPICSelect.value=currentUser.name;
                 }
             }
@@ -5561,7 +5581,7 @@ function setupInlineRequiredValidation(){
         }
 
         function bomTaskValues(key, task) {
-            const pics = taskPICs(task);
+            const pics = reportableTaskPICs(task);
             if (key === 'Member') return pics;
             if (key === 'Year') {
                 const d = cleanDateStr(task.start || task.plan || task.actual || '');
@@ -5780,6 +5800,7 @@ function setupInlineRequiredValidation(){
             // Normalize legacy/current labels so all overtime registrations are included.
             const rows = Array.isArray(timeoffOtList) ? timeoffOtList : [];
             return rows.reduce((sum, x) => {
+                if(isHiddenMember(x?.pic||x?.member||x?.name||'')) return sum;
                 const type = String(x?.type ?? x?.request_type ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '');
                 if (type !== 'overtime') return sum;
                 const hours = Number.parseFloat(String(x?.hours ?? x?.total_hours ?? 0).replace(',', '.'));
@@ -10056,7 +10077,7 @@ function setCalendarView(view) {
             // Recompute metadata
             dailyTasks.forEach(t => calculateTaskMetadata(t));
 
-            let filteredTasks = window.bomFilteredTasks || dailyTasks.filter(taskPassesBomTopFilters);
+            let filteredTasks = (window.bomFilteredTasks || dailyTasks.filter(taskPassesBomTopFilters)).filter(taskIncludedInStatistics);
 
             const total = filteredTasks.length;
             const completed = filteredTasks.filter(t => t.status === 'Completed').length;
@@ -10381,7 +10402,7 @@ function setCalendarView(view) {
 
             const picMap = {};
             filteredTasks.forEach(t => {
-                const pics=taskPICs(t);
+                const pics=reportableTaskPICs(t);
                 pics.forEach(p => {
                     if (!picMap[p]) picMap[p] = { total: 0, completed: 0, ontime: 0, passdue: 0 };
                     picMap[p].total++;
@@ -16307,7 +16328,7 @@ if(typeof old==='function'){
     const sh = wb.Sheets[wb.SheetNames[0]];
     const raw = sh ? XLSX.utils.sheet_to_json(sh, { defval:'', raw:true }) : [];
     if (!raw.length) return notify('The selected file is empty.', 'Import Error');
-    const activeNames = new Map((Array.isArray(users) ? users : []).filter(u => String(u.status||'').toLowerCase() === 'active').map(u => [String(u.name||'').trim().toLowerCase(), String(u.name||'').trim()]));
+    const activeNames = new Map((Array.isArray(users) ? users : []).filter(u => String(u.status||'').toLowerCase() === 'active' && !isHiddenMember(u.name||u.username||'')).map(u => [String(u.name||'').trim().toLowerCase(), String(u.name||'').trim()]));
     const errors = [], items = [];
     raw.forEach((r, i) => {
       const line = i + 2;
@@ -16800,11 +16821,11 @@ function renderOverallV7(data){
  const tab=$('tab-overall');if(!tab||tab.classList.contains('hidden')||!data)return;
  try{
   const p=period(),now=new Date();now.setHours(0,0,0,0);
-  const allUsers=(data.users||[]).filter(u=>norm(u.status||'Active')==='active'&&norm(u.role)!=='viewer');
-  const workloadUsers=allUsers.filter(u=>u.show!==false);
   const hiddenNames=new Set((data.users||[]).filter(u=>u?.show===false).map(u=>norm(u.name||u.username||u.displayName||'')).filter(Boolean));
-  const tasks=(data.tasks||[]).map(t=>({...t,pics:taskPics(t)}));
-  const req=data.requests||[],projects=data.projects||[];
+  const allUsers=(data.users||[]).filter(u=>norm(u.status||'Active')==='active'&&norm(u.role)!=='viewer'&&!hiddenNames.has(norm(u.name||u.username||u.displayName||'')));
+  const workloadUsers=allUsers;
+  const tasks=(data.tasks||[]).map(t=>{const rawPics=taskPics(t),pics=rawPics.filter(name=>!hiddenNames.has(norm(name)));return {...t,pics,__hadAssignedPIC:rawPics.length>0};}).filter(t=>!t.__hadAssignedPIC||t.pics.length>0);
+  const req=(data.requests||[]).filter(x=>!hiddenNames.has(norm(x?.pic||x?.member||x?.name||''))),projects=data.projects||[];
   const teams=[...new Set([...allUsers,...tasks,...req,...projects].map(teamOf).filter(x=>x!=='Unassigned'))].sort((a,b)=>a.localeCompare(b));tab.style.setProperty('--ov-team-count',String(Math.max(1,teams.length)));
   const teamSel=$('ovTeam');
   teamSel.innerHTML='<option value="">All teams</option>'+teams.map(x=>`<option value="${esc(x)}" ${x===ov.team?'selected':''}>${esc(x)}</option>`).join('');
@@ -16816,12 +16837,7 @@ function renderOverallV7(data){
   const selectedTeams=teams;
   const rows=selectedTeams.map(tm=>{
    const uu=allUsers.filter(x=>teamOf(x)===tm),wuu=workloadUsers.filter(x=>teamOf(x)===tm),tt=tpAll.filter(x=>teamOf(x)===tm),rr=req.filter(x=>teamOf(x)===tm&&overlap(x.startDate,x.endDate,p)),pp=projects.filter(x=>teamOf(x)===tm);
-   const h=tt.reduce((sum,x)=>{
-    const usage=Number(x.usageTime)||0,pics=taskPics(x);
-    if(!pics.length)return sum+usage;
-    const included=pics.filter(name=>!hiddenNames.has(norm(name))).length;
-    return sum+usage*(included/pics.length);
-   },0);
+   const h=tt.reduce((sum,x)=>sum+(Number(x.usageTime)||0),0);
    const c=wuu.length*p.wd*8,util=c?h/c*100:0,ot=rr.filter(isOT).reduce((a,x)=>a+requestHours(x,p),0);
    const open=tt.filter(x=>!taskDone(x)).length,overdue=tt.filter(x=>!taskDone(x)&&jsDate(x.plan)&&jsDate(x.plan)<now).length,risk=pp.filter(x=>projectHealth(x,now)==='At risk').length;
    let level='g',label='On track',action='Maintain cadence';
@@ -17378,6 +17394,182 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',connect,{once:true});
   else connect();
+})();
+</script>
+<!-- ================= IE TEAM APP V16: PROJECT COLUMNS + 15-ROW PORTFOLIO ================= -->
+<style id="ieTeamV16ProjectStyle">
+/* Each project table owns its scroll area and keeps its header visible. */
+#tab-overall .ov-project-card{max-height:none!important}
+#tab-overall .ov-project-scroll,
+#tab-projects .v13-project-scroll{
+  min-height:0!important;
+  max-height:var(--v16-project-viewport,none)!important;
+  overflow:auto!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable both-edges;
+  scrollbar-width:thin;
+  scrollbar-color:#9fb3c8 #edf3f8;
+  position:relative;
+}
+#tab-overall .ov-project-scroll::-webkit-scrollbar,
+#tab-projects .v13-project-scroll::-webkit-scrollbar{width:9px;height:9px}
+#tab-overall .ov-project-scroll::-webkit-scrollbar-track,
+#tab-projects .v13-project-scroll::-webkit-scrollbar-track{background:#edf3f8}
+#tab-overall .ov-project-scroll::-webkit-scrollbar-thumb,
+#tab-projects .v13-project-scroll::-webkit-scrollbar-thumb{background:#9fb3c8;border:2px solid #edf3f8;border-radius:999px}
+#tab-overall .ov-project-table thead th,
+#tab-projects .v13-project-table thead th{
+  position:sticky!important;
+  top:0!important;
+  z-index:10!important;
+  box-shadow:inset 0 -1px rgba(255,255,255,.25),0 2px 5px rgba(15,56,96,.12);
+}
+#tab-overall .ov-project-table thead th:nth-child(1),
+#tab-overall .ov-project-table thead th:nth-child(2),
+#tab-projects .v13-project-table thead th:nth-child(1),
+#tab-projects .v13-project-table thead th:nth-child(2){z-index:14!important}
+</style>
+<script id="ieTeamV16ProjectColumns">
+(function(){
+  'use strict';
+  const W=window;
+  const hasOwn=(obj,key)=>Object.prototype.hasOwnProperty.call(obj||{},key);
+  const boolValue=(value,fallback=true)=>{
+    if(value===undefined||value===null||value==='')return fallback;
+    if(typeof value==='boolean')return value;
+    return !/^(false|0|no|n|off)$/i.test(String(value).trim());
+  };
+  const legacyMeta=row=>{
+    const hours=row?.hours_used&&typeof row.hours_used==='object'
+      ? row.hours_used
+      : (row?.hoursUsed&&typeof row.hoursUsed==='object'?row.hoursUsed:{});
+    return hours.__projectMeta&&typeof hours.__projectMeta==='object'?hours.__projectMeta:{};
+  };
+  function applyProjectColumns(project,row){
+    if(!project||!row)return project;
+    const meta=legacyMeta(row);
+    const current=hasOwn(row,'current_stage')&&row.current_stage!==null
+      ? row.current_stage
+      : (row.currentStage??meta.currentStage??meta.stage??project.currentStage??'');
+    const archived=hasOwn(row,'archived_goal')&&row.archived_goal!==null
+      ? row.archived_goal
+      : (row.archivedGoal??row.detailedStatus??meta.archivedGoal??meta.detailedStatus??project.archivedGoal??project.detailedStatus??'');
+    const key=hasOwn(row,'key_project')&&row.key_project!==null
+      ? boolValue(row.key_project,true)
+      : boolValue(row.keyProject??meta.keyProject??project.keyProject,true);
+    project.currentStage=String(current??'');
+    project.archivedGoal=String(archived??'');
+    project.keyProject=key;
+    // Preserve the legacy app alias while making archived_goal the database source of truth.
+    project.detailedStatus=project.archivedGoal;
+    return project;
+  }
+
+  /* Read current_stage, archived_goal and key_project directly from public.projects. */
+  try{
+    const previousMap=W.mapDbProjectToApp||mapDbProjectToApp;
+    const nextMap=function(row){return applyProjectColumns(previousMap(row),row);};
+    W.mapDbProjectToApp=nextMap;
+    mapDbProjectToApp=nextMap;
+  }catch(error){console.error('V16 project mapper setup failed',error);}
+
+  /* The main Projects page uses the relational builder, so enrich that path too. */
+  try{
+    const previousBuild=W.buildRelationalProjects||buildRelationalProjects;
+    const nextBuild=function(projectRows,phaseRows,taskRows){
+      const result=previousBuild(projectRows,phaseRows,taskRows);
+      const rowsById=new Map((projectRows||[]).map(row=>[String(row?.id),row]));
+      return (result||[]).map(project=>applyProjectColumns(project,rowsById.get(String(project?.id))));
+    };
+    W.buildRelationalProjects=nextBuild;
+    buildRelationalProjects=nextBuild;
+  }catch(error){console.error('V16 relational project mapper setup failed',error);}
+
+  /* Keep hours_used for project hours/legacy tree data, but stop duplicating the three new fields there. */
+  try{
+    const previousHours=W.buildProjectStorageHours||buildProjectStorageHours;
+    const nextHours=function(project){
+      const raw=previousHours(project)||{};
+      if(raw.__projectMeta&&typeof raw.__projectMeta==='object'){
+        const meta={...raw.__projectMeta};
+        ['currentStage','stage','archivedGoal','archiveGoal','achievedGoal','detailedStatus','keyProject'].forEach(key=>delete meta[key]);
+        if(Object.keys(meta).length)raw.__projectMeta=meta;
+        else delete raw.__projectMeta;
+      }
+      return raw;
+    };
+    W.buildProjectStorageHours=nextHours;
+    buildProjectStorageHours=nextHours;
+  }catch(error){console.error('V16 project hours cleanup setup failed',error);}
+
+  /* Every normal project save now writes the dedicated public.projects columns. */
+  try{
+    const previousPayload=W.dbPayloadForSheet||dbPayloadForSheet;
+    const nextPayload=function(sheet,row){
+      const payload=previousPayload(sheet,row);
+      if(sheet!=='Projects'||!payload)return payload;
+      return {
+        ...payload,
+        current_stage:String(row?.currentStage??'').trim(),
+        archived_goal:String(row?.archivedGoal??row?.detailedStatus??'').trim(),
+        key_project:boolValue(row?.keyProject,true),
+        hours_used:buildProjectStorageHours(row)
+      };
+    };
+    W.dbPayloadForSheet=nextPayload;
+    dbPayloadForSheet=nextPayload;
+  }catch(error){console.error('V16 project payload setup failed',error);}
+
+  /* Show no more than 15 project rows before the table gets its own scrollbar. */
+  const selectors=['#tab-overall .ov-project-scroll','#tab-projects .v13-project-scroll'];
+  let frame=0;
+  function visibleRows(scroller){
+    return [...scroller.querySelectorAll('tbody > tr')].filter(row=>{
+      if(row.classList.contains('v13-filter-hidden'))return false;
+      const style=getComputedStyle(row);
+      return style.display!=='none'&&style.visibility!=='hidden';
+    });
+  }
+  function sizeScroller(scroller){
+    const table=scroller.querySelector('table');
+    if(!table)return;
+    const rows=visibleRows(scroller);
+    if(rows.length<=15){
+      scroller.style.removeProperty('--v16-project-viewport');
+      scroller.dataset.v16Scrollable='false';
+      return;
+    }
+    const head=table.tHead?.getBoundingClientRect().height||36;
+    const rowHeight=rows.slice(0,15).reduce((sum,row)=>sum+Math.max(1,row.getBoundingClientRect().height),0);
+    if(rowHeight>15){
+      scroller.style.setProperty('--v16-project-viewport',Math.ceil(head+rowHeight+2)+'px');
+      scroller.dataset.v16Scrollable='true';
+    }
+  }
+  function syncProjectScrollers(){
+    frame=0;
+    selectors.forEach(selector=>document.querySelectorAll(selector).forEach(sizeScroller));
+  }
+  function scheduleProjectScrollers(){
+    if(frame)cancelAnimationFrame(frame);
+    frame=requestAnimationFrame(()=>requestAnimationFrame(syncProjectScrollers));
+  }
+  function connectProjectScrollers(){
+    const roots=[document.getElementById('ovProjectBody'),document.getElementById('projectsTableBody')].filter(Boolean);
+    roots.forEach(root=>{
+      if(root.dataset.v16ScrollObserved==='1')return;
+      root.dataset.v16ScrollObserved='1';
+      new MutationObserver(scheduleProjectScrollers).observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
+    });
+    window.addEventListener('resize',scheduleProjectScrollers,{passive:true});
+    document.addEventListener('click',event=>{
+      if(event.target.closest('[data-tab],.nav-item,#ovRefresh,#ovNow,#v13HeaderFilterPopup,.v13-filter-head'))setTimeout(scheduleProjectScrollers,0);
+    },true);
+    scheduleProjectScrollers();
+    setTimeout(scheduleProjectScrollers,120);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',connectProjectScrollers,{once:true});
+  else connectProjectScrollers();
 })();
 </script>
 </body>
