@@ -3340,9 +3340,11 @@ button.mtr-show{cursor:pointer} button.mtr-show:hover{filter:brightness(.96)} bu
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
                     <div class="flex items-center justify-between border-b pb-3">
                         <h3 class="text-base font-bold text-slate-800">Saturday Off Matrix Register</h3>
-                        <div class="flex items-center space-x-2">
-                            <label class="text-xs font-semibold text-slate-600">Month:</label>
-                            <input type="month" id="saturdayMatrixMonth" onchange="renderSaturdayMatrixTable()" class="p-1 border rounded text-xs">
+                        <div class="flex flex-wrap items-center gap-2" aria-label="Saturday Off Matrix period filters">
+                            <label class="text-xs font-semibold text-slate-600" for="saturdayMatrixYear">Year:</label>
+                            <select id="saturdayMatrixYear" onchange="renderSaturdayMatrixTable()" class="p-1.5 border border-slate-300 rounded-lg bg-white text-xs min-w-[86px]"></select>
+                            <label class="text-xs font-semibold text-slate-600" for="saturdayMatrixMonth">Month:</label>
+                            <select id="saturdayMatrixMonth" onchange="renderSaturdayMatrixTable()" class="p-1.5 border border-slate-300 rounded-lg bg-white text-xs min-w-[112px]"></select>
                         </div>
                     </div>
                     <div class="overflow-x-auto custom-scrollbar" style="max-height: calc(100vh - 220px);">
@@ -3982,12 +3984,7 @@ button.mtr-show{cursor:pointer} button.mtr-show:hover{filter:brightness(.96)} bu
             initCalendarAnchor();
             currentGanttAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-            const nextM = new Date();
-            nextM.setMonth(nextM.getMonth() + 1);
-            const mStr = `${nextM.getFullYear()}-${String(nextM.getMonth() + 1).padStart(2, '0')}`;
-            if(document.getElementById('saturdayMatrixMonth')) {
-                document.getElementById('saturdayMatrixMonth').value = mStr;
-            }
+            // Saturday Matrix Year/Month controls are initialized by the V19 period module.
 
             // IMPORTANT: Do not block the Login screen on the full database load.
             // The previous version loaded every table before showing Login, so a slow/blocked
@@ -4920,7 +4917,7 @@ function setupInlineRequiredValidation(){
             // Existing Project owner behavior remains unchanged.
             const activeNames=canonicalPersonList(activeUsers.map(u=>u?.name||u?.username||''));
             const taskUsers=activeNames.filter(name=>!isHiddenMember(name));
-            const projectUsers=activeNames;
+            const projectUsers=taskUsers;
             const taskWrapper = document.getElementById('taskPICsWrapper');
             const projectWrapper = document.getElementById('projectPICsWrapper');
             if (taskWrapper) {
@@ -4960,7 +4957,7 @@ function setupInlineRequiredValidation(){
             
             const timeoffPICSelect = document.getElementById('timeoffPIC');
             if (timeoffPICSelect) {
-                const timeoffPics=canonicalPersonList(activeUsers.map(u=>u?.name||u?.username||'')).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+                const timeoffPics=canonicalPersonList(activeUsers.map(u=>u?.name||u?.username||'')).filter(name=>!isHiddenMember(name)).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
                 const memberOptions = timeoffPics.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
                 timeoffPICSelect.innerHTML = memberOptions;
                 if(currentUser && timeoffPics.some(p=>normalizePersonKey(p)===normalizePersonKey(currentUser.name))) {
@@ -6624,7 +6621,7 @@ function setupInlineRequiredValidation(){
                 let priorityBadge = task.priority === 'High' ? 'bg-red-100 text-red-700' : (task.priority === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700');
                 let statusBadge = task.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : (task.status === 'Overdue' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800');
                 let disciplineBadge = task.discipline === 'On Time' ? 'text-emerald-600 font-bold' : (task.discipline === 'Overdue' ? 'text-red-600 font-bold' : 'text-slate-400');
-                const picsList = taskPICs(task).join(', ') || '-';
+                const picsList = reportableTaskPICs(task).join(', ') || '-';
                 const itemsText = escapeHtml(task.items || '-');
 
                 tr.innerHTML = `
@@ -6657,9 +6654,10 @@ function setupInlineRequiredValidation(){
             if(!tbody || !currentUser) return;
             tbody.innerHTML = '';
             const myTasksUserName = document.getElementById('myTasksUserName');
-            if (myTasksUserName) myTasksUserName.innerText = currentUser.name;
+            const managementOnly=typeof isHiddenMember==='function'&&isHiddenMember(currentUser.name||currentUser.username||'');
+            if (myTasksUserName) myTasksUserName.innerText = managementOnly?'Management-only access':currentUser.name;
 
-            const myTasks = (window.bomFilteredTasks || dailyTasks).filter(t => {
+            const myTasks = (managementOnly?[]:(window.bomFilteredTasks || dailyTasks)).filter(t => {
                 const me=normalizePersonKey(currentUser?.name||currentUser?.username||'');
                 return taskPICs(t).some(pic=>normalizePersonKey(pic)===me);
             }).slice().sort(compareByCreationTimeDesc);
@@ -11138,7 +11136,7 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
   function sync(){try{if(typeof syncProjectBottomScroll==='function')syncProjectBottomScroll();}catch(e){}}
   document.addEventListener('DOMContentLoaded',()=>{sync();setTimeout(sync,200);setTimeout(sync,800);});
   const host=document.getElementById('projectsTableBody');
-  if(host){new MutationObserver(sync).observe(host,{childList:true,subtree:true});}
+  if(host){ requestAnimationFrame(sync); }
   window.addEventListener('resize',sync);
 })();
 </script>
@@ -11294,7 +11292,7 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
 
   const host=document.getElementById('projectsTableBody');
   if(host){
-    new MutationObserver(()=>requestAnimationFrame(bindTableScroll)).observe(host,{childList:true,subtree:true});
+    requestAnimationFrame(bindTableScroll);
   }
   document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(bindTableScroll));
   window.addEventListener('resize',bindTableScroll);
@@ -11390,7 +11388,7 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
   window.syncProjectBottomScroll=fixRealTableScroll;
   window.syncProjectTableScroll=fixRealTableScroll;
   const host=document.getElementById('projectsTableBody');
-  if(host)new MutationObserver(()=>requestAnimationFrame(fixRealTableScroll)).observe(host,{childList:true,subtree:true});
+  if(host)requestAnimationFrame(fixRealTableScroll);
   document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(fixRealTableScroll));
   window.addEventListener('resize',fixRealTableScroll);
 })();
@@ -11621,8 +11619,7 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
   function bindObservers(){
     const host=document.getElementById('projectsTableBody');
     if(host && !tableObserver){
-      tableObserver=new MutationObserver(queueTableSync);
-      tableObserver.observe(host,{childList:true,subtree:true});
+      requestAnimationFrame(queueTableSync);
     }
     const wrap=tableParts().wrap;
     if(wrap && !tableResizeObserver && typeof ResizeObserver==='function'){
@@ -11815,7 +11812,7 @@ updateGanttHoursUsed=async function(projectId,dateIso,value,inputEl){
   function observe(){
     schedule();
     const root=document.getElementById('tab-projects');
-    if(root)new MutationObserver(schedule).observe(root,{childList:true,subtree:true});
+    if(root)requestAnimationFrame(schedule);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',observe,{once:true});
   else observe();
@@ -13630,7 +13627,7 @@ document.addEventListener('change',e=>{
 #mtrUsers .mtr-team-b .mtr-chip{cursor:pointer}
 #mtrUsers .mtr-team-b .mtr-chip:hover{filter:brightness(.95)}
 #mtrUsers .mtr-note{font-size:11px;color:#64748b;padding:0 2px}
-#mtrUserModal .mtr-row{display:grid;grid-template-columns:1fr 150px 34px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dashed #e2e8f0}
+#mtrUserModal .mtr-row{display:grid;grid-template-columns:minmax(180px,1fr) 140px 118px 34px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dashed #e2e8f0}
 #mtrUserModal .mtr-row.head{font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:1px solid #e2e8f0}
 #mtrUserModal .mtr-row.locked{opacity:.6}
 #mtrUserModal .mtr-f{width:100%;height:34px;border:1px solid #cbd5e1;border-radius:8px;padding:0 9px;font-size:12px;background:#f8fafc;outline:none}
@@ -13680,9 +13677,9 @@ document.addEventListener('change',e=>{
           <span class="text-xs font-bold text-slate-800"><i class="fa-solid fa-key mr-1 text-indigo-500"></i>Team access</span>
           <button type="button" id="mtrAddAccessBtn" class="mtr-btn" onclick="mtrAddAccessRow()"><i class="fa-solid fa-plus"></i> Add team access</button>
         </div>
-        <div class="mtr-row head"><span>Team</span><span>Role</span><span></span></div>
+        <div class="mtr-row head"><span>Team</span><span>Role</span><span>Main / Sub</span><span></span></div>
         <div id="mtrAccessRows"></div>
-        <p class="text-[10.5px] text-slate-500 mt-2 leading-relaxed">One account, many teams. The role applies only inside that team. The user switches team in the sidebar.</p>
+        <p class="text-[10.5px] text-slate-500 mt-2 leading-relaxed"><b>Main</b> = counted in that team and, when Show = Yes, displayed in member/workload pages. <b>Sub</b> = management access only; never counted or displayed as a team member. Exactly one Main team is required.</p>
       </div>
       <div class="pt-3 border-t border-slate-100 flex justify-end gap-3">
         <button type="button" onclick="mtrCloseUser()" class="px-5 py-2.5 bg-slate-100 rounded-xl text-xs font-semibold">Cancel</button>
@@ -13760,7 +13757,7 @@ function membershipsOf(u){
   if(pt&&!list.some(x=>N(x.team)===N(pt))) list.unshift({team:pt,role:roleOk(u.role)||'Member',primary:true});
   if(pt) list.forEach(x=>x.primary=N(x.team)===N(pt));
   else if(list.length&&!list.some(x=>x.primary)) list[0].primary=true;
-  return list.sort((a,b)=>a.team.localeCompare(b.team));
+  return list.sort((a,b)=>Number(b.primary)-Number(a.primary)||a.team.localeCompare(b.team));
 }
 window.getUserMemberships=membershipsOf;
 function baseUsers(){return MT.all.length?MT.all:(Array.isArray(users)?users:[]);}
@@ -13842,7 +13839,7 @@ window.renderTeamSwitcher=function(){
   const list=currentUser&&!currentUser.isReadOnly&&!isAppAdmin()?(currentUser.memberships||[]):[];
   if(list.length>1){
     const sel=box.querySelector('select');
-    sel.innerHTML=list.map(m=>`<option value="${esc(m.team)}">${esc(m.team)} — ${esc(m.role)}</option>`).join('');
+    sel.innerHTML=list.map(m=>`<option value="${esc(m.team)}">${esc(m.team)} — ${m.primary?'Main':'Sub'} · ${esc(m.role)}</option>`).join('');
     sel.value=list.find(m=>N(m.team)===N(currentUser.team))?.team||list[0].team;
     $('mtrScopeHint').textContent=`You have access to ${list.length} teams.`;
     box.classList.remove('hidden'); $('teamStaticLabel')?.classList.add('hidden');
@@ -13921,7 +13918,7 @@ function buildUsersPage(){
     </div>
     <div id="mtrViewUser" class="mtr-card"><div class="mtr-scroll">
       <table id="table-users"><thead><tr>
-        <th style="min-width:190px">Member</th><th style="min-width:160px">Team</th><th style="width:140px">Role</th><th style="width:90px">Status</th><th style="width:90px;text-align:center" title="No = excluded from workload/utilization calculations; still included in IE Overall headcount">Show</th><th style="width:130px">Password</th><th style="width:90px;text-align:center">Action</th>
+        <th style="min-width:190px">Member</th><th style="min-width:160px">Team</th><th style="width:130px">Main / Sub</th><th style="width:140px">Role</th><th style="width:90px">Status</th><th style="width:90px;text-align:center" title="No = excluded from headcount, PIC, workload and utilization">Show</th><th style="width:130px">Password</th><th style="width:90px;text-align:center">Action</th>
       </tr></thead><tbody id="userManagementTableBody"></tbody></table>
     </div></div>
     <div id="mtrViewTeam" class="hidden"><div class="mtr-grid" id="mtrTeamGrid"></div></div>
@@ -14024,9 +14021,10 @@ function render(){
       const top=ms.some(m=>m.role==='Team Admin')?'Team Admin':ms.some(m=>m.role==='Member')?'Member':'Viewer';
       roleHtml=`<span class="mtr-role-ro ${chipClass(top)}">${top}</span>`;
     }
-    html.push(`<tr class="g-first"><td class="c-user">${userCell}</td><td>${teamHtml}</td><td>${roleHtml}</td><td>${status}</td><td style="text-align:center">${showCell}</td><td>${pw}</td><td style="text-align:center;white-space:nowrap">${acts}</td></tr>`);
+    const membershipHtml=u.role==='Admin'?'<span class="mtr-role-ro aa">All teams</span>':(ms.length?`<div class="mtr-tchips">${ms.slice().sort((a,b)=>Number(b.primary)-Number(a.primary)||String(a.team).localeCompare(String(b.team))).map(m=>`<span class="mtr-membership ${m.primary?'main':'sub'}" title="${esc(m.team)}: ${m.primary?'Main team — counted as member':'Sub team — management access only'}">${m.primary?'Main':'Sub'} · ${esc(m.team)}</span>`).join('')}</div>`:'<span class="text-slate-300">—</span>');
+    html.push(`<tr class="g-first"><td class="c-user">${userCell}</td><td>${teamHtml}</td><td>${membershipHtml}</td><td>${roleHtml}</td><td>${status}</td><td style="text-align:center">${showCell}</td><td>${pw}</td><td style="text-align:center;white-space:nowrap">${acts}</td></tr>`);
   });
-  tb.innerHTML=html.length?html.join(''):`<tr><td colspan="7"><div class="mtr-empty">No user matches the current filters.</div></td></tr>`;
+  tb.innerHTML=html.length?html.join(''):`<tr><td colspan="8"><div class="mtr-empty">No user matches the current filters.</div></td></tr>`;
   // BY TEAM
   const grid=$('mtrTeamGrid');
   if(grid&&MT.view==='team'){
@@ -14105,11 +14103,13 @@ function accessRowHtml(m,locked){
   if(locked) return `<div class="mtr-row locked" data-locked="1" data-team="${esc(team)}" data-role="${esc(role)}" data-primary="${m?.primary?1:0}">
       <span class="text-xs font-semibold truncate" title="Managed by another Team Admin / App Admin"><i class="fa-solid fa-lock text-slate-400 mr-1"></i>${esc(team)}</span>
       <span class="text-xs">${esc(role)}</span>
+      <span class="mtr-membership ${m?.primary?'main':'sub'}">${m?.primary?'Main':'Sub'}</span>
       <span></span></div>`;
   return `<div class="mtr-row" data-locked="0" data-primary="${m?.primary?1:0}">
       <select class="mtr-f mtr-team-sel" aria-label="Team">${teamOptions(team)}</select>
       <select class="mtr-f mtr-role-sel" aria-label="Role">${roleOptionsFor(team,role)}</select>
-            <button type="button" class="mtr-btn" style="padding:0 9px" onclick="this.closest('.mtr-row').remove()" aria-label="Remove access"><i class="fa-solid fa-xmark"></i></button></div>`;
+      <select class="mtr-f mtr-type-sel" aria-label="Main or Sub team"><option value="Main" ${m?.primary?'selected':''}>Main</option><option value="Sub" ${m?.primary?'':'selected'}>Sub</option></select>
+      <button type="button" class="mtr-btn" style="padding:0 9px" onclick="this.closest('.mtr-row').remove()" aria-label="Remove access"><i class="fa-solid fa-xmark"></i></button></div>`;
 }
 function wireRows(){
   $('mtrAccessRows').querySelectorAll('.mtr-team-sel').forEach(sel=>{
@@ -14125,7 +14125,8 @@ function wireRows(){
 }
 window.mtrAddAccessRow=function(team){
   const box=$('mtrAccessRows');
-  box.insertAdjacentHTML('beforeend',accessRowHtml({team:team||'',role:'Member',primary:false},false));
+  const makeMain=!box.querySelector('.mtr-row');
+  box.insertAdjacentHTML('beforeend',accessRowHtml({team:team||'',role:'Member',primary:makeMain},false));
   wireRows();
 };
 function showModal(){ $('mtrUserModal').classList.remove('opacity-0','pointer-events-none'); document.body.classList.add('modal-active'); setTimeout(()=>$('mtrName')?.focus(),50); }
@@ -14166,15 +14167,17 @@ function readAccessRows(){
     if(row.dataset.locked==='1'){out.push({team:row.dataset.team,role:row.dataset.role,primary:row.dataset.primary==='1',locked:true});return;}
     const sel=row.querySelector('.mtr-team-sel'); const team=String(sel.value||'').trim();
     const role=row.querySelector('.mtr-role-sel').value;
+    const primary=row.querySelector('.mtr-type-sel')?.value==='Main';
     if(!team||team==='__new__'){errs.push(`Access row ${i+1}: select a team.`);return;}
     if(sel.selectedOptions[0]?.dataset.newTeam) newTeams.push(team);
     if(!isAppAdmin()&&!canManageTeam(team)) errs.push(`You do not manage team "${team}".`);
     if(!isAppAdmin()&&role==='Team Admin') errs.push('Only App Admin can grant Team Admin.');
-    out.push({team:canonTeam(team),role,primary:row.dataset.primary==='1',locked:false});
+    out.push({team:canonTeam(team),role,primary,locked:false});
   });
   const seen=new Set();
   out.forEach(m=>{const k=N(m.team);if(seen.has(k))errs.push(`Team "${m.team}" is listed twice.`);seen.add(k);});
-  if(out.length&&!out.some(m=>m.primary)) out[0].primary=true;
+  const mainCount=out.filter(m=>m.primary).length;
+  if(out.length&&mainCount!==1) errs.push('Select exactly one Main team. All other team access rows must be Sub.');
   return {list:out,errs,newTeams};
 }
 async function ensureTeams(names){
@@ -14274,7 +14277,7 @@ window.deleteUser=function(idx){const u=(Array.isArray(users)?users:[])[idx];if(
 try{deleteUser=window.deleteUser;}catch(_){}
 
 /* ---------------- IMPORT (App Admin only) ----------------
-   Columns: Member | Team | Role   (optional: Password, Status)
+   Columns: Member | Team | Main/Sub | Role   (optional: Password, Status)
    - Same Member on several rows  -> ONE account with several team accesses.
    - Existing Member              -> access is added / role updated; other teams are kept.
    - Missing Team                 -> created automatically (after confirmation).
@@ -14294,20 +14297,23 @@ async function handleImport(e){
     raw.forEach((row,i)=>{
       const m={}; Object.keys(row).forEach(k=>m[hk(k)]=row[k]);
       const name=String(m.member??m.membername??m.name??'').trim(), team=String(m.team??'').trim(), role=normRole(m.role);
+      const membership=String(m.mainsub??m.membership??m.teamtype??'').trim();
       const pw=String(m.password??'').trim(), st=String(m.status??'').trim();
       const r=i+2;
       if(!name&&!team&&!m.role) return; // blank line
       if(!name){errs.push(`Row ${r}: Member is required.`);return;}
       if(!role){errs.push(`Row ${r}: Role must be Team Admin, Member, Viewer or App Admin.`);return;}
       if(role!=='Admin'&&!team){errs.push(`Row ${r}: Team is required.`);return;}
+      if(role!=='Admin'&&!/^(main|sub)$/i.test(membership)){errs.push(`Row ${r}: Main/Sub must be Main or Sub.`);return;}
       if(st&&!['active','inactive'].includes(N(st))) errs.push(`Row ${r}: Status must be Active or Inactive.`);
       if(team){const k=N(name)+'|'+N(team);if(seenPair.has(k))errs.push(`Row ${r}: "${name}" + "${team}" appears twice.`);seenPair.add(k);}
       const g=groups.get(N(name))||{name,password:'',status:'',appAdmin:false,ms:[]};
       if(pw) g.password=pw; if(st) g.status=N(st)==='active'?'Active':'Inactive';
       if(role==='Admin') g.appAdmin=true;
-      if(team) g.ms.push({team:canonTeam(team),role:role==='Admin'?'Team Admin':role});
+      if(team) g.ms.push({team:canonTeam(team),role:role==='Admin'?'Team Admin':role,primary:/^main$/i.test(membership)});
       groups.set(N(name),g);
     });
+    groups.forEach(g=>{if(!g.appAdmin&&g.ms.length&&g.ms.filter(m=>m.primary).length!==1)errs.push(`${g.name}: select exactly one Main team; all others must be Sub.`);});
     if(errs.length) throw new Error(errs.slice(0,15).join('\n')+(errs.length>15?`\n...and ${errs.length-15} more.`:''));
     const known=new Set(knownTeams().map(N));
     const newTeams=[...new Set([...groups.values()].flatMap(g=>g.ms.map(m=>m.team)).filter(t=>!known.has(N(t))))];
@@ -14325,8 +14331,9 @@ async function handleImport(e){
         const u=baseUsers().find(x=>N(x.name)===N(g.name));
         const cur=u?membershipsOf(u):[];
         const merged=cur.map(m=>({...m}));
-        g.ms.forEach(m=>{const f=merged.find(x=>N(x.team)===N(m.team)); if(f) f.role=m.role; else merged.push({team:m.team,role:m.role,primary:false});});
-        if(merged.length&&!merged.some(m=>m.primary)) merged[0].primary=true;
+        const importedMain=g.ms.find(m=>m.primary);if(importedMain)merged.forEach(x=>x.primary=false);
+        g.ms.forEach(m=>{const f=merged.find(x=>N(x.team)===N(m.team)); if(f){f.role=m.role;f.primary=!!m.primary;} else merged.push({team:m.team,role:m.role,primary:!!m.primary});});
+        if(merged.filter(m=>m.primary).length!==1) throw new Error('Exactly one Main team is required.');
         await persistUser(u,{name:u?.name||g.name,password:g.password||u?.password||g.name,status:g.status||u?.status||'Active',appAdmin:g.appAdmin||u?.role==='Admin'},merged,null);
         done++;
       }catch(err){fails.push(`${g.name}: ${err?.message||err}`);}
@@ -14342,21 +14349,21 @@ async function handleImport(e){
 window.handleUserImport=e=>handleImport(e);
 
 window.mtrDownloadTemplate=function(){
-  const ws=XLSX.utils.aoa_to_sheet([['Member','Team','Role','Password','Status'],
-    ['Jenny Nguyen','Pattern','Team Admin','',''],['Jenny Nguyen','Cover Drawing','Team Admin','',''],['Jenny Nguyen','Kit','Team Admin','',''],
-    ['An Tran','Kit','Member','','Active']]);
-  ws['!cols']=[{wch:22},{wch:20},{wch:14},{wch:14},{wch:10}];
+  const ws=XLSX.utils.aoa_to_sheet([['Member','Team','Main/Sub','Role','Password','Status'],
+    ['Jenny Nguyen','Pattern','Main','Team Admin','','Active'],['Jenny Nguyen','Cover Drawing','Sub','Team Admin','','Active'],['Jenny Nguyen','Kit','Sub','Team Admin','','Active'],
+    ['An Tran','Kit','Main','Member','','Active']]);
+  ws['!cols']=[{wch:22},{wch:20},{wch:12},{wch:14},{wch:14},{wch:10}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Users'); XLSX.writeFile(wb,'User_Import_Template.xlsx');
 };
 window.mtrExportAccess=function(){
-  const out=[['Member','Team','Role','Status']];
+  const out=[['Member','Team','Main/Sub','Role','Status']];
   visibleUsers().map(u=>({u,ms:membershipsOf(u)})).filter(x=>passFilters(x.u,x.ms))
     .sort((a,b)=>String(a.u.name).localeCompare(String(b.u.name))).forEach(({u,ms})=>{
-      if(u.role==='Admin') out.push([u.name,'','App Admin',u.status||'']);
-      ms.forEach(m=>out.push([u.name,m.team,m.role,u.status||'']));
-      if(u.role!=='Admin'&&!ms.length) out.push([u.name,'','',u.status||'']);
+      if(u.role==='Admin') out.push([u.name,'','','App Admin',u.status||'']);
+      ms.forEach(m=>out.push([u.name,m.team,m.primary?'Main':'Sub',m.role,u.status||'']));
+      if(u.role!=='Admin'&&!ms.length) out.push([u.name,'','','',u.status||'']);
     });
-  const ws=XLSX.utils.aoa_to_sheet(out); ws['!cols']=[{wch:24},{wch:20},{wch:14},{wch:10}];
+  const ws=XLSX.utils.aoa_to_sheet(out); ws['!cols']=[{wch:24},{wch:20},{wch:12},{wch:14},{wch:10}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'User Access'); XLSX.writeFile(wb,'User_Team_Access.xlsx');
 };
 
@@ -16719,7 +16726,7 @@ function taskPics(t){const raw=Array.isArray(t?.pics)?t.pics:String(t?.pic||t?.p
 function todoItems(){
  const d=today();
  const me=norm(currentUser?.name||currentUser?.displayName||currentUser?.username||'');
- if(!me)return [];
+ if(!me||(typeof isHiddenMember==='function'&&isHiddenMember(currentUser?.name||currentUser?.displayName||currentUser?.username||'')))return [];
  return (Array.isArray(window.dailyTasks)?window.dailyTasks:(typeof dailyTasks!=='undefined'?dailyTasks:[])).filter(t=>{
   const plan=date(t?.plan||t?.planDate);
   const assignedToMe=taskPics(t).some(p=>norm(p)===me);
@@ -16773,11 +16780,27 @@ async function loadOverallAllTeams(force=false){
    paged(SUPABASE_TABLES.Tasks,q=>q.or(`and(start_date.lte.${end},plan_date.gte.${start}),and(start_date.gte.${start},start_date.lte.${end}),and(plan_date.gte.${start},plan_date.lte.${end}),and(actual_date.gte.${start},actual_date.lte.${end})`)),
    paged(SUPABASE_TABLES.TimeOff_OT,q=>q.lte('start_date',end)),
    paged(SUPABASE_TABLES.Projects),
-   (async()=>{try{const r=await supabaseClient.from('user_team_roles').select('user_id,team,role');return r.error?[]:(r.data||[]);}catch(_){return [];}})()
+   (async()=>{try{const r=await supabaseClient.from('user_team_roles').select('id,user_id,team,role,is_primary').order('id',{ascending:true});return r.error?[]:(r.data||[]);}catch(_){return [];}})()
   ]);
-  const baseUsers=ur.map(mapDbUserToApp),byId=new Map(baseUsers.map(u=>[String(u.id),u])),expanded=[];
-  baseUsers.forEach(u=>{if(u.team)expanded.push({...u});});mr.forEach(m=>{const u=byId.get(String(m.user_id));const team=String(m.team||'').trim();if(u&&team&&!expanded.some(x=>String(x.id)===String(u.id)&&norm(x.team)===norm(team)))expanded.push({...u,team,role:u.role==='Admin'?'Admin':(m.role||u.role)});});
-  const data={users:expanded,tasks:tr.map(mapDbTaskToApp),requests:rr.map(mapDbTimeoffToApp),projects:pr.map(mapDbProjectToApp)};ov.cache.set(key,{at:Date.now(),data});return data;
+  const baseUsers=ur.map(mapDbUserToApp);
+  const membershipsByUser=new Map();
+  mr.forEach(m=>{const id=String(m.user_id),team=String(m.team||'').trim();if(!team)return;const list=membershipsByUser.get(id)||[];list.push({...m,team});membershipsByUser.set(id,list);});
+  const mainByUser=new Map();
+  const headcountUsers=baseUsers.flatMap(user=>{
+     const memberships=membershipsByUser.get(String(user.id))||[];
+     const main=memberships.find(m=>m.is_primary===true)||memberships.find(m=>norm(m.team)===norm(user.team))||(memberships.length?memberships[0]:null);
+     const fallbackTeam=String(user.team||'').trim();
+     const mainTeam=String(main?.team||fallbackTeam).trim();
+     if(!mainTeam||user.show===false||norm(user.role)==='admin')return [];
+     mainByUser.set(norm(user.name||user.username||user.displayName||''),norm(mainTeam));
+     return [{...user,team:mainTeam,role:main?.role||user.role,mainTeam}];
+   });
+  const knownNames=new Set(baseUsers.map(u=>norm(u.name||u.username||u.displayName||'')).filter(Boolean));
+  const allowed=(name,team)=>{const person=norm(name);return !person||!knownNames.has(person)||(mainByUser.has(person)&&mainByUser.get(person)===norm(team));};
+  const mappedTasks=tr.map(mapDbTaskToApp).map(task=>{const raw=taskPics(task),pics=raw.filter(name=>allowed(name,task.team));if(raw.length&&!pics.length)return null;return {...task,pics,pic:pics.join(', ')};}).filter(Boolean);
+  const mappedRequests=rr.map(mapDbTimeoffToApp).filter(item=>allowed(item?.pic||item?.member||item?.name||'',item?.team));
+  const mappedProjects=pr.map(mapDbProjectToApp).map(project=>{const raw=Array.isArray(project?.owners)?project.owners:String(project?.owner||'').split(',');const owners=raw.map(v=>String(v).trim()).filter(Boolean).filter(name=>allowed(name,project.team));return {...project,owners,owner:owners.join(', ')};});
+  const data={users:headcountUsers,tasks:mappedTasks,requests:mappedRequests,projects:mappedProjects};ov.cache.set(key,{at:Date.now(),data});return data;
  })().catch(e=>{console.error('Overall all-team load failed',e);throw e;}).finally(()=>{ov.loading=null;ov.loadingKey='';if(status)status.classList.add('hidden');});
  return ov.loading;
 }
@@ -16822,7 +16845,8 @@ function renderOverallV7(data){
  try{
   const p=period(),now=new Date();now.setHours(0,0,0,0);
   const hiddenNames=new Set((data.users||[]).filter(u=>u?.show===false).map(u=>norm(u.name||u.username||u.displayName||'')).filter(Boolean));
-  const allUsers=(data.users||[]).filter(u=>norm(u.status||'Active')==='active'&&norm(u.role)!=='viewer'&&!hiddenNames.has(norm(u.name||u.username||u.displayName||'')));
+  /* Headcount and member visibility use Main team + Show = Yes only. Sub access is management-only. */
+  const allUsers=(data.users||[]).filter(u=>norm(u.status||'Active')==='active'&&norm(u.role)!=='viewer'&&u.show!==false);
   const workloadUsers=allUsers;
   const tasks=(data.tasks||[]).map(t=>{const rawPics=taskPics(t),pics=rawPics.filter(name=>!hiddenNames.has(norm(name)));return {...t,pics,__hadAssignedPIC:rawPics.length>0};}).filter(t=>!t.__hadAssignedPIC||t.pics.length>0);
   const req=(data.requests||[]).filter(x=>!hiddenNames.has(norm(x?.pic||x?.member||x?.name||''))),projects=data.projects||[];
@@ -17160,7 +17184,7 @@ const key13=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ');
 const yes13=v=>v===undefined||v===null||v===''||v===true||/^(yes|y|true|1)$/i.test(String(v).trim());
 const user13=()=>typeof currentUser!=='undefined'?currentUser:null;
 const projectTeam13=p=>String(p?.team||((W.activeTeamView&&W.activeTeamView!==W.TEAM_ALL)?W.activeTeamView:'')||user13()?.team||'Unassigned').trim()||'Unassigned';
-const owner13=p=>{const a=Array.isArray(p?.owners)&&p.owners.length?p.owners:String(p?.owner||'').split(',');return a.map(x=>String(x).trim()).filter(Boolean).join(', ')||'Unassigned';};
+const owner13=p=>{const a=Array.isArray(p?.owners)&&p.owners.length?p.owners:String(p?.owner||'').split(',');return a.map(x=>String(x).trim()).filter(Boolean).filter(x=>typeof isHiddenMember!=='function'||!isHiddenMember(x)).join(', ')||'Unassigned';};
 const money13=v=>{const n=Number(String(v??'').replace(/[$,\s]/g,''));return Number.isFinite(n)&&n!==0?'$'+n.toLocaleString(undefined,{maximumFractionDigits:0}):'-';};
 const date13=v=>{try{return (typeof formatDateMMDDYYYY==='function'?formatDateMMDDYYYY(v):String(v||''))||'-';}catch(_){return String(v||'')||'-';}};
 const statusClass13=v=>/complete|done|closed/i.test(v)?'completed':/overdue|delay|risk|stuck|block/i.test(v)?'risk':/working|progress|process/i.test(v)?'working':'';
@@ -17188,7 +17212,7 @@ try{
 }catch(e){console.error('V13 project metadata setup failed',e);}
 
 const projectColumns13=[
- ['team','Team'],['name','Project name'],['owner','Owner'],['startDate','Start'],['dueDate','Plan Completed'],['actualDate','Actual'],['status','Status'],['currentStage','Current Stage'],['progress','%Progress'],['archivedGoal','Archived goal'],['saving','Saving (if have)'],['keyProject','Key Project']
+ ['name','Project name'],['owner','Owner'],['startDate','Start'],['dueDate','Plan Completed'],['actualDate','Actual'],['status','Status'],['currentStage','Current Stage'],['progress','%Progress'],['archivedGoal','Archived goal'],['saving','Saving (if have)'],['keyProject','Key Project']
 ];
 W.v13ProjectHeaderFilters=W.v13ProjectHeaderFilters||{};
 function value13(p,k){if(k==='team')return projectTeam13(p);if(k==='owner')return owner13(p);if(k==='progress')return projectProgress13(p);if(k==='saving')return p?.actualSaving!==''&&p?.actualSaving!=null&&Number(p.actualSaving)!==0?p.actualSaving:p?.saving;if(k==='keyProject')return yes13(p?.keyProject)?'Yes':'No';return p?.[k]??'';}
@@ -17204,7 +17228,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('#v13HeaderFilterPopu
 W.v13UpdateProjectField=async function(id,field,value){const list=Array.isArray(W.projectsList)?W.projectsList:(typeof projectsList!=='undefined'?projectsList:[]);const p=list.find(x=>String(x.id)===String(id));if(!p)return;if(field==='progress')value=Math.max(0,Math.min(100,Number(value)||0));if(field==='keyProject')value=yes13(value);p[field]=value;if(field==='archivedGoal')p.detailedStatus=String(value||'');p.hoursUsed=buildProjectStorageHours(p);try{await saveSheetData('Projects',list);renderProjectsTable();try{W.refreshOverallAllTeams?.();}catch(_){}}catch(e){console.error(e);showToast?.('Unable to save project change');}};
 
 function projectHeader13(){return `<thead><tr>${projectColumns13.map(([k,l])=>{const active=(W.v13ProjectHeaderFilters[k]||[]).length;return `<th><div class="v13-filter-head"><span>${esc13(l)}</span><button type="button" class="${active?'active':''}" onclick="v13OpenProjectFilter(event,'${k}','${esc13(l)}')"><i class="fa-solid fa-filter"></i></button></div></th>`;}).join('')}<th>Action</th></tr></thead>`;}
-function projectRow13(p){const id=String(p.id).replace(/'/g,"\\'");const disabled=user13()?.isReadOnly?'disabled':'';const status=String(p.status||'Not Started'),progress=projectProgress13(p);p.progress=progress;const saving=value13(p,'saving');return `<tr data-project-id="${esc13(p.id)}"><td><span class="v13-team-pill">${esc13(projectTeam13(p))}</span></td><td><div class="v13-project-title" title="${esc13(p.name||'')}">${esc13(p.name||'Unnamed project')}</div><small class="v13-project-desc" title="${esc13(p.detail||'')}">${esc13(p.detail||'-')}</small></td><td>${esc13(owner13(p))}</td><td>${esc13(date13(p.startDate))}</td><td>${esc13(date13(p.dueDate))}</td><td>${esc13(date13(p.actualDate))}</td><td><span class="v13-status ${statusClass13(status)}">${esc13(status)}</span></td><td><textarea class="v13-inline-input v13-inline-text" rows="2" ${disabled} onchange="v13UpdateProjectField('${id}','currentStage',this.value)" placeholder="Current stage...">${esc13(p.currentStage||'')}</textarea></td><td><div class="v14-auto-progress" title="Automatically calculated from Start, Plan Completed, Actual and today"><div class="v14-auto-progress-track"><i style="width:${progress}%"></i></div><b>${progress}%</b></div></td><td><textarea class="v13-inline-input v13-inline-text" rows="2" ${disabled} onchange="v13UpdateProjectField('${id}','archivedGoal',this.value)" placeholder="1. Result...">${esc13(p.archivedGoal||p.detailedStatus||'')}</textarea></td><td><b>${esc13(money13(saving))}</b></td><td><select class="v13-inline-select" ${disabled} onchange="v13UpdateProjectField('${id}','keyProject',this.value)"><option value="Yes" ${yes13(p.keyProject)?'selected':''}>Yes</option><option value="No" ${!yes13(p.keyProject)?'selected':''}>No</option></select></td><td><div class="v13-actions"><button type="button" onclick="openAddProjectModal('${id}')" title="Edit"><i class="fa-solid fa-pen"></i></button><button type="button" class="danger" onclick="deleteProject('${id}')" title="Delete"><i class="fa-solid fa-trash"></i></button></div></td></tr>`;}
+function projectRow13(p){const id=String(p.id).replace(/'/g,"\\'");const disabled=user13()?.isReadOnly?'disabled':'';const status=String(p.status||'Not Started'),progress=projectProgress13(p);p.progress=progress;const saving=value13(p,'saving');return `<tr data-project-id="${esc13(p.id)}"><td><div class="v13-project-title" title="${esc13(p.name||'')}">${esc13(p.name||'Unnamed project')}</div><small class="v13-project-desc" title="${esc13(p.detail||'')}">${esc13(p.detail||'-')}</small></td><td>${esc13(owner13(p))}</td><td>${esc13(date13(p.startDate))}</td><td>${esc13(date13(p.dueDate))}</td><td>${esc13(date13(p.actualDate))}</td><td><span class="v13-status ${statusClass13(status)}">${esc13(status)}</span></td><td><textarea class="v13-inline-input v13-inline-text" rows="2" ${disabled} onchange="v13UpdateProjectField('${id}','currentStage',this.value)" placeholder="Current stage...">${esc13(p.currentStage||'')}</textarea></td><td><div class="v14-auto-progress" title="Automatically calculated from Start, Plan Completed, Actual and today"><div class="v14-auto-progress-track"><i style="width:${progress}%"></i></div><b>${progress}%</b></div></td><td><textarea class="v13-inline-input v13-inline-text" rows="2" ${disabled} onchange="v13UpdateProjectField('${id}','archivedGoal',this.value)" placeholder="1. Result...">${esc13(p.archivedGoal||p.detailedStatus||'')}</textarea></td><td><b>${esc13(money13(saving))}</b></td><td><select class="v13-inline-select" ${disabled} onchange="v13UpdateProjectField('${id}','keyProject',this.value)"><option value="Yes" ${yes13(p.keyProject)?'selected':''}>Yes</option><option value="No" ${!yes13(p.keyProject)?'selected':''}>No</option></select></td><td><div class="v13-actions"><button type="button" onclick="openAddProjectModal('${id}')" title="Edit"><i class="fa-solid fa-pen"></i></button><button type="button" class="danger" onclick="deleteProject('${id}')" title="Delete"><i class="fa-solid fa-trash"></i></button></div></td></tr>`;}
 const renderProjects13=function(){const host=document.getElementById('projectsTableBody');if(!host)return;const list=(Array.isArray(W.projectsList)?W.projectsList:(typeof projectsList!=='undefined'?projectsList:[])).filter(p=>p&&String(p.name||'').trim()).filter(projectSearch13).filter(passes13);host.innerHTML=list.length?`<div class="v13-project-scroll"><table class="v13-project-table">${projectHeader13()}<tbody>${list.map(projectRow13).join('')}</tbody></table></div>`:`<div class="v13-empty"><i class="fa-solid fa-diagram-project" style="font-size:28px;margin-bottom:10px"></i><div><b>No matching project</b></div><div>Adjust search or column filters.</div></div>`;updateSummary13();};
 W.renderProjectsTable=renderProjectsTable=renderProjects13;
 W.setProjectView=setProjectView=function(){document.getElementById('projectTableView')?.classList.remove('hidden');document.getElementById('projectGanttView')?.classList.add('hidden');};
@@ -17221,7 +17245,7 @@ W.getAllProjectExportRows=getAllProjectExportRows=function(){const old=W.v13Proj
 /* Shared top filters for Requests List and Saturday matrix. */
 function datesForRequest13(x){const s=cleanDateStr(x?.startDate),e=cleanDateStr(x?.endDate||x?.startDate)||s;if(!s)return[];const a=new Date(s+'T00:00:00'),b=new Date(e+'T00:00:00'),out=[];for(let d=new Date(a),guard=0;d<=b&&guard<370;d.setDate(d.getDate()+1),guard++)out.push(new Date(d));return out;}
 function timeoffPass13(x){const st=typeof bomTopFilterState!=='undefined'?bomTopFilterState:null;if(!st)return true;const ds=datesForRequest13(x);const checks=[['Year',d=>String(d.getFullYear())],['Month',d=>String(d.getMonth()+1)],['Week',d=>String(getIsoWeekNumber(formatDateLocal(d)))]];for(const [k,f] of checks){if(st[k]?.size&&!ds.some(d=>st[k].has(f(d))))return false;}if(st.Member?.size&&!st.Member.has(String(x?.pic||''))&&![...st.Member].some(v=>key13(v)===key13(x?.pic)))return false;if(st.Category?.size&&![...st.Category].some(v=>key13(v)===key13(x?.type)))return false;if(st.Status?.size&&x?.status&&!st.Status.has(String(x.status)))return false;return true;}
-W.renderTimeoffOtTable=renderTimeoffOtTable=function(){const body=document.getElementById('timeoffOtTableBody');if(!body)return;const rows=(Array.isArray(W.timeoffOtList)?W.timeoffOtList:(typeof timeoffOtList!=='undefined'?timeoffOtList:[])).filter(timeoffPass13).slice().sort((a,b)=>(Number(b.id)||0)-(Number(a.id)||0)||String(b.startDate||'').localeCompare(String(a.startDate||'')));body.innerHTML=rows.length?rows.map(item=>{let cls='bg-blue-100 text-blue-800';if(item.type==='Over Time')cls='bg-amber-100 text-amber-800';if(item.type==='Saturday Off')cls='bg-purple-100 text-purple-800';if(item.type==='Time Off')cls='bg-cyan-100 text-cyan-800';return `<tr class="border-b border-slate-100"><td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${cls}">${esc13(item.type)}</span></td><td class="py-2.5 px-3 font-semibold">${esc13(item.pic)}</td><td class="py-2.5 px-3 text-slate-600">${esc13(date13(item.startDate))} → ${esc13(date13(item.endDate))}</td><td class="py-2.5 px-3 text-center font-bold">${Number(item.hours)||0} ${/Over Time|Saturday Off|Time Off/.test(item.type)?'hrs':'days'}</td><td class="py-2.5 px-3 text-slate-500 truncate max-w-xs">${esc13(item.reason||'-')}</td><td class="py-2.5 px-3 text-center whitespace-nowrap"><button onclick="openTimeoffEditModal(${JSON.stringify(item.id)})" class="text-slate-400 hover:text-indigo-600 mr-2" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteTimeoffOt(${JSON.stringify(item.id)})" class="text-slate-400 hover:text-red-600" title="Delete"><i class="fa-solid fa-trash"></i></button></td></tr>`;}).join(''):'<tr><td colspan="6" class="py-8 text-center text-slate-400">No requests match the shared filters.</td></tr>';try{restoreAdvancedTableFilters?.();}catch(_){}};
+W.renderTimeoffOtTable=renderTimeoffOtTable=function(){const body=document.getElementById('timeoffOtTableBody');if(!body)return;const rows=(Array.isArray(W.timeoffOtList)?W.timeoffOtList:(typeof timeoffOtList!=='undefined'?timeoffOtList:[])).filter(x=>typeof isHiddenMember!=='function'||!isHiddenMember(x?.pic||x?.member||x?.name||'')).filter(timeoffPass13).slice().sort((a,b)=>(Number(b.id)||0)-(Number(a.id)||0)||String(b.startDate||'').localeCompare(String(a.startDate||'')));body.innerHTML=rows.length?rows.map(item=>{let cls='bg-blue-100 text-blue-800';if(item.type==='Over Time')cls='bg-amber-100 text-amber-800';if(item.type==='Saturday Off')cls='bg-purple-100 text-purple-800';if(item.type==='Time Off')cls='bg-cyan-100 text-cyan-800';return `<tr class="border-b border-slate-100"><td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${cls}">${esc13(item.type)}</span></td><td class="py-2.5 px-3 font-semibold">${esc13(item.pic)}</td><td class="py-2.5 px-3 text-slate-600">${esc13(date13(item.startDate))} → ${esc13(date13(item.endDate))}</td><td class="py-2.5 px-3 text-center font-bold">${Number(item.hours)||0} ${/Over Time|Saturday Off|Time Off/.test(item.type)?'hrs':'days'}</td><td class="py-2.5 px-3 text-slate-500 truncate max-w-xs">${esc13(item.reason||'-')}</td><td class="py-2.5 px-3 text-center whitespace-nowrap"><button onclick="openTimeoffEditModal(${JSON.stringify(item.id)})" class="text-slate-400 hover:text-indigo-600 mr-2" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteTimeoffOt(${JSON.stringify(item.id)})" class="text-slate-400 hover:text-red-600" title="Delete"><i class="fa-solid fa-trash"></i></button></td></tr>`;}).join(''):'<tr><td colspan="6" class="py-8 text-center text-slate-400">No requests match the shared filters.</td></tr>';try{restoreAdvancedTableFilters?.();}catch(_){}};
 function resolveMonth13(){const st=typeof bomTopFilterState!=='undefined'?bomTopFilterState:null;let year=new Date().getFullYear(),month=new Date().getMonth()+1;if(st?.Year?.size===1)year=Number([...st.Year][0])||year;if(st?.Week?.size===1){const r=getIsoWeekRange(year,Number([...st.Week][0]));if(r){year=Number(r.start.slice(0,4));month=Number(r.start.slice(5,7));}}else if(st?.Month?.size===1)month=Number([...st.Month][0])||month;else{const raw=document.getElementById('saturdayMatrixMonth')?.value;if(/^\d{4}-\d{2}$/.test(raw||'')){year=Number(raw.slice(0,4));month=Number(raw.slice(5,7));}}return{year,month};}
 function matrixSaturdays13(){const {year,month}=resolveMonth13(),out=[];for(let d=new Date(year,month-1,1);d.getMonth()===month-1;d.setDate(d.getDate()+1))if(d.getDay()===6){const iso=formatDateLocal(d);if(typeof bomTopFilterState!=='undefined'&&bomTopFilterState.Week?.size&&!bomTopFilterState.Week.has(String(getIsoWeekNumber(iso))))continue;out.push(iso);}const input=document.getElementById('saturdayMatrixMonth');if(input)input.value=`${year}-${String(month).padStart(2,'0')}`;return out;}
 W.getNextMonthSaturdays=getNextMonthSaturdays=matrixSaturdays13;
@@ -17559,7 +17583,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     roots.forEach(root=>{
       if(root.dataset.v16ScrollObserved==='1')return;
       root.dataset.v16ScrollObserved='1';
-      new MutationObserver(scheduleProjectScrollers).observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
+      W.__scheduleProjectScrollers=scheduleProjectScrollers;
     });
     window.addEventListener('resize',scheduleProjectScrollers,{passive:true});
     document.addEventListener('click',event=>{
@@ -17572,8 +17596,48 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   else connectProjectScrollers();
 })();
 </script>
-<!-- ================= IE TEAM APP V18: DATABASE + SCROLL + SATURDAY MATRIX ================= -->
-<style id="ieTeamV18Fixes">
+<!-- ================= IE TEAM APP V19: PRIMARY HEADCOUNT + OPTIMIZED UI ================= -->
+<style id="ieTeamV19AuthoritativeFixes">
+/* V19 authoritative layout: replaces scattered last-mile overrides with one bounded layer. */
+/* Shared filter bars stay above every table/chart while the page scrolls. */
+.tab-content > .bom-page-filter,
+#tab-projects .pm-reference-toolbar[data-bom-filter-bar="1"]{
+  position:sticky!important;top:0!important;z-index:5000!important;
+  isolation:isolate;background:#fff!important;
+  box-shadow:0 8px 18px -14px rgba(15,23,42,.8),0 1px 0 #dbe6f0!important;
+}
+.tab-content > .bom-page-filter::before,
+#tab-projects .pm-reference-toolbar[data-bom-filter-bar="1"]::before{
+  content:"";position:absolute;inset:0;z-index:-1;background:inherit;border-radius:inherit;pointer-events:none;
+}
+.tab-content table thead{z-index:20}
+
+/* PIC x Status headers: all status labels remain white on colored backgrounds. */
+#dashTablePicStatus thead th,#dashTablePicStatus thead th *{color:#fff!important}
+
+/* Daily Tracking always occupies its full card and keeps readable column widths. */
+#tab-daily-tracking > .bg-white{width:100%!important;min-width:0!important}
+#tab-daily-tracking > .bg-white > .overflow-x-auto{width:100%!important;max-width:100%!important;overflow-x:auto!important}
+#table-daily-tracking{width:max(100%,1500px)!important;min-width:1500px!important;table-layout:fixed!important}
+#table-daily-tracking th:nth-child(1){width:120px}#table-daily-tracking th:nth-child(2){width:190px}
+#table-daily-tracking th:nth-child(3){width:240px}#table-daily-tracking th:nth-child(4){width:155px}
+#table-daily-tracking th:nth-child(5){width:90px}#table-daily-tracking th:nth-child(6){width:130px}
+#table-daily-tracking th:nth-child(7),#table-daily-tracking th:nth-child(8),#table-daily-tracking th:nth-child(9){width:105px}
+#table-daily-tracking th:nth-child(10){width:85px}#table-daily-tracking th:nth-child(11){width:110px}
+#table-daily-tracking th:nth-child(12){width:110px}#table-daily-tracking th:nth-child(13){width:70px}
+#table-daily-tracking th,#table-daily-tracking td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Project health: larger doughnut with a horizontal legend below it. */
+#tab-overall [data-overall-chart="ovC4"]{overflow:visible!important}
+#tab-overall [data-overall-chart="ovC4"] .ov-donut-wrap{height:100%;min-height:190px;flex-direction:column!important;gap:10px!important;justify-content:center!important}
+#tab-overall [data-overall-chart="ovC4"] .ov-donut{width:min(172px,72%)!important;flex:0 0 auto}
+#tab-overall [data-overall-chart="ovC4"] .ov-donut-legend{width:100%;min-width:0!important;display:flex!important;flex-direction:row!important;justify-content:center;align-items:center;gap:8px 14px!important;flex-wrap:wrap}
+#tab-overall [data-overall-chart="ovC4"] .ov-donut-legend>div{display:grid;grid-template-columns:8px auto auto;gap:5px;width:auto;white-space:nowrap}
+
+/* Saturday Matrix period controls and table remain readable. */
+#saturdayMatrixYear,#saturdayMatrixMonth{height:31px}
+#timeoffMatrixScroll{isolation:isolate}
+
 /* Keep the Project Management horizontal scrollbar inside the visible viewport. */
 #tab-projects #projectTableView{min-width:0!important;max-width:calc(100% - 28px)!important}
 #tab-projects #projectsTableBody{min-width:0!important;max-width:100%!important}
@@ -17597,8 +17661,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 #tab-projects .v13-project-scroll::-webkit-scrollbar-thumb:hover{background:#527998!important}
 #tab-projects .v13-project-table{min-width:1425px!important;width:max(100%,1425px)!important}
 @media(max-width:900px){#tab-projects .v13-project-scroll{max-height:calc(100vh - 270px)!important}}
+/* Reduce expensive visual effects in the dense project workspace. */
+#tab-projects .v13-project-scroll{contain:layout style;will-change:scroll-position}
+#tab-projects .pm-ref-input,#tab-projects button{transition-duration:.08s!important}
 </style>
-<script id="ieTeamV18Fixes">
+<script id="ieTeamV19AuthoritativeLogic">
 (function(){
   'use strict';
   const W=window;
@@ -17631,7 +17698,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const guardedMap=row=>applyDedicatedProjectColumns(inheritedMap(row),row);
     W.mapDbProjectToApp=guardedMap;
     mapDbProjectToApp=guardedMap;
-  }catch(error){console.error('V18 project mapper setup failed',error);}
+  }catch(error){console.error('V19 project mapper setup failed',error);}
   try{
     const inheritedBuild=W.buildRelationalProjects||buildRelationalProjects;
     const guardedBuild=(projectRows,phaseRows,taskRows)=>{
@@ -17641,7 +17708,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     };
     W.buildRelationalProjects=guardedBuild;
     buildRelationalProjects=guardedBuild;
-  }catch(error){console.error('V18 relational project mapper setup failed',error);}
+  }catch(error){console.error('V19 relational project mapper setup failed',error);}
 
   /* Final write guard: every Projects insert/update includes all three public.projects columns. */
   try{
@@ -17659,46 +17726,59 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     };
     W.dbPayloadForSheet=guardedPayload;
     dbPayloadForSheet=guardedPayload;
-  }catch(error){console.error('V18 project payload setup failed',error);}
+  }catch(error){console.error('V19 project payload setup failed',error);}
 
   const esc=v=>typeof escapeHtml==='function'?escapeHtml(String(v??'')):String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const personKey=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ');
-  const monthSaturdays=monthValue=>{
-    let value=String(monthValue||'');
-    if(!/^\d{4}-\d{2}$/.test(value)){
-      const now=new Date();
-      value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    }
-    const year=Number(value.slice(0,4)),month=Number(value.slice(5,7));
+  const MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const matrixPeriod=()=>{
+    const yearSelect=document.getElementById('saturdayMatrixYear');
+    const monthSelect=document.getElementById('saturdayMatrixMonth');
+    const now=new Date();
+    let year=Number(yearSelect?.value)||now.getFullYear();
+    let month=Number(monthSelect?.value)||now.getMonth()+1;
+    if(month<1||month>12)month=now.getMonth()+1;
+    return {year,month,value:`${year}-${String(month).padStart(2,'0')}`};
+  };
+  function matrixSaturdays(year,month){
     const dates=[];
     for(let date=new Date(year,month-1,1);date.getMonth()===month-1;date.setDate(date.getDate()+1)){
       if(date.getDay()===6)dates.push(formatDateLocal(date));
     }
-    return {value,dates};
-  };
+    return dates;
+  }
+  function initMatrixPeriodControls(preferGlobal=false){
+    const yearSelect=document.getElementById('saturdayMatrixYear');
+    const monthSelect=document.getElementById('saturdayMatrixMonth');
+    if(!yearSelect||!monthSelect)return;
+    const now=new Date(),years=new Set([now.getFullYear()-1,now.getFullYear(),now.getFullYear()+1]);
+    const requestSource=Array.isArray(W.timeoffOtList)?W.timeoffOtList:(typeof timeoffOtList!=='undefined'?timeoffOtList:[]);
+    requestSource.forEach(item=>{const y=Number(String(item?.startDate||'').slice(0,4));if(y)years.add(y);});
+    const globalState=typeof bomTopFilterState!=='undefined'?bomTopFilterState:null;
+    const globalYear=preferGlobal&&globalState?.Year instanceof Set&&globalState.Year.size===1?Number([...globalState.Year][0]):0;
+    const globalMonth=preferGlobal&&globalState?.Month instanceof Set&&globalState.Month.size===1?Number([...globalState.Month][0]):0;
+    const currentYear=globalYear||Number(yearSelect.value)||now.getFullYear();
+    const currentMonth=globalMonth||Number(monthSelect.value)||now.getMonth()+1;
+    if(globalYear)years.add(globalYear);
+    yearSelect.innerHTML=[...years].filter(Boolean).sort((a,b)=>b-a).map(y=>`<option value="${y}">${y}</option>`).join('');
+    monthSelect.innerHTML=MONTH_NAMES.map((name,index)=>`<option value="${index+1}">${name}</option>`).join('');
+    yearSelect.value=String([...years].includes(currentYear)?currentYear:now.getFullYear());
+    monthSelect.value=String(currentMonth>=1&&currentMonth<=12?currentMonth:now.getMonth()+1);
+  }
 
-  /* Registration choices stay independent from report filters as well. */
-  const nextMonthSaturdays=()=>{
-    const next=new Date();
-    next.setDate(1);
-    next.setMonth(next.getMonth()+1);
-    return monthSaturdays(`${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}`).dates;
-  };
+  /* Registration choices remain independent from Week; Year + Month are explicit. */
+  const nextMonthSaturdays=()=>{const next=new Date();next.setDate(1);next.setMonth(next.getMonth()+1);return matrixSaturdays(next.getFullYear(),next.getMonth()+1);};
   W.getNextMonthSaturdays=nextMonthSaturdays;
   try{getNextMonthSaturdays=nextMonthSaturdays;}catch(_){ }
 
-  /* The Saturday Off Matrix uses only its own Month control for dates; Week never narrows or changes it. */
   const renderMatrix=()=>{
     const head=document.getElementById('saturdayMatrixHeader');
     const body=document.getElementById('saturdayMatrixBody');
-    const monthInput=document.getElementById('saturdayMatrixMonth');
-    if(!head||!body||!monthInput)return;
-    const period=monthSaturdays(monthInput.value);
-    if(monthInput.value!==period.value)monthInput.value=period.value;
-    const sats=period.dates;
+    if(!head||!body)return;
+    initMatrixPeriodControls(false);
+    const {year,month}=matrixPeriod(),sats=matrixSaturdays(year,month);
     head.innerHTML='<th class="py-2.5 px-4">Member Name</th>'+sats.map(date=>`<th class="py-2.5 px-2 text-center">Sat (${esc(typeof formatDateMMDDYYYY==='function'?formatDateMMDDYYYY(date):date)})</th>`).join('');
 
-    /* Member/Category selections remain supported; Year/Month/Week are deliberately ignored here. */
     const state=typeof bomTopFilterState!=='undefined'?bomTopFilterState:null;
     const selectedMembers=state?.Member instanceof Set?state.Member:new Set();
     const categoryOk=!(state?.Category instanceof Set)||!state.Category.size||[...state.Category].some(value=>personKey(value)==='saturday off');
@@ -17710,12 +17790,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       .filter(user=>!selectedMembers.size||[...selectedMembers].some(value=>personKey(value)===personKey(user?.name)));
 
     if(!categoryOk||!visibleUsers.length){
-      body.innerHTML=`<tr><td colspan="${Math.max(1,sats.length+1)}" class="py-8 text-center text-slate-400">No members match the shared member/category filters.</td></tr>`;
+      body.innerHTML=`<tr><td colspan="${Math.max(1,sats.length+1)}" class="py-8 text-center text-slate-400">No members match the selected filters.</td></tr>`;
       return;
     }
     body.innerHTML=visibleUsers.map(user=>{
-      const safeName=String(user?.name??'');
-      const jsName=safeName.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const safeName=String(user?.name??''),jsName=safeName.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const cells=sats.map(date=>{
         const checked=sourceRequests.some(item=>personKey(item?.type)==='saturday off'&&personKey(item?.pic)===personKey(safeName)&&cleanDateStr(item?.startDate)<=date&&date<=cleanDateStr(item?.endDate||item?.startDate));
         return `<td class="py-2.5 px-2 text-center"><input type="checkbox" ${checked?'checked':''} onchange="toggleSaturdayMatrix('${jsName}','${date}',this.checked)" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"></td>`;
@@ -17726,9 +17805,298 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   W.renderSaturdayMatrixTable=renderMatrix;
   try{renderSaturdayMatrixTable=renderMatrix;}catch(_){ }
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',renderMatrix,{once:true});
-  else requestAnimationFrame(renderMatrix);
+  /* Shared Year/Month filters synchronize the Matrix; Week never changes its date columns. */
+  try{
+    const inheritedApplyFilters=W.applyBomUnifiedFilters||applyBomUnifiedFilters;
+    const applyFiltersWithMatrix=function(){
+      const result=inheritedApplyFilters.apply(this,arguments);
+      requestAnimationFrame(()=>{initMatrixPeriodControls(true);renderMatrix();});
+      return result;
+    };
+    W.applyBomUnifiedFilters=applyFiltersWithMatrix;
+    applyBomUnifiedFilters=applyFiltersWithMatrix;
+  }catch(error){console.error('V19 Matrix filter synchronization failed',error);}
+
+  /* Batch repeated project renders into one animation frame and run one scroll sync. */
+  try{
+    const inheritedProjectRender=W.renderProjectsTable||renderProjectsTable;
+    let frame=0,again=false,running=false;
+    const batchedProjectRender=function(){
+      if(running){again=true;return;}
+      if(frame){again=true;return;}
+      frame=requestAnimationFrame(()=>{
+        frame=0;running=true;
+        try{inheritedProjectRender.apply(this,arguments);}finally{
+          running=false;
+          requestAnimationFrame(()=>{W.syncProjectTableScroll?.();W.__scheduleProjectScrollers?.();});
+          if(again){again=false;batchedProjectRender();}
+        }
+      });
+    };
+    W.renderProjectsTable=batchedProjectRender;
+    renderProjectsTable=batchedProjectRender;
+  }catch(error){console.error('V19 project render batching setup failed',error);}
+
+  function initV19(){initMatrixPeriodControls(true);renderMatrix();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initV19,{once:true});
+  else requestAnimationFrame(initV19);
 })();
 </script>
+
+<!-- ================= IE TEAM APP V20: FILTER / HEADCOUNT / VIEWER / PROJECT ROW FIXES ================= -->
+<style id="ieTeamV20AuthoritativeFixes">
+/* The sticky shared filter owns the full content width and paints an opaque top gutter. */
+#contentArea{--v20-content-gutter:24px}
+.tab-content>.bom-page-filter{
+  position:sticky!important;
+  top:0!important;
+  z-index:12000!important;
+  isolation:isolate!important;
+  box-sizing:border-box!important;
+  width:calc(100% + (2 * var(--v20-content-gutter)))!important;
+  max-width:none!important;
+  margin:0 calc(-1 * var(--v20-content-gutter))!important;
+  padding-left:var(--v20-content-gutter)!important;
+  padding-right:var(--v20-content-gutter)!important;
+  background:#fff!important;
+  background-image:none!important;
+  border-color:#dbe6f0!important;
+  border-radius:0 0 12px 12px!important;
+  box-shadow:0 8px 18px -14px rgba(15,23,42,.8),0 1px 0 #dbe6f0!important;
+}
+.tab-content>.bom-page-filter::before{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:calc(-1 * var(--v20-content-gutter))!important;
+  height:calc(var(--v20-content-gutter) + 1px)!important;
+  background:#f1f5f9!important;
+  pointer-events:none!important;
+  z-index:0!important;
+}
+.tab-content>.bom-page-filter>*{position:relative;z-index:1}
+body.report-exporting .tab-content>.bom-page-filter{
+  position:static!important;width:100%!important;margin:0!important;padding-left:12px!important;padding-right:12px!important;border-radius:12px!important;
+}
+body.report-exporting .tab-content>.bom-page-filter::before{display:none!important}
+@media(max-width:1024px){#contentArea{--v20-content-gutter:10px}}
+@media(max-width:640px){#contentArea{--v20-content-gutter:8px}}
+
+/* Project Management: Project name is the first and only frozen column; Team is intentionally absent. */
+#tab-projects .v13-project-table{min-width:1320px!important;width:max(100%,1320px)!important}
+#tab-projects .v13-project-table th:nth-child(1),
+#tab-projects .v13-project-table td:nth-child(1){width:270px!important;position:sticky!important;left:0!important;z-index:8!important;box-shadow:7px 0 10px -10px rgba(20,61,96,.8)}
+#tab-projects .v13-project-table thead th:nth-child(1){z-index:15!important}
+#tab-projects .v13-project-table th:nth-child(2),#tab-projects .v13-project-table td:nth-child(2){width:135px!important;position:static!important;left:auto!important;z-index:auto!important;box-shadow:none!important}
+#tab-projects .v13-project-table th:nth-child(3),#tab-projects .v13-project-table td:nth-child(3),
+#tab-projects .v13-project-table th:nth-child(4),#tab-projects .v13-project-table td:nth-child(4),
+#tab-projects .v13-project-table th:nth-child(5),#tab-projects .v13-project-table td:nth-child(5){width:94px!important}
+#tab-projects .v13-project-table th:nth-child(6),#tab-projects .v13-project-table td:nth-child(6){width:105px!important}
+#tab-projects .v13-project-table th:nth-child(7),#tab-projects .v13-project-table td:nth-child(7){width:180px!important}
+#tab-projects .v13-project-table th:nth-child(8),#tab-projects .v13-project-table td:nth-child(8){width:105px!important}
+#tab-projects .v13-project-table th:nth-child(9),#tab-projects .v13-project-table td:nth-child(9){width:210px!important}
+#tab-projects .v13-project-table th:nth-child(10),#tab-projects .v13-project-table td:nth-child(10){width:110px!important}
+#tab-projects .v13-project-table th:nth-child(11),#tab-projects .v13-project-table td:nth-child(11){width:92px!important}
+#tab-projects .v13-project-table th:nth-child(12),#tab-projects .v13-project-table td:nth-child(12){width:72px!important}
+#tab-projects .v13-project-table tbody tr[data-project-id]{cursor:pointer}
+#tab-projects .v13-project-table tbody tr.v20-project-expanded td{
+  height:auto!important;min-height:70px!important;padding-top:11px!important;padding-bottom:11px!important;vertical-align:top!important;
+}
+#tab-projects .v13-project-table tbody tr.v20-project-expanded .v13-project-title,
+#tab-projects .v13-project-table tbody tr.v20-project-expanded .v13-project-desc{
+  white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important;word-break:break-word!important;
+}
+#tab-projects .v13-project-table tbody tr.v20-project-expanded .v13-project-desc{margin-top:6px!important;line-height:1.45!important;font-size:9.5px!important}
+#mtrSwitchBox.v20-viewer-team-picker{display:block!important}
+#mtrSwitchBox.v20-viewer-team-picker select{cursor:pointer}
+</style>
+<script id="ieTeamV20AuthoritativeLogic">
+(function(){
+  'use strict';
+  const W=window;
+  const session=()=>typeof currentUser!=='undefined'?currentUser:W.currentUser;
+  const key=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ');
+  const esc=v=>typeof escapeHtml==='function'?escapeHtml(String(v??'')):String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const isViewer=()=>!!session()&&session().isReadOnly===true;
+  function allKnownTeams(){
+    const map=new Map(),add=value=>{const label=String(value??'').trim();if(label&&!/^(__ALL__|loading teams|all teams)$/i.test(label)&&!map.has(key(label)))map.set(key(label),label);};
+    try{(W.computeKnownTeams?.()||[]).forEach(add);}catch(_){}
+    (W.teamsTableRows||[]).forEach(row=>add(row?.code||row?.team||row?.name));
+    (W.__seenTeams||[]).forEach(add);
+    document.querySelectorAll('#loginTeam option').forEach(option=>add(option.value));
+    add(session()?.team);
+    return [...map.values()].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+  }
+  function ensureViewerPicker(){
+    let box=document.getElementById('mtrSwitchBox');
+    if(!box){
+      const card=document.getElementById('teamSwitcherCard');
+      if(!card)return null;
+      box=document.createElement('div');box.id='mtrSwitchBox';box.setAttribute('data-mtr-free','1');
+      box.innerHTML='<label for="mtrScopeSel" class="sr-only">Active team</label><select id="mtrScopeSel"></select><p class="mt-1.5 text-[10px] text-slate-400" id="mtrScopeHint"></p>';
+      const label=document.getElementById('teamStaticLabel');
+      label?label.insertAdjacentElement('afterend',box):card.appendChild(box);
+      box.querySelector('select').addEventListener('change',event=>W.switchTeamView(event.target.value));
+    }
+    box.setAttribute('data-mtr-free','1');
+    return box;
+  }
+  const inheritedRenderTeam=W.renderTeamSwitcher;
+  W.renderTeamSwitcher=function(){
+    const result=typeof inheritedRenderTeam==='function'?inheritedRenderTeam.apply(this,arguments):undefined;
+    if(!isViewer())return result;
+    const box=ensureViewerPicker();if(!box)return result;
+    const teams=allKnownTeams(),select=box.querySelector('select');
+    select.innerHTML=teams.map(team=>`<option value="${esc(team)}">${esc(team)}</option>`).join('');
+    const active=teams.find(team=>key(team)===key(session()?.team||W.activeTeamView))||teams[0]||'';
+    if(active)select.value=active;
+    select.disabled=false;
+    box.classList.remove('hidden');box.classList.add('v20-viewer-team-picker');
+    document.getElementById('teamStaticLabel')?.classList.add('hidden');
+    document.getElementById('teamAdminControls')?.classList.add('hidden');
+    const hint=document.getElementById('mtrScopeHint');if(hint)hint.textContent='View only · choose any team.';
+    const greet=document.getElementById('teamGreeting');if(greet)greet.textContent=active;
+    return result;
+  };
+  try{renderTeamSwitcher=W.renderTeamSwitcher;}catch(_){}
+
+  const inheritedSwitchTeam=W.switchTeamView;
+  W.switchTeamView=async function(value){
+    if(!isViewer())return typeof inheritedSwitchTeam==='function'?inheritedSwitchTeam.apply(this,arguments):undefined;
+    const team=allKnownTeams().find(item=>key(item)===key(value));
+    const user=session();
+    if(!user||!team||key(team)===key(user.team))return;
+    const previous=String(user.team||'');
+    const select=document.querySelector('#mtrSwitchBox select');if(select)select.disabled=true;
+    W.activeTeamView=team;user.team=team;W.__loadedTaskKey=null;
+    try{bomTopFilterState?.Category?.clear?.();bomTopFilterState?.Member?.clear?.();}catch(_){}
+    try{
+      const ok=await W.fetchAllDataFromSheet({background:false,forceRender:true});
+      if(ok===false)throw new Error('Unable to load the selected team.');
+      try{W.initUserSession?.();}catch(_){}
+      try{W.populateFilterOptions?.();}catch(_){}
+      try{W.updateDashboardCharts?.();}catch(_){}
+    }catch(error){
+      W.activeTeamView=previous;user.team=previous;
+      try{W.showAppNotification?.(error?.message||'Unable to switch team.','Team view');}catch(_){}
+    }finally{W.renderTeamSwitcher();}
+  };
+  try{switchTeamView=W.switchTeamView;}catch(_){}
+
+  const expandedProjects=new Set();
+  function toggleProjectRow(row,force){
+    const id=String(row.dataset.projectId||'');
+    const expanded=force===undefined?!row.classList.contains('v20-project-expanded'):!!force;
+    row.classList.toggle('v20-project-expanded',expanded);
+    row.setAttribute('aria-expanded',String(expanded));
+    if(id){if(expanded)expandedProjects.add(id);else expandedProjects.delete(id);}
+  }
+  const projectHost=document.getElementById('projectsTableBody');
+  if(projectHost){
+    projectHost.addEventListener('click',event=>{
+      if(event.target.closest('button,input,select,textarea,a,[role="button"]'))return;
+      const row=event.target.closest('.v13-project-table tbody tr[data-project-id]');if(row)toggleProjectRow(row);
+    });
+    projectHost.addEventListener('keydown',event=>{
+      if(event.key!=='Enter'&&event.key!==' ')return;
+      if(event.target.closest('button,input,select,textarea,a,[role="button"]'))return;
+      const row=event.target.closest('.v13-project-table tbody tr[data-project-id]');if(!row)return;
+      event.preventDefault();toggleProjectRow(row);
+    });
+    const prepareRows=()=>projectHost.querySelectorAll('.v13-project-table tbody tr[data-project-id]').forEach(row=>{const expanded=expandedProjects.has(String(row.dataset.projectId||''));row.classList.toggle('v20-project-expanded',expanded);row.tabIndex=0;row.setAttribute('aria-expanded',String(expanded));row.title='Click to expand or collapse the full project name and description';});
+    new MutationObserver(()=>requestAnimationFrame(prepareRows)).observe(projectHost,{childList:true,subtree:true});
+    requestAnimationFrame(prepareRows);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>W.renderTeamSwitcher?.(),{once:true});
+  else requestAnimationFrame(()=>W.renderTeamSwitcher?.());
+})();
+</script>
+
+
+<!-- ================= IE TEAM APP V21: MAIN/SUB MEMBERSHIP + PROJECT HEADER FIX ================= -->
+<style id="ieTeamV21AuthoritativeFixes">
+#mtrUsers .mtr-membership{display:inline-flex;align-items:center;justify-content:center;min-width:52px;margin:2px 4px 2px 0;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:850;white-space:nowrap;border:1px solid transparent}
+#mtrUsers .mtr-membership.main,#mtrUserModal .mtr-membership.main{background:#dcfce7;color:#166534;border-color:#86efac}
+#mtrUsers .mtr-membership.sub,#mtrUserModal .mtr-membership.sub{background:#f1f5f9;color:#64748b;border-color:#cbd5e1}
+#mtrUserModal .mtr-membership{display:inline-flex;align-items:center;justify-content:center;min-height:28px;border-radius:8px;font-size:11px;font-weight:800;border:1px solid transparent}
+
+/* One authoritative table geometry prevents sticky headers from overlapping or being cut. */
+#tab-projects .v13-project-scroll{position:relative!important;isolation:isolate!important;overflow:auto!important;scrollbar-gutter:stable both-edges!important}
+#tab-projects .v13-project-table{width:1320px!important;min-width:1320px!important;max-width:none!important;table-layout:fixed!important;border-collapse:separate!important;border-spacing:0!important}
+#tab-projects .v13-project-table col.v21-project{width:270px}#tab-projects .v13-project-table col.v21-owner{width:135px}
+#tab-projects .v13-project-table col.v21-date{width:94px}#tab-projects .v13-project-table col.v21-status{width:105px}
+#tab-projects .v13-project-table col.v21-stage{width:180px}#tab-projects .v13-project-table col.v21-progress{width:105px}
+#tab-projects .v13-project-table col.v21-goal{width:210px}#tab-projects .v13-project-table col.v21-saving{width:110px}
+#tab-projects .v13-project-table col.v21-key{width:92px}#tab-projects .v13-project-table col.v21-action{width:72px}
+#tab-projects .v13-project-table thead{position:relative!important;z-index:40!important}
+#tab-projects .v13-project-table thead tr{height:46px!important}
+#tab-projects .v13-project-table thead th{position:sticky!important;top:0!important;z-index:42!important;height:46px!important;min-height:46px!important;box-sizing:border-box!important;overflow:visible!important;vertical-align:middle!important;background:linear-gradient(180deg,#1269c7 0%,#0b56ad 100%)!important;color:#fff!important;border-right:1px solid rgba(255,255,255,.22)!important;border-bottom:1px solid #08498f!important;box-shadow:0 2px 5px rgba(15,56,96,.16)!important;padding:7px 8px!important;white-space:normal!important}
+#tab-projects .v13-project-table thead th:first-child{position:sticky!important;left:0!important;z-index:50!important;width:270px!important;min-width:270px!important;max-width:270px!important}
+#tab-projects .v13-project-table tbody td:first-child{position:sticky!important;left:0!important;z-index:8!important;width:270px!important;min-width:270px!important;max-width:270px!important}
+#tab-projects .v13-project-table thead th:nth-child(n+2){position:sticky!important;top:0!important;left:auto!important;z-index:42!important}
+#tab-projects .v13-project-table tbody td:nth-child(n+2){position:static!important;left:auto!important;z-index:auto!important;box-shadow:none!important}
+#tab-projects .v13-project-table .v13-filter-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:6px!important;width:100%!important;min-width:0!important;min-height:28px!important}
+#tab-projects .v13-project-table .v13-filter-head>span{display:block!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:normal!important;line-height:1.2!important;color:#fff!important}
+#tab-projects .v13-project-table .v13-filter-head>button{flex:0 0 20px!important}
+#tab-projects .v13-project-table thead th:last-child{text-align:center!important}
+</style>
+<script id="ieTeamV21AuthoritativeLogic">
+(function(){
+  'use strict';
+  const W=window;
+  const k=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ');
+  const activeTeam=()=>{try{const t=W.getViewTeam?.();return t===W.TEAM_ALL?'':String(t||'').trim();}catch(_){return String(W.activeTeamView||'').trim();}};
+  const baseUsers=()=>W.__mtr?.all?.length?W.__mtr.all:(Array.isArray(W.users)?W.users:(typeof users!=='undefined'?users:[]));
+  const memberships=user=>{try{return W.getUserMemberships?.(user)||[];}catch(_){return [];}};
+  function primaryTeam(user){const list=memberships(user);const main=list.find(m=>m.primary)||list.find(m=>k(m.team)===k(user?.team));return String(main?.team||(!list.length?user?.team:'')||'').trim();}
+  function rebuildExclusions(){
+    const team=activeTeam(),excluded=new Set();
+    baseUsers().forEach(user=>{const name=k(user?.name||user?.username||user?.displayName||'');if(!name)return;const main=primaryTeam(user);if(user?.show===false||(team&&k(main)!==k(team)))excluded.add(name);});
+    W.__v21ExcludedMembers=excluded;
+    return excluded;
+  }
+  const inheritedHidden=typeof W.isHiddenMember==='function'?W.isHiddenMember:null;
+  const exclusionSet=()=>W.__v21ExcludedMembers instanceof Set?W.__v21ExcludedMembers:rebuildExclusions();
+  const hidden=function(name){const nameKey=k(name);return !!nameKey&&(exclusionSet().has(nameKey)||(inheritedHidden?inheritedHidden(name):false));};
+  W.isHiddenMember=hidden;try{isHiddenMember=hidden;}catch(_){ }
+  W.isReportableActiveUser=user=>!!user&&k(user.status||'Active')==='active'&&!hidden(user.name||user.username||user.displayName||'');
+  W.reportableTaskPICs=task=>{const list=typeof taskPICs==='function'?taskPICs(task):(Array.isArray(task?.pics)?task.pics:String(task?.pic||'').split(','));return list.filter(name=>!hidden(name));};
+  try{reportableTaskPICs=W.reportableTaskPICs;isReportableActiveUser=W.isReportableActiveUser;}catch(_){ }
+
+  /* Scope every member-facing page to Main + Show Yes. Sub remains available for management/session switching only. */
+  const inheritedScope=W.applyTeamScopeToState;
+  if(typeof inheritedScope==='function'){
+    const scoped=function(){
+      const result=inheritedScope.apply(this,arguments),team=activeTeam(),all=baseUsers(),byName=new Map();
+      all.forEach(user=>byName.set(k(user?.name||user?.username||user?.displayName||''),user));
+      const allowedUser=user=>{const base=byName.get(k(user?.name||user?.username||user?.displayName||''))||user;const main=primaryTeam(base);return base?.show!==false&&!!main&&(!team||k(main)===k(team));};
+      if(Array.isArray(users))users=users.filter(allowedUser).map(user=>({...user,team:primaryTeam(byName.get(k(user.name))||user)||user.team,membershipType:'Main'}));
+      W.users=users;rebuildExclusions();W.invalidateHiddenMembers?.();
+      return result;
+    };
+    W.applyTeamScopeToState=scoped;
+  }
+
+  function installProjectColumns(){
+    document.querySelectorAll('#tab-projects .v13-project-table').forEach(table=>{
+      const labels=['Project name','Owner','Start','Plan Completed','Actual','Status','Current Stage','%Progress','Archived goal','Saving (if have)','Key Project','Action'];
+      let group=table.querySelector(':scope > colgroup.v21-project-cols');
+      if(!group){group=document.createElement('colgroup');group.className='v21-project-cols';group.innerHTML='<col class="v21-project"><col class="v21-owner"><col class="v21-date"><col class="v21-date"><col class="v21-date"><col class="v21-status"><col class="v21-stage"><col class="v21-progress"><col class="v21-goal"><col class="v21-saving"><col class="v21-key"><col class="v21-action">';table.insertBefore(group,table.firstChild);}
+      const heads=[...table.querySelectorAll('thead th')];
+      heads.forEach((th,index)=>{const label=labels[index]||'';const span=th.querySelector('.v13-filter-head>span');if(span&&label)span.textContent=label;else if(index===heads.length-1&&label)th.textContent=label;th.dataset.columnLabel=label;th.setAttribute('aria-label',label);});
+    });
+  }
+  const projectHost=document.getElementById('projectsTableBody');
+  if(projectHost){new MutationObserver(()=>requestAnimationFrame(installProjectColumns)).observe(projectHost,{childList:true,subtree:true});requestAnimationFrame(installProjectColumns);}
+  const inheritedProjectRender=W.renderProjectsTable;
+  if(typeof inheritedProjectRender==='function'){
+    const wrapped=function(){const result=inheritedProjectRender.apply(this,arguments);requestAnimationFrame(()=>requestAnimationFrame(installProjectColumns));return result;};
+    wrapped.__v21=true;W.renderProjectsTable=wrapped;try{renderProjectsTable=wrapped;}catch(_){ }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{rebuildExclusions();installProjectColumns();},{once:true});else requestAnimationFrame(()=>{rebuildExclusions();installProjectColumns();});
+})();
+</script>
+
 </body>
 </html>
